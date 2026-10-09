@@ -232,6 +232,39 @@ export function describeRepositoryContract(name: string, create: () => Promise<C
         expect((await notes.listLinks({ folderId: 'root' })).items).toEqual([])
       })
 
+      it('says where a link sits', async () => {
+        const { notes, signInNewUser } = await create()
+        await signInNewUser()
+        const outer = await notes.createFolder('Outer')
+        const inner = await notes.createFolder('Inner', outer.id)
+        const project = await notes.createNote({ title: 'Project', folderId: inner.id })
+        const task = await notes.createNote({ title: 'Task', parentNoteId: project.id })
+
+        const atRoot = await notes.createLink({ title: 'Root', url: 'https://a.co' })
+        const inFolder = await notes.createLink({
+          title: 'F',
+          url: 'https://a.co',
+          folderId: inner.id,
+        })
+        const underNote = await notes.createLink({
+          title: 'N',
+          url: 'https://a.co',
+          parentNoteId: task.id,
+        })
+
+        expect(atRoot.path).toEqual([])
+        expect((await notes.getLink(inFolder.id)).path.map((p) => p.title)).toEqual([
+          'Outer',
+          'Inner',
+        ])
+        expect((await notes.getLink(underNote.id)).path).toEqual([
+          { type: 'folder', id: outer.id, title: 'Outer' },
+          { type: 'folder', id: inner.id, title: 'Inner' },
+          { type: 'note', id: project.id, title: 'Project' },
+          { type: 'note', id: task.id, title: 'Task' },
+        ])
+      })
+
       it('only accepts absolute http(s) URLs', async () => {
         const { notes, signInNewUser } = await create()
         await signInNewUser()

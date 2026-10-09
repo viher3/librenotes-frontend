@@ -1,0 +1,27 @@
+{
+  "title": "Etiquetas",
+  "none": "Aún no hay etiquetas",
+  "list": {
+    "empty": "Aún no hay etiquetas",
+    "itemCount_one": "{{count}} elemento",
+    "itemCount_other": "{{count}} elementos"
+  },
+  "editor": {
+    "label": "Etiquetas",
+    "add": "Añadir etiqueta",
+    "placeholder": "Añadir una etiqueta…",
+    "remove": "Quitar la etiqueta {{name}}",
+    "tooLong": "Una etiqueta puede tener como máximo {{max}} caracteres.",
+    "tooMany": "Un documento puede tener como máximo {{max}} etiquetas."
+  },
+  "page": {
+    "title": "Etiqueta: {{name}}",
+    "documents": "Documentos",
+    "links": "Enlaces",
+    "empty": "Nada tiene la etiqueta «{{name}}».",
+    "loadMore": "Mostrar más",
+    "loadError": "No hemos podido cargar esta etiqueta.",
+    "retry": "Reintentar",
+    "back": "Volver a los documentos"
+  }
+}

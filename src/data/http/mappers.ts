@@ -8,6 +8,7 @@ import {
   type FolderDetail,
   type FolderSummary,
   type Link,
+  type LinkDetail,
   type Locale,
   type Note,
   type NoteChildren,
@@ -122,6 +123,10 @@ export function toLink(
     createdAt: req(dto.created_at, 'created_at'),
     updatedAt: req(dto.updated_at, 'updated_at'),
   }
+}
+
+export function toLinkDetail(dto: S['LinkDetailResponse']): LinkDetail {
+  return { ...toLink(dto), path: toPath(dto.path) }
 }
 
 function toFolderSummary(dto: S['FolderSummary']): FolderSummary {

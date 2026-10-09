@@ -3937,7 +3937,7 @@ export interface components {
       /** Format: date-time */
       updated_at?: string
     }
-    LinkDetailResponse: {
+    LinkListItem: {
       /** Format: uuid */
       id?: string
       title?: string
@@ -3956,9 +3956,29 @@ export interface components {
       /** Format: date-time */
       updated_at?: string
     }
+    LinkDetailResponse: {
+      /** Format: uuid */
+      id?: string
+      title?: string
+      url?: string
+      note?: string | null
+      /** Format: uuid */
+      folder_id?: string | null
+      /**
+       * Format: uuid
+       * @description The note it is placed under, if any.
+       */
+      parent_note_id?: string | null
+      tags?: components['schemas']['TagNames']
+      /** Format: date-time */
+      created_at?: string
+      /** Format: date-time */
+      updated_at?: string
+      path?: components['schemas']['AncestorPath']
+    }
     LinkListResponse: {
       meta?: components['schemas']['PageMeta']
-      data?: components['schemas']['LinkDetailResponse'][]
+      data?: components['schemas']['LinkListItem'][]
     }
     SearchResult: {
       /** @enum {string} */

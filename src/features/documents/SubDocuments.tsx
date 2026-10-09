@@ -9,10 +9,12 @@ import { useNoteChildren } from '@/features/tree/queries'
 export function SubDocuments({
   noteId,
   onAdd,
+  onAddLink,
   adding,
 }: {
   noteId: ID
   onAdd: () => void
+  onAddLink: () => void
   adding: boolean
 }) {
   const { t } = useTranslation('tree')
@@ -39,22 +41,23 @@ export function SubDocuments({
         </Link>
       ))}
       {links.map((link) => (
-        <a
+        <Link
           key={link.id}
-          href={link.url}
-          target="_blank"
-          rel="noopener noreferrer nofollow"
+          to={`/link/${link.id}`}
           className="rounded-full border border-neutral-300 px-3 py-0.5 hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-neutral-800"
         >
           <span aria-hidden="true">🔗 </span>
           {link.title}
-        </a>
+        </Link>
       ))}
       {!hasChildren && !query.isPending && (
         <span className="text-neutral-500">{t('subDocuments.none')}</span>
       )}
       <Button variant="ghost" className="px-2 py-0.5 text-xs" onClick={onAdd} disabled={adding}>
         {t('subDocuments.add')}
+      </Button>
+      <Button variant="ghost" className="px-2 py-0.5 text-xs" onClick={onAddLink}>
+        {t('subDocuments.addLink')}
       </Button>
     </section>
   )

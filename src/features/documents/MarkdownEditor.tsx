@@ -31,7 +31,12 @@ export default function MarkdownEditor({ value, onChange, label, autoFocus }: Ma
       onChange={onChange}
       extensions={extensions}
       theme={isDark() ? 'dark' : 'light'}
-      autoFocus={autoFocus}
+      onCreateEditor={(view) => {
+        // The editor loads on demand, so it can arrive after the user has already started typing elsewhere (the
+        // title, a tag): it may take the focus only if nobody has it.
+        const active = document.activeElement
+        if (autoFocus && (active === null || active === document.body)) view.focus()
+      }}
       height="100%"
       className="h-full"
       basicSetup={{

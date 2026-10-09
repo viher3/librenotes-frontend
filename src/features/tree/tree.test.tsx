@@ -121,19 +121,32 @@ describe('tree: browsing', () => {
     expect(hasRow('Task')).toBe(false)
   })
 
-  it('opens links in a new tab, safely', async () => {
+  it('shows a link as a row that leads to its own page', async () => {
     const mock = await signedInBackend()
-    await seed(mock)
-    await renderApp('/', mock)
-
+    const { bookmark } = await seed(mock)
+    const { user, router } = await renderApp('/', mock)
     await waitFor(() => expect(hasRow('Bookmark')).toBe(true))
 
-    const link = within(row('Bookmark')).getByRole('link', {
-      name: 'Bookmark (opens in a new tab)',
-    })
-    expect(link).toHaveAttribute('href', 'https://bookmark.example')
-    expect(link).toHaveAttribute('target', '_blank')
-    expect(link).toHaveAttribute('rel', 'noopener noreferrer nofollow')
+    const anchor = within(row('Bookmark')).getByRole('link')
+    expect(anchor).toHaveAttribute('href', `/link/${bookmark.id}`)
+    expect(anchor).not.toHaveAttribute('target')
+    expect(row('Bookmark')).not.toHaveAttribute('aria-expanded')
+
+    await user.click(anchor)
+    await waitFor(() => expect(router.state.location.pathname).toBe(`/link/${bookmark.id}`))
+  })
+
+  it('opens the address of a link in a new tab from its menu, safely', async () => {
+    const mock = await signedInBackend()
+    await seed(mock)
+    const open = vi.spyOn(window, 'open').mockReturnValue(null)
+    const { user } = await renderApp('/', mock)
+    await waitFor(() => expect(hasRow('Bookmark')).toBe(true))
+
+    await user.click(within(row('Bookmark')).getByRole('button', { name: 'Actions for Bookmark' }))
+    await user.click(await screen.findByRole('menuitem', { name: 'Open link in a new tab' }))
+
+    expect(open).toHaveBeenCalledWith('https://bookmark.example', '_blank', 'noopener,noreferrer')
   })
 
   it('remembers which branches are open', async () => {
@@ -299,12 +312,19 @@ describe('tree: keyboard', () => {
       within(menu)
         .getAllByRole('menuitem')
         .map((i) => i.textContent),
-    ).toEqual(['New document inside', 'New folder inside', 'Rename', 'Move to…', 'Delete'])
+    ).toEqual([
+      'New document inside',
+      'New folder inside',
+      'New link inside',
+      'Rename',
+      'Move to…',
+      'Delete',
+    ])
     expect(within(menu).getAllByRole('menuitem')[0]).toHaveFocus()
     await user.keyboard('{ArrowDown}')
     expect(within(menu).getAllByRole('menuitem')[1]).toHaveFocus()
     await user.keyboard('{End}')
-    expect(within(menu).getAllByRole('menuitem')[4]).toHaveFocus()
+    expect(within(menu).getAllByRole('menuitem')[5]).toHaveFocus()
 
     await user.keyboard('{Escape}')
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
@@ -326,8 +346,13 @@ describe('tree: keyboard', () => {
       return result
     }
 
-    expect(await labels('Standalone')).toEqual(['New sub-document', 'Move to…', 'Delete'])
-    expect(await labels('Bookmark')).toEqual(['Move to…', 'Delete'])
+    expect(await labels('Standalone')).toEqual([
+      'New sub-document',
+      'Add link',
+      'Move to…',
+      'Delete',
+    ])
+    expect(await labels('Bookmark')).toEqual(['Open link in a new tab', 'Move to…', 'Delete'])
   })
 })
 
@@ -852,9 +877,8 @@ describe('sub-documents panel', () => {
     )
     expect(within(panel).getByRole('link', { name: /Reference/ })).toHaveAttribute(
       'href',
-      'https://ref.example',
+      `/link/${reference.id}`,
     )
-    void reference
 
     await user.click(within(panel).getByRole('button', { name: 'Add sub-document' }))
 

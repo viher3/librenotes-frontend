@@ -97,6 +97,12 @@ export interface Link {
   updatedAt: string
 }
 
+/** A link with where it sits (as returned when one is opened or created). */
+export interface LinkDetail extends Link {
+  /** Ancestors from the top level down to the parent (the link itself is not included). */
+  path: PathItem[]
+}
+
 /** What is directly under a note. */
 export interface NoteChildren {
   notes: NoteSummary[]

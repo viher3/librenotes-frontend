@@ -110,21 +110,25 @@ Implemented. The backend calls them _notes_.
 
 Everything lives in one **tree** in the sidebar, like a workspace of pages: folders hold documents and links, and **a document can hold other documents and links too** (a page with sub-pages). Folders and documents can be mixed to any depth (folder → document → document → link ...). An item is in exactly one place; tags (below) give the second, cross-cutting way to organize.
 
-- **Sidebar tree** (implemented): folders, then documents, then links, each level ordered by name. Branches load when they are opened and remember being open between visits; a document is expandable only when it has children. The page being shown is highlighted and its ancestors are opened. Links open in a new tab.
+- **Sidebar tree** (implemented): folders, then documents, then links, each level ordered by name. Branches load when they are opened and remember being open between visits; a document is expandable only when it has children. The page being shown is highlighted and its ancestors are opened. A link leads to its own page (`/link/:id`); its menu also offers _Open link in a new tab_.
 - **Keyboard** follows the ARIA tree pattern: the tree is one tab stop; Up/Down, Home/End move; Right opens a branch and then enters it; Left closes it and then goes to the parent; Enter opens the item; the context-menu key (or Shift+F10) opens its actions.
 - **Actions** per item, from the "…" menu: _New document inside_ / _New sub-document_, _New folder inside_ (folders), _Rename_ (folders; a document is renamed in its page), _Move to…_ and _Delete_. Deleting something that holds others says so and sends the whole subtree to the trash; restoring brings it back together.
 - **Moving**: by dragging an item onto a folder, onto a document, or onto the empty space (top level), and with the _Move to…_ dialog, which works without a mouse. Folders can only go into folders or the top level. A document cannot be put inside itself or inside its own sub-documents (the picker does not offer them, and the server refuses it if a drop attempts it).
 - **Folder page** (`/folder/:id`): breadcrumbs, the folder's sub-folders, documents and links, and _New document here_.
 - **Breadcrumbs** on documents and folders show the whole way from the top level.
 - **Sub-documents panel** on every document: what is directly under it, and _Add sub-document_.
-- **Tags**: add/remove on a document or link; filter by tag. _(Not built yet.)_
+- **Tags** (documents and links):
+  - The document header has a tag editor: chips that link to the tag's page, each with a remove button, and a field with suggestions from the tags already in use. Enter or a comma adds what was typed, pasting a comma-separated list adds them all, and leaving the field adds what is pending.
+  - Names are trimmed and lower-cased and duplicates are ignored, as the backend does. Longer than 50 characters or more than 20 tags are refused on the spot with a message, so an autosave never fails because of a tag. Tags are saved by the same autosave as the text.
+  - The sidebar lists every tag in use with how many items carry it, most used first, and follows changes (tagging, deleting) without reloading.
+  - `/tag/:name` lists the documents and links that carry a tag (newest first, 20 at a time, _Show more_). The address is case-insensitive.
 - Files attached to a folder are not shown in the tree yet (attachments are step 7).
 
 ### 4.3 Links
 
-- Save a link (URL + title + optional note + tags).
-- List view; links open in a new tab (`rel="noopener noreferrer"`).
-- Edit and delete.
+- Save a link (URL + title + optional note + tags) from the sidebar, a folder's or document's menu, the folder page or the sub-documents panel. Only `http://` and `https://` addresses are accepted. When no title is given, the site name is used.
+- **Link page** (`/link/:id`, implemented): breadcrumbs (`path` from the link detail), editable title, address, note and tags with autosave (same rules as documents: an invalid address or empty title is not sent and the status says so; Ctrl/Cmd+S saves at once), an _Open_ button (`target="_blank" rel="noopener noreferrer nofollow"`) and delete (to the trash, after confirmation).
+- **List view** (`/links`, implemented): newest first, 20 at a time, each entry leading to its page.
 - In the MVP the user types the title; metadata is not extracted automatically.
 
 ### 4.4 Attachments
@@ -178,7 +182,8 @@ Everything lives in one **tree** in the sidebar, like a workspace of pages: fold
 | `/`           | Home: recent and pinned documents           |
 | `/doc/:id`    | Document editor/preview + attachments panel |
 | `/folder/:id` | Folder contents                             |
-| `/links`      | Link list and management                    |
+| `/link/:id`   | Link page (edit, open, delete)              |
+| `/links`      | Link list                                   |
 | `/tag/:name`  | Items with that tag                         |
 | `*`           | 404                                         |
 
@@ -312,8 +317,8 @@ src/
 2. ✅ **Data layer** (interfaces, HTTP client with session renewal, mock adapter, contract and end-to-end tests).
 3. ✅ **Authentication**: login, register, "check your email" and activation pages, protected routes, session restore and renewal, language selector saved to the profile.
 4. ✅ **Documents**: create, edit, delete and pin; Markdown editor with preview; autosave.
-5. **Folders, nesting and tags**: ✅ tree sidebar (folders and documents that hold documents), breadcrumbs, folder page, create / rename / move / delete, drag & drop; tags UI pending.
-6. **Links**.
+5. ✅ **Folders, nesting and tags**: tree sidebar (folders and documents that hold documents), breadcrumbs, folder page, create / rename / move / delete, drag & drop; tag editor, tag list and tag page.
+6. ✅ **Links**: link page with autosave, creation dialog from every entry point, link list, links in the tree and breadcrumbs.
 7. **Attachments**.
 8. **Search** and shortcuts.
 9. Polish: theme, responsive, empty/error states, accessibility, translation review.

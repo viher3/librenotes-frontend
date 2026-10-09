@@ -1,0 +1,27 @@
+{
+  "title": "Tags",
+  "none": "No tags yet",
+  "list": {
+    "empty": "No tags yet",
+    "itemCount_one": "{{count}} item",
+    "itemCount_other": "{{count}} items"
+  },
+  "editor": {
+    "label": "Tags",
+    "add": "Add tag",
+    "placeholder": "Add a tag…",
+    "remove": "Remove tag {{name}}",
+    "tooLong": "A tag can have at most {{max}} characters.",
+    "tooMany": "A document can have at most {{max}} tags."
+  },
+  "page": {
+    "title": "Tag: {{name}}",
+    "documents": "Documents",
+    "links": "Links",
+    "empty": "Nothing is tagged “{{name}}”.",
+    "loadMore": "Show more",
+    "loadError": "We couldn't load this tag.",
+    "retry": "Try again",
+    "back": "Back to documents"
+  }
+}

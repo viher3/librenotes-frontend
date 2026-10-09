@@ -270,6 +270,16 @@ export function createMockRepositories(options: MockOptions = {}): {
   }
   const pathOfFolder = (folder: FolderRecord): PathItem[] =>
     folderChain(folder.parentFolderId ? folders.get(folder.parentFolderId) : undefined)
+  /** Where a link sits: the note it is under (and that note's ancestors), or the chain of folders it is in. */
+  const pathOfLink = (link: LinkRecord): PathItem[] => {
+    if (link.parentNoteId) {
+      const parent = notes.get(link.parentNoteId)
+      return parent
+        ? [...pathOfNote(parent), { type: 'note', id: parent.id, title: parent.title }]
+        : []
+    }
+    return folderChain(link.folderId ? folders.get(link.folderId) : undefined)
+  }
   const pathOfNote = (note: NoteRecord): PathItem[] => {
     const path: PathItem[] = []
     let current = note
@@ -694,7 +704,8 @@ export function createMockRepositories(options: MockOptions = {}): {
 
     async getLink(id) {
       await begin()
-      return toLink(linkOf(id, true))
+      const link = linkOf(id, true)
+      return { ...toLink(link), path: pathOfLink(link) }
     },
 
     async createLink(input) {
@@ -718,7 +729,7 @@ export function createMockRepositories(options: MockOptions = {}): {
         deletedAt: null,
       }
       links.set(link.id, link)
-      return toLink(link)
+      return { ...toLink(link), path: pathOfLink(link) }
     },
 
     async updateLink(id, input) {

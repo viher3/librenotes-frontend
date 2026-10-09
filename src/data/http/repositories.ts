@@ -18,6 +18,7 @@ import {
   toAttachmentDetail,
   toFolderContents,
   toLink,
+  toLinkDetail,
   toNote,
   toNoteChildren,
   toNoteSummary,
@@ -227,7 +228,7 @@ function createNotesRepository(
       return toPage(dto, (item) => toLink(item))
     },
     async getLink(id) {
-      return toLink(await unwrap(api.GET('/links/{id}', path(id))))
+      return toLinkDetail(await unwrap(api.GET('/links/{id}', path(id))))
     },
     async createLink(input) {
       const { id } = await unwrap(
@@ -242,7 +243,7 @@ function createNotesRepository(
           },
         }),
       )
-      return toLink(await unwrap(api.GET('/links/{id}', path(req(id, 'id')))))
+      return toLinkDetail(await unwrap(api.GET('/links/{id}', path(req(id, 'id')))))
     },
     async updateLink(id, input) {
       await unwrap(api.PATCH('/links/{id}', { ...path(id), body: input }))

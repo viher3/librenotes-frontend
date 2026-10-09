@@ -5,19 +5,39 @@ import enAuth from '@/locales/en/auth.json'
 import enCommon from '@/locales/en/common.json'
 import enDocuments from '@/locales/en/documents.json'
 import enErrors from '@/locales/en/errors.json'
+import enLinks from '@/locales/en/links.json'
+import enTags from '@/locales/en/tags.json'
 import enTree from '@/locales/en/tree.json'
 import esAuth from '@/locales/es/auth.json'
 import esCommon from '@/locales/es/common.json'
 import esDocuments from '@/locales/es/documents.json'
 import esErrors from '@/locales/es/errors.json'
+import esLinks from '@/locales/es/links.json'
+import esTags from '@/locales/es/tags.json'
 import esTree from '@/locales/es/tree.json'
 
 export const SUPPORTED_LANGUAGES = ['es', 'en'] as const
 export type Language = (typeof SUPPORTED_LANGUAGES)[number]
 
 export const resources = {
-  es: { common: esCommon, auth: esAuth, documents: esDocuments, errors: esErrors, tree: esTree },
-  en: { common: enCommon, auth: enAuth, documents: enDocuments, errors: enErrors, tree: enTree },
+  es: {
+    common: esCommon,
+    auth: esAuth,
+    documents: esDocuments,
+    errors: esErrors,
+    links: esLinks,
+    tags: esTags,
+    tree: esTree,
+  },
+  en: {
+    common: enCommon,
+    auth: enAuth,
+    documents: enDocuments,
+    errors: enErrors,
+    links: enLinks,
+    tags: enTags,
+    tree: enTree,
+  },
 } as const
 
 void i18n
@@ -29,7 +49,7 @@ void i18n
     supportedLngs: SUPPORTED_LANGUAGES,
     nonExplicitSupportedLngs: true,
     defaultNS: 'common',
-    ns: ['common', 'auth', 'documents', 'errors', 'tree'],
+    ns: ['common', 'auth', 'documents', 'errors', 'links', 'tags', 'tree'],
     interpolation: { escapeValue: false },
     detection: {
       order: ['localStorage', 'navigator'],

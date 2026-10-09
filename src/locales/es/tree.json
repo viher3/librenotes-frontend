@@ -16,7 +16,10 @@
     "newFolderInside": "Carpeta nueva dentro",
     "rename": "Renombrar",
     "move": "Mover a…",
-    "delete": "Eliminar"
+    "delete": "Eliminar",
+    "newLinkInside": "Enlace nuevo dentro",
+    "addLink": "Añadir enlace",
+    "openLink": "Abrir enlace en una pestaña nueva"
   },
   "newFolder": "Carpeta nueva",
   "folderDialog": {
@@ -68,13 +71,15 @@
     "notFoundTitle": "Esta carpeta no existe",
     "notFoundBody": "Puede que se haya eliminado.",
     "back": "Volver a los documentos",
-    "loadError": "No hemos podido abrir esta carpeta."
+    "loadError": "No hemos podido abrir esta carpeta.",
+    "newLink": "Enlace nuevo aquí"
   },
   "subDocuments": {
     "title": "Subdocumentos",
     "add": "Añadir subdocumento",
     "none": "Aún no hay subdocumentos.",
-    "links": "Enlaces"
+    "links": "Enlaces",
+    "addLink": "Añadir enlace"
   },
   "drop": {
     "hint": "Arrastra elementos sobre una carpeta o un documento para moverlos"

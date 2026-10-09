@@ -16,7 +16,10 @@
     "newFolderInside": "New folder inside",
     "rename": "Rename",
     "move": "Move to…",
-    "delete": "Delete"
+    "delete": "Delete",
+    "newLinkInside": "New link inside",
+    "addLink": "Add link",
+    "openLink": "Open link in a new tab"
   },
   "newFolder": "New folder",
   "folderDialog": {
@@ -68,13 +71,15 @@
     "notFoundTitle": "This folder doesn't exist",
     "notFoundBody": "It may have been deleted.",
     "back": "Back to documents",
-    "loadError": "We couldn't open this folder."
+    "loadError": "We couldn't open this folder.",
+    "newLink": "New link here"
   },
   "subDocuments": {
     "title": "Sub-documents",
     "add": "Add sub-document",
     "none": "No sub-documents yet.",
-    "links": "Links"
+    "links": "Links",
+    "addLink": "Add link"
   },
   "drop": {
     "hint": "Drag items onto a folder or document to move them"

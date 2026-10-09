@@ -10,6 +10,22 @@ export const noteKeys = {
   detail: (id: ID) => [...noteKeys.all, 'detail', id] as const,
 }
 
+export const linkKeys = {
+  all: ['links'] as const,
+  /** The paginated list of every link. */
+  list: () => [...linkKeys.all, 'list'] as const,
+  detail: (id: ID) => [...linkKeys.all, 'detail', id] as const,
+}
+
+export const tagKeys = {
+  all: ['tags'] as const,
+  /** Every tag in use, with how many items carry it. */
+  list: () => [...tagKeys.all, 'list'] as const,
+  /** The documents or links that carry one tag. */
+  notes: (name: string) => [...tagKeys.all, 'notes', name] as const,
+  links: (name: string) => [...tagKeys.all, 'links', name] as const,
+}
+
 export const treeKeys = {
   all: ['tree'] as const,
   /** The contents of a folder; `null` is the top level. */
@@ -27,5 +43,7 @@ export function invalidateStructure(queryClient: QueryClient) {
   return Promise.all([
     queryClient.invalidateQueries({ queryKey: treeKeys.all }),
     queryClient.invalidateQueries({ queryKey: noteKeys.all }),
+    queryClient.invalidateQueries({ queryKey: tagKeys.all }),
+    queryClient.invalidateQueries({ queryKey: linkKeys.all }),
   ])
 }

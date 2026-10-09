@@ -39,6 +39,24 @@ export const routes: RouteObject[] = [
             }),
           },
           {
+            path: '/link/:id',
+            lazy: async () => ({
+              Component: (await import('@/features/links/LinkPage')).default,
+            }),
+          },
+          {
+            path: '/links',
+            lazy: async () => ({
+              Component: (await import('@/features/links/LinksPage')).default,
+            }),
+          },
+          {
+            path: '/tag/:name',
+            lazy: async () => ({
+              Component: (await import('@/features/tags/TagPage')).default,
+            }),
+          },
+          {
             path: '/doc/:id',
             lazy: async () => ({
               Component: (await import('@/features/documents/DocumentPage')).default,

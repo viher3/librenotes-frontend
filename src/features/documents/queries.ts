@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
 import { useRepositories } from '@/data/DataProvider'
 import type { CreateNoteInput, ID, ListNotesParams, Note, UpdateNoteInput } from '@/data/types'
-import { invalidateStructure, noteKeys } from '@/lib/queryKeys'
+import { invalidateStructure, noteKeys, tagKeys } from '@/lib/queryKeys'
 
 export { noteKeys }
 
@@ -50,7 +50,10 @@ export function useSaveNote(id: ID) {
       )
       // A new title or pin shows in the tree and in the breadcrumbs of other documents; plain typing does not.
       if ('title' in changes || 'pinned' in changes) void invalidateStructure(queryClient)
-      else void queryClient.invalidateQueries({ queryKey: noteKeys.lists() })
+      else if ('tags' in changes) {
+        void queryClient.invalidateQueries({ queryKey: tagKeys.all })
+        void queryClient.invalidateQueries({ queryKey: noteKeys.lists() })
+      } else void queryClient.invalidateQueries({ queryKey: noteKeys.lists() })
     },
     [id, notes, queryClient],
   )

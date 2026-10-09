@@ -98,6 +98,11 @@ function FolderRow({ folder, level }: { folder: FolderSummary; level: number }) 
       onSelect: () => onAction({ type: 'newFolder', parentFolderId: folder.id }),
     },
     {
+      id: 'link',
+      label: t('actions.newLinkInside'),
+      onSelect: () => onAction({ type: 'newLink', destination: { type: 'folder', id: folder.id } }),
+    },
+    {
       id: 'rename',
       label: t('actions.rename'),
       onSelect: () => onAction({ type: 'renameFolder', id: folder.id, name: folder.name }),
@@ -141,6 +146,11 @@ function NoteRow({ note, level }: { note: NoteSummary; level: number }) {
       onSelect: () => onAction({ type: 'newDocument', destination: { type: 'note', id: note.id } }),
     },
     {
+      id: 'addLink',
+      label: t('actions.addLink'),
+      onSelect: () => onAction({ type: 'newLink', destination: { type: 'note', id: note.id } }),
+    },
+    {
       id: 'move',
       label: t('actions.move'),
       onSelect: () => onAction({ type: 'move', node, name: note.title }),
@@ -174,6 +184,11 @@ function LinkRow({ link, level }: { link: LinkItem; level: number }) {
   const node: NodeRef = { kind: 'link', id: link.id }
   const items: MenuItem[] = [
     {
+      id: 'open',
+      label: t('actions.openLink'),
+      onSelect: () => window.open(link.url, '_blank', 'noopener,noreferrer'),
+    },
+    {
       id: 'move',
       label: t('actions.move'),
       onSelect: () => onAction({ type: 'move', node, name: link.title }),
@@ -191,7 +206,7 @@ function LinkRow({ link, level }: { link: LinkItem; level: number }) {
       level={level}
       label={link.title}
       icon="🔗"
-      href={link.url}
+      to={`/link/${link.id}`}
       items={items}
     />
   )
@@ -202,10 +217,8 @@ interface TreeItemProps {
   level: number
   label: string
   icon: string
-  /** Internal destination. */
-  to?: string
-  /** External destination (opens in a new tab). */
-  href?: string
+  /** Where the row leads. */
+  to: string
   expandable?: boolean
   items: MenuItem[]
   /** Set when other items can be dropped on this row. */
@@ -222,7 +235,6 @@ function TreeItem({
   label,
   icon,
   to,
-  href,
   expandable = false,
   items,
   dropTarget,
@@ -283,34 +295,18 @@ function TreeItem({
         ) : (
           <span className="size-5 shrink-0" aria-hidden="true" />
         )}
-        {to ? (
-          <Link
-            to={to}
-            data-primary
-            tabIndex={-1}
-            draggable={false}
-            onClick={() => openOnActivate && tree.expand(key)}
-            aria-current={selected ? 'page' : undefined}
-            className="flex min-w-0 flex-1 items-center gap-1.5 py-1"
-          >
-            <span aria-hidden="true">{icon}</span>
-            <span className="truncate">{label}</span>
-          </Link>
-        ) : (
-          <a
-            href={href}
-            data-primary
-            tabIndex={-1}
-            draggable={false}
-            target="_blank"
-            rel="noopener noreferrer nofollow"
-            aria-label={t('openLink', { name: label })}
-            className="flex min-w-0 flex-1 items-center gap-1.5 py-1"
-          >
-            <span aria-hidden="true">{icon}</span>
-            <span className="truncate">{label}</span>
-          </a>
-        )}
+        <Link
+          to={to}
+          data-primary
+          tabIndex={-1}
+          draggable={false}
+          onClick={() => openOnActivate && tree.expand(key)}
+          aria-current={selected ? 'page' : undefined}
+          className="flex min-w-0 flex-1 items-center gap-1.5 py-1"
+        >
+          <span aria-hidden="true">{icon}</span>
+          <span className="truncate">{label}</span>
+        </Link>
         <NodeMenu name={label} items={items} />
       </div>
       {open && branch && (

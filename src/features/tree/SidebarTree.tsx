@@ -17,6 +17,8 @@ import type { Destination, ID, PathItem } from '@/data/types'
 import { errorMessage } from '@/features/auth/errors'
 import { useNote } from '@/features/documents/queries'
 import { useNewDocument } from '@/features/documents/useNewDocument'
+import { useLink } from '@/features/links/queries'
+import { useNewLink } from '@/features/links/NewLinkProvider'
 import { DRAG_TYPE, canDrop, destinationOf, parseNode, type DropTarget } from './dnd'
 import { branchKey, useExpandedBranches } from './expanded'
 import { MoveDialog } from './MoveDialog'
@@ -24,7 +26,7 @@ import { useFolderContents, useTreeActions, type NodeRef } from './queries'
 import { TreeContext, type TreeAction, type TreeContextValue } from './TreeContext'
 import { TreeBranch } from './TreeBranch'
 
-type Dialog = Exclude<TreeAction, { type: 'newDocument' }>
+type Dialog = Exclude<TreeAction, { type: 'newDocument' } | { type: 'newLink' }>
 
 /** The key of the row for a path item or destination. */
 const keyOfPathItem = (item: PathItem) => branchKey(item.type, item.id)
@@ -36,6 +38,7 @@ export function SidebarTree() {
   const expanded = useExpandedBranches()
   const actions = useTreeActions()
   const { createDocument } = useNewDocument()
+  const newLink = useNewLink()
   const [activeKey, setActiveKey] = useState<string | null>(null)
   const [dialog, setDialog] = useState<Dialog | null>(null)
   const [problem, setProblem] = useState<string | null>(null)
@@ -46,16 +49,25 @@ export function SidebarTree() {
   // The page being shown, if it is part of the tree: its row is highlighted and its ancestors are opened.
   const documentId = useMatch('/doc/:id')?.params.id ?? ''
   const folderId = useMatch('/folder/:id')?.params.id ?? ''
+  const linkId = useMatch('/link/:id')?.params.id ?? ''
   const openNote = useNote(documentId, documentId !== '')
   const openFolder = useFolderContents(folderId || null, folderId !== '')
+  const openLink = useLink(linkId, linkId !== '')
   const currentKey = documentId
     ? branchKey('note', documentId)
     : folderId
       ? branchKey('folder', folderId)
-      : null
+      : linkId
+        ? `link:${linkId}`
+        : null
   const currentPath: PathItem[] = useMemo(
-    () => (documentId ? (openNote.data?.path ?? []) : (openFolder.data?.folder?.path ?? [])),
-    [documentId, openNote.data?.path, openFolder.data?.folder?.path],
+    () =>
+      documentId
+        ? (openNote.data?.path ?? [])
+        : linkId
+          ? (openLink.data?.path ?? [])
+          : (openFolder.data?.folder?.path ?? []),
+    [documentId, linkId, openNote.data?.path, openLink.data?.path, openFolder.data?.folder?.path],
   )
 
   const { expand } = expanded
@@ -73,9 +85,13 @@ export function SidebarTree() {
         createDocument(action.destination)
         return
       }
+      if (action.type === 'newLink') {
+        newLink.open(action.destination)
+        return
+      }
       setDialog(action)
     },
-    [createDocument, expand],
+    [createDocument, expand, newLink],
   )
 
   const expandDestination = useCallback(
@@ -90,7 +106,8 @@ export function SidebarTree() {
     const insideRemoved = currentPath.some((item) => item.type === node.kind && item.id === node.id)
     const isRemoved =
       (node.kind === 'note' && documentId === node.id) ||
-      (node.kind === 'folder' && folderId === node.id)
+      (node.kind === 'folder' && folderId === node.id) ||
+      (node.kind === 'link' && linkId === node.id)
     if (insideRemoved || isRemoved) navigate('/', { replace: true })
   }
 

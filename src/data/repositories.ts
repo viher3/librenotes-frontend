@@ -8,6 +8,7 @@ import type {
   FolderContents,
   ID,
   Link,
+  LinkDetail,
   ListLinksParams,
   ListNotesParams,
   Note,
@@ -71,8 +72,8 @@ export interface NotesRepository {
 
   // Links
   listLinks(params?: ListLinksParams): Promise<Page<Link>>
-  getLink(id: ID): Promise<Link>
-  createLink(input: CreateLinkInput): Promise<Link>
+  getLink(id: ID): Promise<LinkDetail>
+  createLink(input: CreateLinkInput): Promise<LinkDetail>
   updateLink(id: ID, input: UpdateLinkInput): Promise<void>
   moveLink(id: ID, destination: Destination): Promise<void>
   deleteLink(id: ID): Promise<void>

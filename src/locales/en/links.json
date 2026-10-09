@@ -1,0 +1,46 @@
+{
+  "nav": "Links",
+  "new": "New link",
+  "page": {
+    "titleLabel": "Link title",
+    "urlLabel": "Web address",
+    "urlInvalid": "Enter a full web address starting with http:// or https://",
+    "open": "Open link",
+    "openAria": "Open {{title}} in a new tab",
+    "noteLabel": "Note",
+    "notePlaceholder": "Why you saved it, what it is…",
+    "delete": "Delete",
+    "notFoundTitle": "This link doesn't exist",
+    "notFoundBody": "It may have been deleted.",
+    "back": "Back to links",
+    "loadError": "We couldn't open this link.",
+    "retry": "Try again",
+    "urlToSave": "Fix the web address to save"
+  },
+  "deleteDialog": {
+    "title": "Delete this link?",
+    "body": "“{{title}}” will be moved to the trash.",
+    "confirm": "Delete",
+    "cancel": "Cancel"
+  },
+  "dialog": {
+    "title": "New link",
+    "url": "Web address",
+    "titleField": "Title (optional)",
+    "titleHint": "If you leave it empty, the site's name is used.",
+    "note": "Note (optional)",
+    "tags": "Tags",
+    "create": "Save link",
+    "creating": "Saving…",
+    "cancel": "Cancel",
+    "urlRequired": "A web address is required"
+  },
+  "list": {
+    "title": "Links",
+    "empty": "You haven't saved any links yet.",
+    "emptyHint": "Save the first one with “New link”.",
+    "loadMore": "Show more",
+    "loadError": "We couldn't load your links.",
+    "retry": "Try again"
+  }
+}

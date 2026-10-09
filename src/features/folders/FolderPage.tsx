@@ -2,10 +2,13 @@ import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router-dom'
 import { Breadcrumbs } from '@/components/Breadcrumbs'
 import { Button } from '@/components/Button'
+import { CardSection, ItemCard } from '@/components/ItemCard'
 import { isApiError } from '@/data/errors'
 import { errorMessage } from '@/features/auth/errors'
 import { formatRelativeTime } from '@/lib/format'
 import { useNewDocument } from '@/features/documents/useNewDocument'
+import { siteName } from '@/features/links/hostname'
+import { useNewLink } from '@/features/links/NewLinkProvider'
 import { useFolderContents } from '@/features/tree/queries'
 import { Alert } from '@/components/Alert'
 
@@ -15,6 +18,7 @@ export default function FolderPage() {
   const { t, i18n } = useTranslation('tree')
   const query = useFolderContents(id)
   const { createDocument, pending, error } = useNewDocument()
+  const newLink = useNewLink()
 
   if (query.isPending) {
     return (
@@ -60,12 +64,20 @@ export default function FolderPage() {
       <Breadcrumbs path={folder.path} current={folder.name} />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-2xl font-semibold">{folder.name}</h2>
-        <Button
-          onClick={() => createDocument({ type: 'folder', id: folder.id })}
-          disabled={pending}
-        >
-          {t('folderPage.newDocument')}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            onClick={() => createDocument({ type: 'folder', id: folder.id })}
+            disabled={pending}
+          >
+            {t('folderPage.newDocument')}
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => newLink.open({ type: 'folder', id: folder.id })}
+          >
+            {t('folderPage.newLink')}
+          </Button>
+        </div>
       </div>
       {error && <Alert tone="error">{error}</Alert>}
 
@@ -76,16 +88,16 @@ export default function FolderPage() {
       )}
 
       {subfolders.length > 0 && (
-        <Section title={t('folderPage.folders')}>
+        <CardSection title={t('folderPage.folders')}>
           {subfolders.map((sub) => (
-            <Card key={sub.id} to={`/folder/${sub.id}`} icon="📁" title={sub.name} />
+            <ItemCard key={sub.id} to={`/folder/${sub.id}`} icon="📁" title={sub.name} />
           ))}
-        </Section>
+        </CardSection>
       )}
       {notes.length > 0 && (
-        <Section title={t('folderPage.documents')}>
+        <CardSection title={t('folderPage.documents')}>
           {notes.map((note) => (
-            <Card
+            <ItemCard
               key={note.id}
               to={`/doc/${note.id}`}
               icon={note.pinned ? '📌' : '📄'}
@@ -93,63 +105,21 @@ export default function FolderPage() {
               detail={formatRelativeTime(note.updatedAt, language)}
             />
           ))}
-        </Section>
+        </CardSection>
       )}
       {links.length > 0 && (
-        <Section title={t('folderPage.links')}>
+        <CardSection title={t('folderPage.links')}>
           {links.map((link) => (
-            <Card key={link.id} href={link.url} icon="🔗" title={link.title} detail={link.url} />
+            <ItemCard
+              key={link.id}
+              to={`/link/${link.id}`}
+              icon="🔗"
+              title={link.title}
+              detail={siteName(link.url)}
+            />
           ))}
-        </Section>
+        </CardSection>
       )}
     </div>
-  )
-}
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section aria-label={title} className="flex flex-col gap-2">
-      <h3 className="text-sm font-semibold tracking-wide text-neutral-500 uppercase">{title}</h3>
-      <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">{children}</ul>
-    </section>
-  )
-}
-
-function Card({
-  to,
-  href,
-  icon,
-  title,
-  detail,
-}: {
-  to?: string
-  href?: string
-  icon: string
-  title: string
-  detail?: string
-}) {
-  const className =
-    'flex flex-col gap-0.5 rounded-lg border border-neutral-200 p-3 hover:bg-neutral-50 focus-visible:outline-2 focus-visible:outline-indigo-500 dark:border-neutral-800 dark:hover:bg-neutral-900'
-  const content = (
-    <>
-      <span className="flex items-center gap-2 font-medium">
-        <span aria-hidden="true">{icon}</span>
-        <span className="truncate">{title}</span>
-      </span>
-      {detail && <span className="truncate text-xs text-neutral-500">{detail}</span>}
-    </>
-  )
-  return (
-    <li>
-      {to ? (
-        <Link to={to} className={className}>
-          {content}
-        </Link>
-      ) : (
-        <a href={href} target="_blank" rel="noopener noreferrer nofollow" className={className}>
-          {content}
-        </a>
-      )}
-    </li>
   )
 }

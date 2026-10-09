@@ -2833,7 +2833,7 @@
         },
         "type": "object"
       },
-      "LinkDetailResponse": {
+      "LinkListItem": {
         "properties": {
           "id": { "type": "string", "format": "uuid" },
           "title": { "type": "string" },
@@ -2852,13 +2852,30 @@
         },
         "type": "object"
       },
+      "LinkDetailResponse": {
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "title": { "type": "string" },
+          "url": { "type": "string" },
+          "note": { "type": "string", "nullable": true },
+          "folder_id": { "type": "string", "format": "uuid", "nullable": true },
+          "parent_note_id": {
+            "description": "The note it is placed under, if any.",
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "tags": { "$ref": "#\/components\/schemas\/TagNames" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" },
+          "path": { "$ref": "#\/components\/schemas\/AncestorPath" }
+        },
+        "type": "object"
+      },
       "LinkListResponse": {
         "properties": {
           "meta": { "$ref": "#\/components\/schemas\/PageMeta" },
-          "data": {
-            "type": "array",
-            "items": { "$ref": "#\/components\/schemas\/LinkDetailResponse" }
-          }
+          "data": { "type": "array", "items": { "$ref": "#\/components\/schemas\/LinkListItem" } }
         },
         "type": "object"
       },

@@ -58,6 +58,12 @@ The sidebar is a tree of folders, documents (which can hold other documents) and
 pattern. Branches load when opened; `queries.ts` holds the data hooks and the actions (create folder, rename, move,
 delete) and invalidates everything that depends on the structure at once. Moving works by dragging and with a dialog.
 
+## Links (`src/features/links`)
+
+A link has its own page (`/link/:id`) with autosave, like documents, and a list at `/links`. `NewLinkProvider` exposes
+`useNewLink().open(destination?)`, the dialog every "new link" entry point uses. Only `http(s)` addresses are accepted
+(checked in the form and by the backend).
+
 ## Structure
 
 See §7 of the spec. UI texts live in `src/locales/<es|en>/*.json`.

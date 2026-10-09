@@ -9,10 +9,15 @@ import type { Note } from '@/data/types'
 import { errorMessage } from '@/features/auth/errors'
 import { Breadcrumbs } from '@/components/Breadcrumbs'
 import { MarkdownPreview } from './MarkdownPreview'
+import { useNewLink } from '@/features/links/NewLinkProvider'
 import { SubDocuments } from './SubDocuments'
+import { TagEditor } from '@/features/tags/TagEditor'
+import { useTags } from '@/features/tags/queries'
 import { useNewDocument } from './useNewDocument'
 import { useDeleteNote, useNote, useSaveNote } from './queries'
-import { useAutosave, type SaveStatus } from './useAutosave'
+import { SaveIndicator } from './SaveIndicator'
+import { useAutosave } from './useAutosave'
+import { useSaveGuards } from './useSaveGuards'
 import { useViewMode, type ViewMode } from './useViewMode'
 
 // CodeMirror and its language support are large: they load only when a document is opened.
@@ -76,13 +81,15 @@ function DocumentEditor({ note }: { note: Note }) {
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const titleRef = useRef<HTMLInputElement>(null)
   const { createDocument, pending: creating, error: createError } = useNewDocument()
+  const newLink = useNewLink()
 
   const { draft, status, setField, flush, discard } = useAutosave({
-    initial: { title: note.title, content: note.content },
+    initial: { title: note.title, content: note.content, tags: note.tags },
     save,
     isValid: (field, value) => (field === 'title' ? isTitleValid(value as string) : true),
   })
   const titleMissing = !isTitleValid(draft.title)
+  const knownTags = useTags().data?.map((tag) => tag.name) ?? []
   const preview = useDeferredValue(draft.content)
 
   // A brand-new document opens with its placeholder title selected, so typing names it.
@@ -97,32 +104,8 @@ function DocumentEditor({ note }: { note: Note }) {
     }
   }, [draft.title, i18n, t])
 
-  // Ctrl/Cmd+S saves now (instead of the browser's "save page"); leaving the tab or page must not lose edits.
   const unsaved = status !== 'saved' || titleMissing
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
-        event.preventDefault()
-        void flush()
-      }
-    }
-    const onVisibility = () => {
-      if (document.hidden) void flush()
-    }
-    const onBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (!unsaved) return
-      event.preventDefault() // makes the browser ask for confirmation before closing
-      event.returnValue = ''
-    }
-    window.addEventListener('keydown', onKeyDown)
-    document.addEventListener('visibilitychange', onVisibility)
-    window.addEventListener('beforeunload', onBeforeUnload)
-    return () => {
-      window.removeEventListener('keydown', onKeyDown)
-      document.removeEventListener('visibilitychange', onVisibility)
-      window.removeEventListener('beforeunload', onBeforeUnload)
-    }
-  }, [flush, unsaved])
+  useSaveGuards({ flush, unsaved })
 
   const togglePin = async () => {
     const next = !pinned
@@ -164,7 +147,10 @@ function DocumentEditor({ note }: { note: Note }) {
           }}
           className="min-w-0 flex-1 rounded-md border border-transparent bg-transparent px-2 py-1 text-2xl font-semibold hover:border-neutral-300 focus-visible:border-indigo-500 focus-visible:outline-none dark:hover:border-neutral-700"
         />
-        <SaveIndicator status={status} titleMissing={titleMissing} />
+        <SaveIndicator
+          status={status}
+          problem={titleMissing ? t('status.titleRequired') : undefined}
+        />
         <ViewSwitch mode={mode} onChange={setMode} />
         <Button variant="secondary" onClick={() => void togglePin()} aria-pressed={pinned}>
           {pinned ? t('editor.unpin') : t('editor.pin')}
@@ -174,6 +160,12 @@ function DocumentEditor({ note }: { note: Note }) {
         </Button>
       </div>
 
+      <TagEditor
+        tags={draft.tags}
+        onChange={(tags) => setField('tags', tags)}
+        suggestions={knownTags}
+      />
+
       {pinError && <Alert tone="error">{t('pinFailed')}</Alert>}
       {createError && <Alert tone="error">{createError}</Alert>}
 
@@ -181,6 +173,7 @@ function DocumentEditor({ note }: { note: Note }) {
         noteId={note.id}
         adding={creating}
         onAdd={() => createDocument({ type: 'note', id: note.id })}
+        onAddLink={() => newLink.open({ type: 'note', id: note.id })}
       />
 
       <div
@@ -236,24 +229,6 @@ function DocumentEditor({ note }: { note: Note }) {
         </ConfirmDialog>
       )}
     </div>
-  )
-}
-
-function SaveIndicator({ status, titleMissing }: { status: SaveStatus; titleMissing: boolean }) {
-  const { t } = useTranslation('documents')
-  const text = titleMissing
-    ? t('status.titleRequired')
-    : status === 'saved'
-      ? t('status.saved')
-      : status === 'error'
-        ? t('status.error')
-        : t('status.saving')
-  const tone =
-    titleMissing || status === 'error' ? 'text-red-600 dark:text-red-400' : 'text-neutral-500'
-  return (
-    <p role="status" aria-live="polite" className={`text-sm ${tone}`}>
-      {text}
-    </p>
   )
 }
 

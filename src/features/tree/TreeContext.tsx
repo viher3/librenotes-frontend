@@ -6,6 +6,7 @@ import type { NodeRef } from './queries'
 /** Something the user asked to do from a row's menu; the sidebar turns it into a dialog or a request. */
 export type TreeAction =
   | { type: 'newDocument'; destination: Destination }
+  | { type: 'newLink'; destination: Destination }
   | { type: 'newFolder'; parentFolderId: ID | null }
   | { type: 'renameFolder'; id: ID; name: string }
   | { type: 'move'; node: NodeRef; name: string }

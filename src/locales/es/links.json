@@ -1,0 +1,46 @@
+{
+  "nav": "Enlaces",
+  "new": "Nuevo enlace",
+  "page": {
+    "titleLabel": "Título del enlace",
+    "urlLabel": "Dirección web",
+    "urlInvalid": "Introduce una dirección web completa que empiece por http:// o https://",
+    "open": "Abrir enlace",
+    "openAria": "Abrir {{title}} en una pestaña nueva",
+    "noteLabel": "Nota",
+    "notePlaceholder": "Por qué lo guardaste, qué es…",
+    "delete": "Eliminar",
+    "notFoundTitle": "Este enlace no existe",
+    "notFoundBody": "Puede que se haya eliminado.",
+    "back": "Volver a los enlaces",
+    "loadError": "No hemos podido abrir este enlace.",
+    "retry": "Reintentar",
+    "urlToSave": "Corrige la dirección web para guardar"
+  },
+  "deleteDialog": {
+    "title": "¿Eliminar este enlace?",
+    "body": "«{{title}}» se moverá a la papelera.",
+    "confirm": "Eliminar",
+    "cancel": "Cancelar"
+  },
+  "dialog": {
+    "title": "Nuevo enlace",
+    "url": "Dirección web",
+    "titleField": "Título (opcional)",
+    "titleHint": "Si lo dejas vacío, se usa el nombre del sitio.",
+    "note": "Nota (opcional)",
+    "tags": "Etiquetas",
+    "create": "Guardar enlace",
+    "creating": "Guardando…",
+    "cancel": "Cancelar",
+    "urlRequired": "Hace falta una dirección web"
+  },
+  "list": {
+    "title": "Enlaces",
+    "empty": "Aún no has guardado ningún enlace.",
+    "emptyHint": "Guarda el primero con «Nuevo enlace».",
+    "loadMore": "Mostrar más",
+    "loadError": "No hemos podido cargar tus enlaces.",
+    "retry": "Reintentar"
+  }
+}
