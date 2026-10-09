@@ -1,0 +1,82 @@
+{
+  "title": "Documentos",
+  "root": "Todos los documentos",
+  "empty": "Aquí todavía no hay nada.",
+  "loading": "Cargando…",
+  "loadError": "No se ha podido cargar esta rama.",
+  "retry": "Reintentar",
+  "expand": "Expandir {{name}}",
+  "collapse": "Contraer {{name}}",
+  "openLink": "{{name}} (se abre en una pestaña nueva)",
+  "actions": {
+    "open": "Acciones de {{name}}",
+    "newDocumentInside": "Documento nuevo dentro",
+    "newSubDocument": "Subdocumento nuevo",
+    "newFolder": "Carpeta nueva",
+    "newFolderInside": "Carpeta nueva dentro",
+    "rename": "Renombrar",
+    "move": "Mover a…",
+    "delete": "Eliminar"
+  },
+  "newFolder": "Carpeta nueva",
+  "folderDialog": {
+    "newTitle": "Carpeta nueva",
+    "renameTitle": "Renombrar carpeta",
+    "label": "Nombre",
+    "create": "Crear",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "required": "Hace falta un nombre"
+  },
+  "deleteFolder": {
+    "title": "¿Eliminar esta carpeta?",
+    "body": "«{{name}}» y todo lo que contiene se moverán a la papelera.",
+    "confirm": "Eliminar",
+    "cancel": "Cancelar"
+  },
+  "deleteNote": {
+    "title": "¿Eliminar este documento?",
+    "body": "«{{name}}» se moverá a la papelera.",
+    "bodyWithChildren": "«{{name}}» y todo lo que hay debajo se moverán a la papelera."
+  },
+  "deleteLink": {
+    "title": "¿Eliminar este enlace?",
+    "body": "«{{name}}» se moverá a la papelera."
+  },
+  "moveDialog": {
+    "title": "Mover «{{name}}»",
+    "hint": "Elige dónde ponerlo.",
+    "topLevel": "Nivel superior",
+    "moveHere": "Mover aquí",
+    "itself": "Este es el elemento que se mueve",
+    "cancel": "Cancelar",
+    "moving": "Moviendo…",
+    "loadError": "No se ha podido cargar esta carpeta.",
+    "moveTo": "Mover a {{target}}"
+  },
+  "breadcrumb": {
+    "label": "Ruta de navegación",
+    "home": "Documentos"
+  },
+  "folderPage": {
+    "newDocument": "Documento nuevo aquí",
+    "newFolder": "Carpeta nueva aquí",
+    "folders": "Carpetas",
+    "documents": "Documentos",
+    "links": "Enlaces",
+    "empty": "Esta carpeta está vacía.",
+    "notFoundTitle": "Esta carpeta no existe",
+    "notFoundBody": "Puede que se haya eliminado.",
+    "back": "Volver a los documentos",
+    "loadError": "No hemos podido abrir esta carpeta."
+  },
+  "subDocuments": {
+    "title": "Subdocumentos",
+    "add": "Añadir subdocumento",
+    "none": "Aún no hay subdocumentos.",
+    "links": "Enlaces"
+  },
+  "drop": {
+    "hint": "Arrastra elementos sobre una carpeta o un documento para moverlos"
+  }
+}

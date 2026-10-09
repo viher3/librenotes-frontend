@@ -1,0 +1,51 @@
+{
+  "unknown": "Algo ha salido mal. Inténtalo de nuevo.",
+  "network_error": "No hemos podido contactar con el servidor. Revisa tu conexión e inténtalo de nuevo.",
+  "invalid_response": "El servidor ha enviado una respuesta inesperada.",
+  "aborted": "La operación se ha cancelado.",
+  "validation_error": "Algunos datos no son válidos. Revisa el formulario e inténtalo de nuevo.",
+  "security": {
+    "bad_credentials": "El correo o la contraseña no son correctos.",
+    "inactive_user": "Tu cuenta aún no está activa. Abre el enlace de activación que te enviamos por correo.",
+    "too_many_attempts": "Demasiados intentos. Espera unos minutos e inténtalo de nuevo.",
+    "unauthenticated": "Debes iniciar sesión para continuar.",
+    "invalid_token": "Tu sesión ya no es válida. Inicia sesión de nuevo.",
+    "expired_token": "Tu sesión ha caducado. Inicia sesión de nuevo."
+  },
+  "user": {
+    "email_already_exists": "Ya existe una cuenta con este correo.",
+    "invalid_activation_token": "Este enlace de activación no es válido o ya se usó.",
+    "activation_token_expired": "Este enlace de activación ha caducado.",
+    "locale_unsupported": "Este idioma no está disponible."
+  },
+  "note": {
+    "not_found": "Este documento ya no existe.",
+    "cycle_detected": "Un documento no se puede mover dentro de sí mismo ni de uno de sus subdocumentos.",
+    "parent_not_found": "El documento elegido ya no existe."
+  },
+  "folder": {
+    "not_found": "Esta carpeta ya no existe.",
+    "cycle_detected": "Una carpeta no se puede mover dentro de sí misma."
+  },
+  "link": {
+    "not_found": "Este enlace ya no existe.",
+    "invalid_url": "Introduce una dirección web completa que empiece por http:// o https://."
+  },
+  "attachment": {
+    "not_found": "Este archivo ya no existe.",
+    "too_large": "El archivo es demasiado grande (el límite es 50 MB).",
+    "empty": "El archivo está vacío."
+  },
+  "tag": {
+    "invalid": "Las etiquetas deben tener de 1 a 50 caracteres y puede haber como máximo 20."
+  },
+  "search": {
+    "query_too_short": "Escribe al menos 2 caracteres para buscar."
+  },
+  "notes": {
+    "not_in_trash": "Este elemento no está en la papelera.",
+    "parent_folder_in_trash": "Restaura antes su carpeta.",
+    "parent_note_in_trash": "Restaura antes su documento.",
+    "invalid_location": "Un elemento puede estar en una carpeta o debajo de un documento, no en ambos."
+  }
+}

@@ -3,6 +3,58 @@
   "info": { "title": "Symfony DDD Core", "version": "0.0.2" },
   "servers": [{ "url": "http:\/\/localhost" }],
   "paths": {
+    "\/me": {
+      "get": {
+        "tags": ["User"],
+        "summary": "Current user profile",
+        "description": "The user identified by the access token.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application\/json": {
+                "schema": { "$ref": "#\/components\/schemas\/CurrentUserResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          }
+        },
+        "security": [{ "Bearer": [] }]
+      },
+      "patch": {
+        "tags": ["User"],
+        "summary": "Update the current user\u0027s username and\/or UI language",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application\/json": {
+              "schema": { "$ref": "#\/components\/schemas\/UpdateCurrentUserRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Updated" },
+          "400": {
+            "description": "Invalid data",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          }
+        },
+        "security": [{ "Bearer": [] }]
+      }
+    },
     "\/signup": {
       "post": {
         "tags": ["User"],
@@ -180,6 +232,7 @@
       "post": {
         "tags": ["Authentication"],
         "summary": "User authentication",
+        "description": "Exchanges email and password for a short-lived access token (JWT, 15 minutes, sent later as `Authorization: Bearer \u003CaccessToken\u003E`) and a refresh token used to obtain new pairs through `PUT \/token-renew`. Accounts that registered through `POST \/signup` must be activated first.\n",
         "requestBody": {
           "required": true,
           "content": {
@@ -187,20 +240,51 @@
           }
         },
         "responses": {
-          "200": { "description": "Success" },
-          "500": { "description": "Internal server error" }
+          "200": {
+            "description": "Success",
+            "content": {
+              "application\/json": {
+                "schema": { "$ref": "#\/components\/schemas\/TokenPairResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid data",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "401": {
+            "description": "Bad credentials (`security.bad_credentials`)",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "403": {
+            "description": "The account is not active yet",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "429": {
+            "description": "Too many attempts",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          }
         }
       }
     },
     "\/token-renew": {
       "put": {
         "tags": ["Authentication"],
-        "summary": "Renew JWT token",
+        "summary": "Renew the token pair",
+        "description": "Exchanges a valid refresh token for a new access token **and a new refresh token**. Refresh tokens are single-use (rotated): the one sent is revoked, and re-using a revoked token revokes every active token of the user. No `Authorization` header is needed. Clients should share a single in-flight renewal between concurrent requests.\n",
         "requestBody": {
           "required": true,
           "content": {
             "application\/json": {
-              "schema": { "properties": { "token": { "type": "string" } }, "type": "object" }
+              "schema": { "$ref": "#\/components\/schemas\/RefreshTokenRequest" }
             }
           }
         },
@@ -209,30 +293,51 @@
             "description": "Success",
             "content": {
               "application\/json": {
-                "schema": { "$ref": "#\/components\/schemas\/RenewTokenResponse" }
+                "schema": { "$ref": "#\/components\/schemas\/TokenPairResponse" }
               }
             }
           },
-          "500": { "description": "Internal server error" }
-        },
-        "security": [{ "Bearer": [] }]
+          "400": {
+            "description": "Invalid data",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "401": {
+            "description": "Invalid, revoked or expired refresh token",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "429": {
+            "description": "Too many attempts",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          }
+        }
       },
       "delete": {
         "tags": ["Authentication"],
         "summary": "Logout",
+        "description": "Revokes the given refresh token. Idempotent; unknown or already revoked tokens also return 200.",
         "requestBody": {
           "required": true,
           "content": {
             "application\/json": {
-              "schema": { "properties": { "token": { "type": "string" } }, "type": "object" }
+              "schema": { "$ref": "#\/components\/schemas\/RefreshTokenRequest" }
             }
           }
         },
         "responses": {
           "200": { "description": "Success" },
-          "500": { "description": "Internal server error" }
-        },
-        "security": [{ "Bearer": [] }]
+          "400": {
+            "description": "Invalid data",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          }
+        }
       }
     },
     "\/configurations": {
@@ -785,7 +890,7 @@
             }
           },
           "422": {
-            "description": "Target folder not found or move would create a cycle (folder.cycle_detected)",
+            "description": "Target folder or parent note not found or move would create a cycle (folder.cycle_detected)",
             "content": {
               "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
             }
@@ -853,6 +958,96 @@
       }
     },
     "\/notes": {
+      "get": {
+        "tags": ["Note"],
+        "summary": "List notes (paginated)",
+        "description": "Notes that are not in the trash, without their content. Combine filters freely.",
+        "parameters": [
+          {
+            "name": "folder_id",
+            "in": "query",
+            "description": "Folder to list, or `root` for notes in no folder and under no note. Omit for all folders.",
+            "required": false,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "parent_note_id",
+            "in": "query",
+            "description": "Only what is placed directly under this note. Ignored when `folder_id` is given.",
+            "required": false,
+            "schema": { "type": "string", "format": "uuid" }
+          },
+          {
+            "name": "tag",
+            "in": "query",
+            "description": "Only notes carrying this tag (case-insensitive)",
+            "required": false,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "pinned",
+            "in": "query",
+            "description": "Only pinned (`true`) or only unpinned (`false`) notes",
+            "required": false,
+            "schema": { "type": "boolean" }
+          },
+          {
+            "name": "orderBy",
+            "in": "query",
+            "description": "Sort field",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "updated_at",
+              "enum": ["updated_at", "created_at", "title"]
+            }
+          },
+          {
+            "name": "orderDirection",
+            "in": "query",
+            "description": "Sort direction",
+            "required": false,
+            "schema": { "type": "string", "default": "desc", "enum": ["asc", "desc"] }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number (1-based)",
+            "required": false,
+            "schema": { "type": "integer", "default": 1, "minimum": 1 }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "description": "Page size (max 100)",
+            "required": false,
+            "schema": { "type": "integer", "default": 20, "maximum": 100, "minimum": 1 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application\/json": {
+                "schema": { "$ref": "#\/components\/schemas\/NoteListResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid query parameter",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          }
+        },
+        "security": [{ "Bearer": [] }]
+      },
       "post": {
         "tags": ["Note"],
         "summary": "Create note",
@@ -880,7 +1075,7 @@
             }
           },
           "422": {
-            "description": "Folder not found",
+            "description": "Folder not found (`folder.not_found`) or invalid tags (`tag.invalid`)",
             "content": {
               "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
             }
@@ -1008,7 +1203,7 @@
     "\/notes\/{id}\/move": {
       "patch": {
         "tags": ["Note"],
-        "summary": "Move note to a folder (null = root)",
+        "summary": "Move note to a folder, under another note, or to the root",
         "parameters": [
           {
             "name": "id",
@@ -1039,7 +1234,7 @@
             }
           },
           "422": {
-            "description": "Target folder not found",
+            "description": "Target folder or parent note not found",
             "content": {
               "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
             }
@@ -1252,7 +1447,7 @@
             }
           },
           "409": {
-            "description": "Not in the trash, or its parent folder is still in the trash (notes.not_in_trash \/ notes.parent_folder_in_trash)",
+            "description": "Not in the trash, or its parent folder is still in the trash (notes.not_in_trash \/ notes.parent_folder_in_trash \/ notes.parent_note_in_trash)",
             "content": {
               "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
             }
@@ -1307,7 +1502,7 @@
     "\/trash\/attachments\/{id}\/restore": {
       "post": {
         "tags": ["Trash"],
-        "summary": "Restore a attachment from the trash",
+        "summary": "Restore an attachment from the trash",
         "parameters": [
           {
             "name": "id",
@@ -1326,7 +1521,7 @@
             }
           },
           "409": {
-            "description": "Not in the trash, or its parent folder is still in the trash (notes.not_in_trash \/ notes.parent_folder_in_trash)",
+            "description": "Not in the trash, or its parent folder is still in the trash (notes.not_in_trash \/ notes.parent_folder_in_trash \/ notes.parent_note_in_trash)",
             "content": {
               "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
             }
@@ -1377,6 +1572,611 @@
         },
         "security": [{ "Bearer": [] }]
       }
+    },
+    "\/notes\/{noteId}\/attachments": {
+      "post": {
+        "tags": ["Attachment"],
+        "summary": "Attach a file to a note",
+        "description": "Uploads a file (multipart field `file`, up to 50 MB, not empty) bound to the note. It follows the note through trash, restore and permanent deletion.\n",
+        "parameters": [
+          {
+            "name": "noteId",
+            "in": "path",
+            "description": "Note ID",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart\/form-data": {
+              "schema": { "$ref": "#\/components\/schemas\/UploadAttachmentRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application\/json": {
+                "schema": { "$ref": "#\/components\/schemas\/CreatedResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing \u0022file\u0022 part or failed upload",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "404": {
+            "description": "Note not found (or owned by another user, or in the trash)",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "422": {
+            "description": "File empty (`attachment.empty`) or larger than 50 MB (`attachment.too_large`)",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          }
+        },
+        "security": [{ "Bearer": [] }]
+      }
+    },
+    "\/attachments\/{id}\/content": {
+      "get": {
+        "tags": ["Attachment"],
+        "summary": "Download an attachment",
+        "description": "Streams the stored file. Served with `Content-Disposition: attachment` and `X-Content-Type-Options: nosniff`; `inline=1` is honoured only for png, jpeg, gif and webp images. Attachments in the trash are not downloadable. Send the access token in the `Authorization` header (fetch it as a Blob; it cannot be used as a plain `\u003Cimg src\u003E`).\n",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Attachment ID",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          },
+          {
+            "name": "inline",
+            "in": "query",
+            "description": "Ask for inline display (safe raster image types only)",
+            "required": false,
+            "schema": { "type": "boolean" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The file",
+            "content": {
+              "application\/octet-stream": { "schema": { "type": "string", "format": "binary" } }
+            }
+          },
+          "404": {
+            "description": "Not found (or owned by another user, or in the trash)",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          }
+        },
+        "security": [{ "Bearer": [] }]
+      }
+    },
+    "\/links": {
+      "get": {
+        "tags": ["Link"],
+        "summary": "List links (paginated)",
+        "parameters": [
+          {
+            "name": "folder_id",
+            "in": "query",
+            "description": "Folder to list, or `root` for links in no folder and under no note. Omit for all folders.",
+            "required": false,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "parent_note_id",
+            "in": "query",
+            "description": "Only what is placed directly under this note. Ignored when `folder_id` is given.",
+            "required": false,
+            "schema": { "type": "string", "format": "uuid" }
+          },
+          {
+            "name": "tag",
+            "in": "query",
+            "description": "Only links carrying this tag (case-insensitive)",
+            "required": false,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "orderBy",
+            "in": "query",
+            "description": "Sort field",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "updated_at",
+              "enum": ["updated_at", "created_at", "title"]
+            }
+          },
+          {
+            "name": "orderDirection",
+            "in": "query",
+            "description": "Sort direction",
+            "required": false,
+            "schema": { "type": "string", "default": "desc", "enum": ["asc", "desc"] }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number (1-based)",
+            "required": false,
+            "schema": { "type": "integer", "default": 1, "minimum": 1 }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "description": "Page size (max 100)",
+            "required": false,
+            "schema": { "type": "integer", "default": 20, "maximum": 100, "minimum": 1 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application\/json": {
+                "schema": { "$ref": "#\/components\/schemas\/LinkListResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid query parameter",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          }
+        },
+        "security": [{ "Bearer": [] }]
+      },
+      "post": {
+        "tags": ["Link"],
+        "summary": "Save a link",
+        "description": "Only absolute `http`\/`https` URLs are accepted.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application\/json": {
+              "schema": { "$ref": "#\/components\/schemas\/CreateLinkRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application\/json": {
+                "schema": { "$ref": "#\/components\/schemas\/CreatedResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid data",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "422": {
+            "description": "Invalid URL (`link.invalid_url`), invalid tags (`tag.invalid`) or folder not found (`folder.not_found`)",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          }
+        },
+        "security": [{ "Bearer": [] }]
+      }
+    },
+    "\/links\/{id}": {
+      "get": {
+        "tags": ["Link"],
+        "summary": "Get link",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Link ID",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application\/json": {
+                "schema": { "$ref": "#\/components\/schemas\/LinkDetailResponse" }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or owned by another user)",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          }
+        },
+        "security": [{ "Bearer": [] }]
+      },
+      "delete": {
+        "tags": ["Link"],
+        "summary": "Move link to the trash",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Link ID",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Deleted" },
+          "404": {
+            "description": "Not found (or owned by another user)",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          }
+        },
+        "security": [{ "Bearer": [] }]
+      },
+      "patch": {
+        "tags": ["Link"],
+        "summary": "Update a link (title, url, note and\/or tags)",
+        "description": "Sending `tags` replaces the whole set; a `null` note clears it.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Link ID",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application\/json": {
+              "schema": { "$ref": "#\/components\/schemas\/UpdateLinkRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Updated" },
+          "400": {
+            "description": "Invalid data",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "404": {
+            "description": "Not found (or owned by another user)",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "422": {
+            "description": "Invalid URL (`link.invalid_url`) or tags (`tag.invalid`)",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          }
+        },
+        "security": [{ "Bearer": [] }]
+      }
+    },
+    "\/links\/{id}\/move": {
+      "patch": {
+        "tags": ["Link"],
+        "summary": "Move link to a folder, under a note, or to the root",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Link ID",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application\/json": { "schema": { "$ref": "#\/components\/schemas\/MoveLinkRequest" } }
+          }
+        },
+        "responses": {
+          "200": { "description": "Moved" },
+          "400": {
+            "description": "Invalid data",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "404": {
+            "description": "Not found (or owned by another user)",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "422": {
+            "description": "Target folder or parent note not found",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          }
+        },
+        "security": [{ "Bearer": [] }]
+      }
+    },
+    "\/trash\/links\/{id}\/restore": {
+      "post": {
+        "tags": ["Trash"],
+        "summary": "Restore a link from the trash",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Link ID",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Restored" },
+          "404": {
+            "description": "Not found (or owned by another user)",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "409": {
+            "description": "Not in the trash (`notes.not_in_trash`) or its folder is still in the trash (`notes.parent_folder_in_trash`)",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          }
+        },
+        "security": [{ "Bearer": [] }]
+      }
+    },
+    "\/trash\/links\/{id}": {
+      "delete": {
+        "tags": ["Trash"],
+        "summary": "Permanently delete a link from the trash",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Link ID",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Deleted" },
+          "404": {
+            "description": "Not found (or owned by another user)",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "409": {
+            "description": "Not in the trash (`notes.not_in_trash`)",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          }
+        },
+        "security": [{ "Bearer": [] }]
+      }
+    },
+    "\/search": {
+      "get": {
+        "tags": ["Search"],
+        "summary": "Search notes and links",
+        "description": "Case- and accent-insensitive substring search over note titles and content and link titles, notes and URLs. Every whitespace-separated term must match (max 8 terms). Items in the trash are excluded. Results whose title matches every term come first, then the most recently updated. `snippet` is a plain-text excerpt around the first match (clients should highlight the terms themselves).\n",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Search text (at least 2 characters)",
+            "required": true,
+            "schema": { "type": "string", "minLength": 2 }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "description": "Comma-separated item types to search",
+            "required": false,
+            "schema": { "type": "string", "example": "note,link" }
+          },
+          {
+            "name": "tag",
+            "in": "query",
+            "description": "Only items carrying this tag (case-insensitive)",
+            "required": false,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number (1-based)",
+            "required": false,
+            "schema": { "type": "integer", "default": 1, "minimum": 1 }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "description": "Page size (max 100)",
+            "required": false,
+            "schema": { "type": "integer", "default": 20, "maximum": 100, "minimum": 1 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application\/json": {
+                "schema": { "$ref": "#\/components\/schemas\/SearchResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing `q` or invalid parameter",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "422": {
+            "description": "Query too short (`search.query_too_short`)",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          }
+        },
+        "security": [{ "Bearer": [] }]
+      }
+    },
+    "\/tags": {
+      "get": {
+        "tags": ["Tag"],
+        "summary": "List the tags in use",
+        "description": "Tags of notes and links that are not in the trash, with usage counts, most used first.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application\/json": {
+                "schema": { "$ref": "#\/components\/schemas\/TagListResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          }
+        },
+        "security": [{ "Bearer": [] }]
+      }
+    },
+    "\/notes\/{id}\/children": {
+      "get": {
+        "tags": ["Note"],
+        "summary": "List what is directly under a note",
+        "description": "The notes (ordered by title, each with the number of children it has) and links placed under the note. A note can have children when it is used as a container, like a page that holds sub-pages. Attachments are not listed here: they are part of the note\u0027s detail.\n",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Note ID",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application\/json": {
+                "schema": { "$ref": "#\/components\/schemas\/NoteChildrenResponse" }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or owned by another user, or in the trash)",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          }
+        },
+        "security": [{ "Bearer": [] }]
+      }
     }
   },
   "components": {
@@ -1413,7 +2213,8 @@
           "password": { "type": "string" },
           "role": { "type": "integer", "default": 0 },
           "active": { "type": "boolean", "default": true },
-          "emailValidated": { "type": "boolean", "default": true }
+          "emailValidated": { "type": "boolean", "default": true },
+          "locale": { "type": "string", "enum": ["en", "es"] }
         },
         "type": "object"
       },
@@ -1428,6 +2229,7 @@
           },
           "active": { "type": "boolean", "default": true },
           "emailValidated": { "type": "boolean", "default": true },
+          "locale": { "type": "string", "enum": ["en", "es"] },
           "createdAt": { "type": "string", "format": "date-time" },
           "lastLoginAt": { "type": "string", "format": "date-time" }
         },
@@ -1464,16 +2266,58 @@
         },
         "type": "object"
       },
-      "LoginRequest": {
+      "CurrentUserResponse": {
         "properties": {
+          "id": { "type": "string", "format": "uuid" },
           "email": { "type": "string", "format": "email" },
-          "password": { "type": "string", "format": "password" }
+          "username": { "type": "string" },
+          "locale": {
+            "description": "UI language preference",
+            "type": "string",
+            "enum": ["en", "es"]
+          },
+          "roles": { "type": "array", "items": { "type": "string" } },
+          "active": { "type": "boolean" },
+          "email_validated": { "type": "boolean" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "last_login_at": { "type": "string", "format": "date-time", "nullable": true }
         },
         "type": "object"
       },
-      "RenewTokenResponse": {
+      "UpdateCurrentUserRequest": {
+        "description": "Only these fields are editable through `\/me`; any other field is ignored.",
         "properties": {
-          "data": { "properties": { "token": { "type": "string" } }, "type": "object" }
+          "username": { "type": "string", "maxLength": 20, "minLength": 3 },
+          "locale": { "type": "string", "enum": ["en", "es"] }
+        },
+        "type": "object"
+      },
+      "LoginRequest": {
+        "required": ["email", "password"],
+        "properties": {
+          "email": { "type": "string", "format": "email" },
+          "password": { "type": "string", "format": "password", "minLength": 8 }
+        },
+        "type": "object"
+      },
+      "RefreshTokenRequest": {
+        "required": ["token"],
+        "properties": {
+          "token": {
+            "description": "The refresh token returned by `POST \/login` or `PUT \/token-renew`",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "TokenPairResponse": {
+        "required": ["accessToken", "refreshToken"],
+        "properties": {
+          "accessToken": {
+            "description": "JWT whose payload carries the user id (`id`), valid for 15 minutes",
+            "type": "string"
+          },
+          "refreshToken": { "type": "string" }
         },
         "type": "object"
       },
@@ -1684,7 +2528,15 @@
         "type": "object"
       },
       "MoveNoteRequest": {
-        "properties": { "folder_id": { "type": "string", "format": "uuid", "nullable": true } },
+        "properties": {
+          "folder_id": { "type": "string", "format": "uuid", "nullable": true },
+          "parent_note_id": {
+            "description": "Place it under this note instead of in a folder (never both).",
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          }
+        },
         "type": "object"
       },
       "CreateNoteRequest": {
@@ -1692,14 +2544,24 @@
         "properties": {
           "title": { "type": "string", "maxLength": 255, "minLength": 1 },
           "content": { "description": "Markdown", "type": "string" },
-          "folder_id": { "type": "string", "format": "uuid", "nullable": true }
+          "folder_id": { "type": "string", "format": "uuid", "nullable": true },
+          "parent_note_id": {
+            "description": "Place it under this note instead of in a folder (never both).",
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "pinned": { "type": "boolean", "default": false },
+          "tags": { "$ref": "#\/components\/schemas\/TagNames" }
         },
         "type": "object"
       },
       "UpdateNoteRequest": {
         "properties": {
           "title": { "type": "string", "maxLength": 255, "minLength": 1 },
-          "content": { "description": "Markdown", "type": "string" }
+          "content": { "description": "Markdown", "type": "string" },
+          "pinned": { "type": "boolean" },
+          "tags": { "$ref": "#\/components\/schemas\/TagNames" }
         },
         "type": "object"
       },
@@ -1720,6 +2582,12 @@
         "properties": {
           "id": { "type": "string", "format": "uuid" },
           "title": { "type": "string" },
+          "child_count": {
+            "description": "Live children (notes and links) directly under it.",
+            "type": "integer"
+          },
+          "pinned": { "type": "boolean" },
+          "tags": { "$ref": "#\/components\/schemas\/TagNames" },
           "created_at": { "type": "string", "format": "date-time" },
           "updated_at": { "type": "string", "format": "date-time" }
         },
@@ -1742,7 +2610,8 @@
             "properties": {
               "id": { "type": "string", "format": "uuid" },
               "name": { "type": "string" },
-              "parent_folder_id": { "type": "string", "format": "uuid", "nullable": true }
+              "parent_folder_id": { "type": "string", "format": "uuid", "nullable": true },
+              "path": { "$ref": "#\/components\/schemas\/AncestorPath" }
             },
             "type": "object",
             "nullable": true
@@ -1752,6 +2621,7 @@
             "items": { "$ref": "#\/components\/schemas\/FolderSummary" }
           },
           "notes": { "type": "array", "items": { "$ref": "#\/components\/schemas\/NoteSummary" } },
+          "links": { "type": "array", "items": { "$ref": "#\/components\/schemas\/LinkSummary" } },
           "attachments": {
             "type": "array",
             "items": { "$ref": "#\/components\/schemas\/AttachmentSummary" }
@@ -1765,15 +2635,44 @@
           "title": { "type": "string" },
           "content": { "description": "Markdown", "type": "string" },
           "folder_id": { "type": "string", "format": "uuid", "nullable": true },
+          "parent_note_id": {
+            "description": "The note it is placed under, if any.",
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "path": { "$ref": "#\/components\/schemas\/AncestorPath" },
+          "child_count": {
+            "description": "Live children (notes and links) directly under it.",
+            "type": "integer"
+          },
+          "pinned": { "type": "boolean" },
+          "tags": { "$ref": "#\/components\/schemas\/TagNames" },
           "created_at": { "type": "string", "format": "date-time" },
-          "updated_at": { "type": "string", "format": "date-time" }
+          "updated_at": { "type": "string", "format": "date-time" },
+          "attachments": {
+            "description": "Attachments bound to the note (not in the trash)",
+            "type": "array",
+            "items": { "$ref": "#\/components\/schemas\/AttachmentSummary" }
+          }
         },
         "type": "object"
       },
       "AttachmentDetailResponse": {
         "properties": {
           "id": { "type": "string", "format": "uuid" },
-          "folder_id": { "type": "string", "format": "uuid" },
+          "folder_id": {
+            "description": "Set when the file lives in a folder; null for note attachments",
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "note_id": {
+            "description": "Set when the file is bound to a note; null for folder attachments",
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
           "file_name": { "type": "string" },
           "mime_type": { "type": "string" },
           "size_bytes": { "type": "integer" },
@@ -1807,18 +2706,214 @@
               "type": "object"
             }
           },
+          "links": {
+            "type": "array",
+            "items": {
+              "properties": {
+                "id": { "type": "string", "format": "uuid" },
+                "title": { "type": "string" },
+                "url": { "type": "string" },
+                "folder_id": { "type": "string", "format": "uuid", "nullable": true },
+                "deleted_at": { "type": "string", "format": "date-time" }
+              },
+              "type": "object"
+            }
+          },
           "attachments": {
             "type": "array",
             "items": {
               "properties": {
                 "id": { "type": "string", "format": "uuid" },
                 "file_name": { "type": "string" },
-                "folder_id": { "type": "string", "format": "uuid" },
+                "folder_id": { "type": "string", "format": "uuid", "nullable": true },
+                "note_id": { "type": "string", "format": "uuid", "nullable": true },
                 "deleted_at": { "type": "string", "format": "date-time" }
               },
               "type": "object"
             }
           }
+        },
+        "type": "object"
+      },
+      "TagNames": {
+        "description": "Free-form labels. Names are trimmed and lower-cased, duplicates collapse; at most 20 tags of 1-50 characters.\n",
+        "type": "array",
+        "items": { "type": "string", "maxLength": 50, "minLength": 1 },
+        "maxItems": 20
+      },
+      "PageMeta": {
+        "properties": {
+          "page": { "type": "integer" },
+          "size": { "type": "integer" },
+          "total": { "type": "integer" },
+          "last_page": { "type": "integer" }
+        },
+        "type": "object"
+      },
+      "NoteListItem": {
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "title": { "type": "string" },
+          "folder_id": { "type": "string", "format": "uuid", "nullable": true },
+          "parent_note_id": {
+            "description": "The note it is placed under, if any.",
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "child_count": {
+            "description": "Live children (notes and links) directly under it.",
+            "type": "integer"
+          },
+          "pinned": { "type": "boolean" },
+          "tags": { "$ref": "#\/components\/schemas\/TagNames" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        },
+        "type": "object"
+      },
+      "NoteListResponse": {
+        "properties": {
+          "meta": { "$ref": "#\/components\/schemas\/PageMeta" },
+          "data": { "type": "array", "items": { "$ref": "#\/components\/schemas\/NoteListItem" } }
+        },
+        "type": "object"
+      },
+      "CreateLinkRequest": {
+        "required": ["title", "url"],
+        "properties": {
+          "title": { "type": "string", "maxLength": 255, "minLength": 1 },
+          "url": {
+            "description": "Absolute http or https URL",
+            "type": "string",
+            "maxLength": 2048
+          },
+          "note": { "type": "string", "nullable": true },
+          "folder_id": { "type": "string", "format": "uuid", "nullable": true },
+          "parent_note_id": {
+            "description": "Place it under this note instead of in a folder (never both).",
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "tags": { "$ref": "#\/components\/schemas\/TagNames" }
+        },
+        "type": "object"
+      },
+      "UpdateLinkRequest": {
+        "properties": {
+          "title": { "type": "string", "maxLength": 255, "minLength": 1 },
+          "url": { "type": "string", "maxLength": 2048 },
+          "note": { "type": "string", "nullable": true },
+          "tags": { "$ref": "#\/components\/schemas\/TagNames" }
+        },
+        "type": "object"
+      },
+      "MoveLinkRequest": {
+        "properties": {
+          "folder_id": { "type": "string", "format": "uuid", "nullable": true },
+          "parent_note_id": {
+            "description": "Place it under this note instead of in a folder (never both).",
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          }
+        },
+        "type": "object"
+      },
+      "LinkSummary": {
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "title": { "type": "string" },
+          "url": { "type": "string" },
+          "note": { "type": "string", "nullable": true },
+          "tags": { "$ref": "#\/components\/schemas\/TagNames" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        },
+        "type": "object"
+      },
+      "LinkDetailResponse": {
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "title": { "type": "string" },
+          "url": { "type": "string" },
+          "note": { "type": "string", "nullable": true },
+          "folder_id": { "type": "string", "format": "uuid", "nullable": true },
+          "parent_note_id": {
+            "description": "The note it is placed under, if any.",
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "tags": { "$ref": "#\/components\/schemas\/TagNames" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        },
+        "type": "object"
+      },
+      "LinkListResponse": {
+        "properties": {
+          "meta": { "$ref": "#\/components\/schemas\/PageMeta" },
+          "data": {
+            "type": "array",
+            "items": { "$ref": "#\/components\/schemas\/LinkDetailResponse" }
+          }
+        },
+        "type": "object"
+      },
+      "SearchResult": {
+        "properties": {
+          "type": { "type": "string", "enum": ["note", "link"] },
+          "id": { "type": "string", "format": "uuid" },
+          "title": { "type": "string" },
+          "snippet": {
+            "description": "Plain-text excerpt around the first match (may start\/end with an ellipsis)",
+            "type": "string"
+          },
+          "folder_id": { "type": "string", "format": "uuid", "nullable": true },
+          "tags": { "$ref": "#\/components\/schemas\/TagNames" },
+          "updated_at": { "type": "string", "format": "date-time" },
+          "url": { "description": "Only for links", "type": "string", "nullable": true }
+        },
+        "type": "object"
+      },
+      "SearchResponse": {
+        "properties": {
+          "meta": { "$ref": "#\/components\/schemas\/PageMeta" },
+          "data": { "type": "array", "items": { "$ref": "#\/components\/schemas\/SearchResult" } }
+        },
+        "type": "object"
+      },
+      "TagCount": {
+        "properties": { "name": { "type": "string" }, "count": { "type": "integer" } },
+        "type": "object"
+      },
+      "TagListResponse": {
+        "properties": {
+          "data": { "type": "array", "items": { "$ref": "#\/components\/schemas\/TagCount" } }
+        },
+        "type": "object"
+      },
+      "AncestorPath": {
+        "description": "Where the item sits, from the root down to its direct parent (the item itself is not included). Folders and notes can be mixed, e.g. folder, folder, note, note. Use it for breadcrumbs.\n",
+        "type": "array",
+        "items": {
+          "properties": {
+            "type": { "type": "string", "enum": ["folder", "note"] },
+            "id": { "type": "string", "format": "uuid" },
+            "title": {
+              "description": "The folder name for folders, the title for notes.",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        }
+      },
+      "NoteChildrenResponse": {
+        "properties": {
+          "notes": { "type": "array", "items": { "$ref": "#\/components\/schemas\/NoteSummary" } },
+          "links": { "type": "array", "items": { "$ref": "#\/components\/schemas\/LinkSummary" } }
         },
         "type": "object"
       },
@@ -1935,6 +3030,9 @@
     { "name": "Folder", "description": "Folder" },
     { "name": "Attachment", "description": "Attachment" },
     { "name": "Note", "description": "Note" },
-    { "name": "Trash", "description": "Trash" }
+    { "name": "Trash", "description": "Trash" },
+    { "name": "Link", "description": "Link" },
+    { "name": "Search", "description": "Search" },
+    { "name": "Tag", "description": "Tag" }
   ]
 }

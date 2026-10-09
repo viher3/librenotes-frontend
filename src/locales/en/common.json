@@ -4,19 +4,27 @@
     "home": "Home",
     "links": "Links",
     "signIn": "Sign in",
-    "signUp": "Create account"
+    "signUp": "Create account",
+    "signOut": "Sign out"
   },
   "language": {
     "label": "Language",
     "es": "Español",
     "en": "English"
   },
-  "home": {
-    "title": "Your notes",
-    "empty": "You don't have any documents yet."
-  },
   "notFound": {
     "title": "Page not found",
     "back": "Back to home"
+  },
+  "loading": "Loading…",
+  "userMenu": {
+    "signedInAs": "Signed in as"
+  },
+  "validation": {
+    "required": "This field is required",
+    "email": "Enter a valid email address",
+    "passwordMin": "Use at least {{count}} characters",
+    "passwordMismatch": "The passwords do not match",
+    "usernameLength": "Use between {{min}} and {{max}} characters"
   }
 }

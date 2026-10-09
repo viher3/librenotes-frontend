@@ -4,19 +4,27 @@
     "home": "Inicio",
     "links": "Enlaces",
     "signIn": "Iniciar sesión",
-    "signUp": "Crear cuenta"
+    "signUp": "Crear cuenta",
+    "signOut": "Cerrar sesión"
   },
   "language": {
     "label": "Idioma",
     "es": "Español",
     "en": "English"
   },
-  "home": {
-    "title": "Tus notas",
-    "empty": "Aún no tienes documentos."
-  },
   "notFound": {
     "title": "Página no encontrada",
     "back": "Volver al inicio"
+  },
+  "loading": "Cargando…",
+  "userMenu": {
+    "signedInAs": "Sesión iniciada como"
+  },
+  "validation": {
+    "required": "Este campo es obligatorio",
+    "email": "Introduce un correo electrónico válido",
+    "passwordMin": "Usa al menos {{count}} caracteres",
+    "passwordMismatch": "Las contraseñas no coinciden",
+    "usernameLength": "Usa entre {{min}} y {{max}} caracteres"
   }
 }

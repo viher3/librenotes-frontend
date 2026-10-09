@@ -1,0 +1,82 @@
+{
+  "title": "Documents",
+  "root": "All documents",
+  "empty": "Nothing here yet.",
+  "loading": "Loading…",
+  "loadError": "Couldn't load this branch.",
+  "retry": "Try again",
+  "expand": "Expand {{name}}",
+  "collapse": "Collapse {{name}}",
+  "openLink": "{{name}} (opens in a new tab)",
+  "actions": {
+    "open": "Actions for {{name}}",
+    "newDocumentInside": "New document inside",
+    "newSubDocument": "New sub-document",
+    "newFolder": "New folder",
+    "newFolderInside": "New folder inside",
+    "rename": "Rename",
+    "move": "Move to…",
+    "delete": "Delete"
+  },
+  "newFolder": "New folder",
+  "folderDialog": {
+    "newTitle": "New folder",
+    "renameTitle": "Rename folder",
+    "label": "Name",
+    "create": "Create",
+    "save": "Save",
+    "cancel": "Cancel",
+    "required": "A name is required"
+  },
+  "deleteFolder": {
+    "title": "Delete this folder?",
+    "body": "“{{name}}” and everything in it will be moved to the trash.",
+    "confirm": "Delete",
+    "cancel": "Cancel"
+  },
+  "deleteNote": {
+    "title": "Delete this document?",
+    "body": "“{{name}}” will be moved to the trash.",
+    "bodyWithChildren": "“{{name}}” and everything under it will be moved to the trash."
+  },
+  "deleteLink": {
+    "title": "Delete this link?",
+    "body": "“{{name}}” will be moved to the trash."
+  },
+  "moveDialog": {
+    "title": "Move “{{name}}”",
+    "hint": "Choose where to put it.",
+    "topLevel": "Top level",
+    "moveHere": "Move here",
+    "itself": "This is the item being moved",
+    "cancel": "Cancel",
+    "moving": "Moving…",
+    "loadError": "Couldn't load this folder.",
+    "moveTo": "Move to {{target}}"
+  },
+  "breadcrumb": {
+    "label": "Breadcrumb",
+    "home": "Documents"
+  },
+  "folderPage": {
+    "newDocument": "New document here",
+    "newFolder": "New folder here",
+    "folders": "Folders",
+    "documents": "Documents",
+    "links": "Links",
+    "empty": "This folder is empty.",
+    "notFoundTitle": "This folder doesn't exist",
+    "notFoundBody": "It may have been deleted.",
+    "back": "Back to documents",
+    "loadError": "We couldn't open this folder."
+  },
+  "subDocuments": {
+    "title": "Sub-documents",
+    "add": "Add sub-document",
+    "none": "No sub-documents yet.",
+    "links": "Links"
+  },
+  "drop": {
+    "hint": "Drag items onto a folder or document to move them"
+  }
+}

@@ -3,15 +3,21 @@ import LanguageDetector from 'i18next-browser-languagedetector'
 import { initReactI18next } from 'react-i18next'
 import enAuth from '@/locales/en/auth.json'
 import enCommon from '@/locales/en/common.json'
+import enDocuments from '@/locales/en/documents.json'
+import enErrors from '@/locales/en/errors.json'
+import enTree from '@/locales/en/tree.json'
 import esAuth from '@/locales/es/auth.json'
 import esCommon from '@/locales/es/common.json'
+import esDocuments from '@/locales/es/documents.json'
+import esErrors from '@/locales/es/errors.json'
+import esTree from '@/locales/es/tree.json'
 
 export const SUPPORTED_LANGUAGES = ['es', 'en'] as const
 export type Language = (typeof SUPPORTED_LANGUAGES)[number]
 
 export const resources = {
-  es: { common: esCommon, auth: esAuth },
-  en: { common: enCommon, auth: enAuth },
+  es: { common: esCommon, auth: esAuth, documents: esDocuments, errors: esErrors, tree: esTree },
+  en: { common: enCommon, auth: enAuth, documents: enDocuments, errors: enErrors, tree: enTree },
 } as const
 
 void i18n
@@ -23,7 +29,7 @@ void i18n
     supportedLngs: SUPPORTED_LANGUAGES,
     nonExplicitSupportedLngs: true,
     defaultNS: 'common',
-    ns: ['common', 'auth'],
+    ns: ['common', 'auth', 'documents', 'errors', 'tree'],
     interpolation: { escapeValue: false },
     detection: {
       order: ['localStorage', 'navigator'],

@@ -13,3 +13,97 @@
 body {
   @apply bg-white text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100;
 }
+
+@plugin "@tailwindcss/typography";
+
+/* Editor surface fills its container and keeps the page background in both themes */
+.cm-editor {
+  height: 100%;
+  background: transparent !important;
+  font-size: 0.95rem;
+}
+.cm-editor.cm-focused {
+  outline: none;
+}
+.cm-scroller {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+/* Syntax highlighting of code blocks in the preview (highlight.js token classes) */
+.prose pre code.hljs {
+  background: transparent;
+  padding: 0;
+}
+.hljs-comment,
+.hljs-quote {
+  color: #6b7280;
+  font-style: italic;
+}
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-literal,
+.hljs-doctag {
+  color: #7c3aed;
+}
+.hljs-string,
+.hljs-regexp,
+.hljs-addition,
+.hljs-attribute {
+  color: #047857;
+}
+.hljs-number,
+.hljs-symbol,
+.hljs-bullet {
+  color: #b45309;
+}
+.hljs-title,
+.hljs-section,
+.hljs-name,
+.hljs-built_in,
+.hljs-type {
+  color: #1d4ed8;
+}
+.hljs-variable,
+.hljs-template-variable,
+.hljs-attr {
+  color: #be123c;
+}
+.hljs-deletion {
+  color: #b91c1c;
+}
+[data-theme='dark'] .hljs-comment,
+[data-theme='dark'] .hljs-quote {
+  color: #9ca3af;
+}
+[data-theme='dark'] .hljs-keyword,
+[data-theme='dark'] .hljs-selector-tag,
+[data-theme='dark'] .hljs-literal,
+[data-theme='dark'] .hljs-doctag {
+  color: #c4b5fd;
+}
+[data-theme='dark'] .hljs-string,
+[data-theme='dark'] .hljs-regexp,
+[data-theme='dark'] .hljs-addition,
+[data-theme='dark'] .hljs-attribute {
+  color: #6ee7b7;
+}
+[data-theme='dark'] .hljs-number,
+[data-theme='dark'] .hljs-symbol,
+[data-theme='dark'] .hljs-bullet {
+  color: #fcd34d;
+}
+[data-theme='dark'] .hljs-title,
+[data-theme='dark'] .hljs-section,
+[data-theme='dark'] .hljs-name,
+[data-theme='dark'] .hljs-built_in,
+[data-theme='dark'] .hljs-type {
+  color: #93c5fd;
+}
+[data-theme='dark'] .hljs-variable,
+[data-theme='dark'] .hljs-template-variable,
+[data-theme='dark'] .hljs-attr {
+  color: #fda4af;
+}
+[data-theme='dark'] .hljs-deletion {
+  color: #fca5a5;
+}

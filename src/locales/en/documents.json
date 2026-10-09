@@ -1,0 +1,53 @@
+{
+  "untitled": "Untitled",
+  "new": "New document",
+  "creating": "Creating…",
+  "home": {
+    "title": "Your documents",
+    "pinned": "Pinned",
+    "recent": "Recent",
+    "empty": "You don't have any documents yet.",
+    "emptyHint": "Create your first one to get started.",
+    "loadError": "We couldn't load your documents.",
+    "retry": "Try again",
+    "updated": "Updated {{when}}",
+    "pinnedLabel": "Pinned"
+  },
+  "editor": {
+    "titleLabel": "Document title",
+    "contentLabel": "Document content (Markdown)",
+    "previewLabel": "Preview",
+    "viewMode": "View",
+    "mode": {
+      "edit": "Edit",
+      "split": "Split",
+      "preview": "Preview"
+    },
+    "pin": "Pin",
+    "unpin": "Unpin",
+    "delete": "Delete",
+    "emptyPreview": "Nothing to preview yet."
+  },
+  "status": {
+    "saved": "Saved",
+    "saving": "Saving…",
+    "error": "Couldn't save — retrying…",
+    "titleRequired": "A title is required to save"
+  },
+  "pinFailed": "Couldn't change the pin. Try again.",
+  "deleteDialog": {
+    "title": "Delete this document?",
+    "body": "“{{title}}” will be moved to the trash.",
+    "confirm": "Delete",
+    "cancel": "Cancel"
+  },
+  "notFound": {
+    "title": "This document doesn't exist",
+    "body": "It may have been deleted.",
+    "back": "Back to documents"
+  },
+  "loadError": {
+    "title": "We couldn't open this document",
+    "retry": "Try again"
+  }
+}

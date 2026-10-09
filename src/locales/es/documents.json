@@ -1,0 +1,53 @@
+{
+  "untitled": "Sin título",
+  "new": "Nuevo documento",
+  "creating": "Creando…",
+  "home": {
+    "title": "Tus documentos",
+    "pinned": "Fijados",
+    "recent": "Recientes",
+    "empty": "Aún no tienes documentos.",
+    "emptyHint": "Crea el primero para empezar.",
+    "loadError": "No hemos podido cargar tus documentos.",
+    "retry": "Reintentar",
+    "updated": "Actualizado {{when}}",
+    "pinnedLabel": "Fijado"
+  },
+  "editor": {
+    "titleLabel": "Título del documento",
+    "contentLabel": "Contenido del documento (Markdown)",
+    "previewLabel": "Vista previa",
+    "viewMode": "Vista",
+    "mode": {
+      "edit": "Editar",
+      "split": "Dividida",
+      "preview": "Previsualizar"
+    },
+    "pin": "Fijar",
+    "unpin": "Desfijar",
+    "delete": "Eliminar",
+    "emptyPreview": "Todavía no hay nada que previsualizar."
+  },
+  "status": {
+    "saved": "Guardado",
+    "saving": "Guardando…",
+    "error": "No se pudo guardar — reintentando…",
+    "titleRequired": "Hace falta un título para guardar"
+  },
+  "pinFailed": "No se pudo cambiar el fijado. Inténtalo de nuevo.",
+  "deleteDialog": {
+    "title": "¿Eliminar este documento?",
+    "body": "«{{title}}» se moverá a la papelera.",
+    "confirm": "Eliminar",
+    "cancel": "Cancelar"
+  },
+  "notFound": {
+    "title": "Este documento no existe",
+    "body": "Puede que se haya eliminado.",
+    "back": "Volver a los documentos"
+  },
+  "loadError": {
+    "title": "No hemos podido abrir este documento",
+    "retry": "Reintentar"
+  }
+}

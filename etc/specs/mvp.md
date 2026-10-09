@@ -19,20 +19,20 @@ Web app for storing notes in Markdown, links and file attachments. Inspired by N
 
 ## 2. Stack
 
-| Area            | Choice                                              | Reason                                                                   |
-| --------------- | --------------------------------------------------- | ------------------------------------------------------------------------ |
-| Build           | Vite + React 19 + TypeScript                        | Project requirement; typed from the start                                |
-| Routing         | React Router                                        | Routes `/`, `/doc/:id`, `/folder/:id`                                    |
-| Server state    | TanStack Query                                      | Caching, invalidation, loading states                                    |
-| UI state        | Zustand (minimal)                                   | Sidebar open/closed, editor mode                                         |
-| Editor          | CodeMirror 6 (`@uiw/react-codemirror`)              | Lightweight Markdown editing with syntax highlighting                    |
-| Markdown render | `react-markdown` + `remark-gfm` + `rehype-sanitize` | GFM (tables, task lists) and XSS-safe                                    |
-| Styles          | Tailwind CSS                                        | Speed; light/dark theme                                                  |
-| i18n            | i18next + react-i18next                             | Multilingual (es/en initially), language detection and manual switcher   |
-| Forms           | React Hook Form + Zod                               | Login/register and form validation                                       |
-| Tests           | Vitest + Testing Library                            | Integrated with Vite                                                     |
-| API client      | `openapi-typescript` + `openapi-fetch`              | Types and client generated from the Symfony backend's OpenAPI definition |
-| Quality         | ESLint + Prettier                                   | —                                                                        |
+| Area            | Choice                                               | Reason                                                                          |
+| --------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Build           | Vite + React 19 + TypeScript                         | Project requirement; typed from the start                                       |
+| Routing         | React Router                                         | Routes `/`, `/doc/:id`, `/folder/:id`                                           |
+| Server state    | TanStack Query                                       | Caching, invalidation, loading states                                           |
+| UI state        | Zustand (minimal)                                    | Sidebar open/closed, editor mode                                                |
+| Editor          | CodeMirror 6 (`@uiw/react-codemirror`)               | Lightweight Markdown editing with syntax highlighting                           |
+| Markdown render | `react-markdown` + `remark-gfm` + `rehype-highlight` | GFM (tables, task lists), highlighted code; raw HTML is never rendered (see §8) |
+| Styles          | Tailwind CSS                                         | Speed; light/dark theme                                                         |
+| i18n            | i18next + react-i18next                              | Multilingual (es/en initially), language detection and manual switcher          |
+| Forms           | React Hook Form + Zod                                | Login/register and form validation                                              |
+| Tests           | Vitest + Testing Library                             | Integrated with Vite                                                            |
+| API client      | `openapi-typescript` + `openapi-fetch`               | Types and client generated from the Symfony backend's OpenAPI definition        |
+| Quality         | ESLint + Prettier                                    | —                                                                               |
 
 ## 3. Data model
 
@@ -90,19 +90,35 @@ interface Attachment {
 
 ### 4.1 Documents
 
-- **Create** a new document (button and `Ctrl/Cmd+N` shortcut); default title "Untitled".
-- **Edit** the title (header field) and the content (Markdown editor).
-- **View**: switch between _Edit_, _Preview_ and _Split_ (editor + preview).
-- **Autosave** with debounce (~800 ms) and a status indicator: "Saving…" / "Saved".
-- **Delete** with confirmation. No trash in the MVP.
-- **Pin** documents (shown at the top of the sidebar).
-- Supported Markdown: headings, emphasis, lists, task lists, quotes, code (highlighted blocks), tables, links, images (GFM).
+Implemented. The backend calls them _notes_.
+
+- **Create** a document with the sidebar button or `Ctrl/Cmd+N`. Browsers reserve that combination for "new window" and often never deliver it to the page, so `Alt+N` works too. The document is named "Untitled" in the active language and opens with that title selected, so typing names it. Activating it twice in a row creates one document.
+- **Edit** the title (header field) and the content (CodeMirror 6 Markdown editor, loaded on demand). The document opens from a snapshot: changes made elsewhere while it is open are not merged in (last write wins).
+- **View**: _Edit_, _Split_ (default) and _Preview_, remembered in the browser. The preview updates as you type.
+- **Autosave** with an 800 ms debounce and a status indicator (_Saved_ / _Saving…_ / _Couldn't save — retrying…_):
+  - only the fields that changed are sent, one request at a time (edits made while saving go out right after);
+  - a failure never clears the screen: it is retried after 2, 5, 15 and then every 30 seconds, or at once if the user types again;
+  - an empty title is kept on screen but not saved ("A title is required to save"; leaving the field restores the last saved title) while the content is still saved;
+  - `Ctrl/Cmd+S` saves at once, hiding the tab saves, and leaving the document sends what is pending;
+  - closing or reloading the page while something is unsaved asks the browser for confirmation.
+- **Delete** with confirmation; the document goes to the trash (the backend keeps it; the Trash view is still to be built). Pending edits of a deleted document are dropped.
+- **Pin** documents; they are listed first on the home page.
+- Home page: _Pinned_ and _Recent_ lists with tags and "updated 5 minutes ago".
+- Supported Markdown: headings, emphasis, lists, task lists, quotes, code blocks highlighted in their language, tables, links, images (GFM).
 
 ### 4.2 Organization
 
-- Nested **folders**: create, rename, delete (with a warning if not empty), move documents between folders.
-- **Tags**: add/remove on a document or link; filter by tag.
-- **Sidebar** tree: Pinned → Folders → No folder; Links section.
+Everything lives in one **tree** in the sidebar, like a workspace of pages: folders hold documents and links, and **a document can hold other documents and links too** (a page with sub-pages). Folders and documents can be mixed to any depth (folder → document → document → link ...). An item is in exactly one place; tags (below) give the second, cross-cutting way to organize.
+
+- **Sidebar tree** (implemented): folders, then documents, then links, each level ordered by name. Branches load when they are opened and remember being open between visits; a document is expandable only when it has children. The page being shown is highlighted and its ancestors are opened. Links open in a new tab.
+- **Keyboard** follows the ARIA tree pattern: the tree is one tab stop; Up/Down, Home/End move; Right opens a branch and then enters it; Left closes it and then goes to the parent; Enter opens the item; the context-menu key (or Shift+F10) opens its actions.
+- **Actions** per item, from the "…" menu: _New document inside_ / _New sub-document_, _New folder inside_ (folders), _Rename_ (folders; a document is renamed in its page), _Move to…_ and _Delete_. Deleting something that holds others says so and sends the whole subtree to the trash; restoring brings it back together.
+- **Moving**: by dragging an item onto a folder, onto a document, or onto the empty space (top level), and with the _Move to…_ dialog, which works without a mouse. Folders can only go into folders or the top level. A document cannot be put inside itself or inside its own sub-documents (the picker does not offer them, and the server refuses it if a drop attempts it).
+- **Folder page** (`/folder/:id`): breadcrumbs, the folder's sub-folders, documents and links, and _New document here_.
+- **Breadcrumbs** on documents and folders show the whole way from the top level.
+- **Sub-documents panel** on every document: what is directly under it, and _Add sub-document_.
+- **Tags**: add/remove on a document or link; filter by tag. _(Not built yet.)_
+- Files attached to a folder are not shown in the tree yet (attachments are step 7).
 
 ### 4.3 Links
 
@@ -129,8 +145,9 @@ interface Attachment {
 
 - **Sign up** (email, name, password) and **sign in** (email + password).
 - **Sign out** from the user menu.
-- **Session**: the frontend keeps the access token in memory only and stores the refresh token in `localStorage` (the Symfony backend returns it in the response body, e.g. with `lexik/jwt-authentication-bundle` + `gesdinet/jwt-refresh-token-bundle`). The API is called with `Authorization: Bearer <jwt>`. On a `401` it tries to refresh once (a single refresh request shared among concurrent requests); if that fails, it clears the session and redirects to `/login`. Accepted trade-off: a refresh token in `localStorage` is reachable by XSS; this is mitigated with strict Markdown sanitization, CSP, refresh token rotation and a short JWT lifetime.
-- **Protected routes**: everything except `/login` and `/register` requires a session; after login the user returns to the requested route.
+- **Session**: the frontend keeps the access token in memory only and stores the refresh token in `localStorage`. The API is called with `Authorization: Bearer <accessToken>`. On a `401` it renews once through `PUT /token-renew` (a single renewal shared among concurrent requests, because refresh tokens are single-use); if that fails, it clears the session and redirects to `/login`. Accepted trade-off: a refresh token in `localStorage` is reachable by XSS; this is mitigated with strict Markdown sanitization, CSP, the backend's refresh-token rotation with reuse detection and the 15-minute access-token lifetime.
+- **Protected routes**: everything except `/login`, `/register`, `/register/check-email` and `/activate` requires a session. After signing in the user returns to the route they were heading to, except after an explicit sign-out. A session that ends on its own (refresh token rejected) sends the user to `/login` with a notice. Signed-in users are redirected away from the public pages. The query cache is cleared on sign-in and sign-out.
+- **Activation**: signing up shows "check your email"; `/activate?token=` (opened from the email) activates the account and invites the user to sign in. The token works once, so the page requests it only once even under React StrictMode.
 - Client-side form validation (email format, minimum password length) and translated server error messages.
 - Out of the MVP: password recovery, email verification, OAuth (see §9).
 
@@ -169,63 +186,80 @@ Layout: **Sidebar** (left) · **Main content** · optional **right side panel** 
 
 ## 6. Data layer
 
-The backend is our own, so its REST API is the source of truth. To avoid blocking frontend development while the backend is being built, data access is defined as an interface with swappable adapters:
+Status: **implemented** (`src/data`, see the README). The UI never calls the API directly: it uses two repository
+interfaces obtained with `useRepositories()`, backed by interchangeable adapters.
 
 ```ts
+interface AuthRepository {
+  signUp(input): Promise<void>
+  activate(token): Promise<void>
+  login(email, password): Promise<User> // stores the session
+  logout(): Promise<void> // revokes the refresh token, clears the session even if offline
+  restoreSession(): Promise<User | null> // from the stored refresh token
+  me(): Promise<User>
+  updateProfile(input): Promise<User>
+}
+
 interface NotesRepository {
-  listDocuments(): Promise<Document[]>
-  getDocument(id: ID): Promise<Document>
-  saveDocument(doc: Partial<Document> & { id?: ID }): Promise<Document>
-  deleteDocument(id: ID): Promise<void>
-  // ...equivalents for folders, links and attachments
-  uploadAttachment(
-    documentId: ID,
-    file: File,
-    onProgress?: (n: number) => void,
-  ): Promise<Attachment>
+  folderContents(folderId?): Promise<FolderContents>
+  createFolder / renameFolder / moveFolder / deleteFolder
+  listNotes(params?): Promise<Page<NoteSummary>>
+  getNote / createNote / updateNote / moveNote / deleteNote
+  listLinks(params?): Promise<Page<Link>>
+  getLink / createLink / updateLink / moveLink / deleteLink
+  uploadNoteAttachment(noteId, file, { onProgress, signal }) / uploadFolderAttachment
+  getAttachment / downloadAttachment(id): Promise<Blob> / deleteAttachment
+  search(params): Promise<Page<SearchResult>>
+  listTags(): Promise<TagCount[]>
+  listTrash() / restore(kind, id) / deletePermanently(kind, id) / emptyTrash()
 }
 ```
 
-- **`http` adapter** (production): REST against the Symfony backend (`VITE_API_URL`), with a client generated from its OpenAPI definition (`npm run api:fetch` downloads `/api/doc.json` into the versioned `openapi.json`, and `npm run api:generate` builds `src/data/api/schema.d.ts` from it); it attaches the JWT, refreshes the session and normalizes errors.
-- **`mock` adapter** (development and tests only): in-memory/IndexedDB data with a fake user, to make progress without the backend. Not included in the production build.
-- Selected via environment variable: `VITE_DATA_ADAPTER=http|mock` (defaults to `http`).
-- A similar `AuthRepository` interface (`register`, `login`, `logout`, `refresh`, `me`, `updateProfile`) with the same two adapters.
+- **Domain types** are strict and camelCase (`src/data/types.ts`) and independent of the wire format: the generated
+  OpenAPI types mark every response property optional (the backend declares no `required`), so each mapper checks what
+  it needs and rejects with `invalid_response` if the contract drifts.
+- **`http` adapter** (default): typed `openapi-fetch` client generated from the backend's OpenAPI document. It adds the
+  Bearer header and, on `401`, renews the session once and retries; concurrent renewals share one request because
+  refresh tokens are single-use, and a renewal that fails for transient reasons (offline, `429`, `5xx`) does not end the
+  session. Uploads use `XMLHttpRequest` for progress, with the same renew-and-retry.
+- **`mock` adapter** (development only, `VITE_DATA_ADAPTER=mock`): an in-memory backend with the same error codes,
+  ownership, trash cascades, pagination and search, seeded with a demo account. It is removed from production builds.
+- **Errors** are `ApiError` with `status`, a stable `code` (use it as an i18n key), `params`, and field-level `errors`
+  for `400` validation failures. Network failures are `network_error` (status 0).
+- **Development proxy**: the backend's CORS answers preflights with `Access-Control-Allow-Headers: *`, which browsers do
+  not honour for `Authorization`. In development `VITE_API_URL=/backend` and Vite forwards `/backend` to the API, so no
+  CORS is involved. Production needs either the same origin or an explicit `Authorization` in that header.
+- **Tests**: unit tests per piece, a shared behaviour contract run against the mock, and an opt-in end-to-end smoke test
+  against a live backend (`npm run test:e2e`).
 
-### Backend status (from `openapi.json`, "Symfony DDD Core" v0.0.2)
+### Backend contract (Symfony, `librenotes` repo)
 
-The API is served at the host root (`VITE_API_URL=http://localhost`, e.g. `POST /login`); the OpenAPI document is published at `/api/doc.json` (Swagger UI at `/api/docs`).
+The API is served at the host root (`VITE_API_URL=http://localhost`, e.g. `POST /login`). The OpenAPI document is published at `/api/doc.json` (Swagger UI at `/api/docs`); `npm run api:fetch && npm run api:generate` regenerate `src/data/api/schema.d.ts`. The backend's own spec, with every decision and deviation, is `librenotes/etc/specs/notes-data-model.md`. The frontend's "documents" are the backend's **notes**.
 
-**Available today**
+| Area        | Endpoints                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Auth        | `POST /signup` (email, password ≥ 8, optional username; account starts inactive), `POST /users/activate` (`{token}`; `404` unknown, `410` expired), `POST /login` → `{accessToken, refreshToken}`, `PUT /token-renew` (`{token: <refreshToken>}` → new `{accessToken, refreshToken}`), `DELETE /token-renew` (logout, revokes the refresh token)                                                                                                                                       |
+| Profile     | `GET /me` (`id`, `email`, `username`, `locale`, `roles`, `active`, `email_validated`, `created_at`, `last_login_at`), `PATCH /me` (`username`, `locale` ∈ `en`/`es`)                                                                                                                                                                                                                                                                                                                   |
+| Folders     | `POST /folders`, `GET /folders/contents?folder_id=` (sub-folders, notes, links, attachments; root when omitted; includes the folder's `path`), `PATCH /folders/{id}` (rename), `PATCH /folders/{id}/move`, `DELETE /folders/{id}` (to trash)                                                                                                                                                                                                                                           |
+| Notes       | `POST /notes`, `GET /notes` (paginated; `parent_note_id` filter), `GET/PATCH/DELETE /notes/{id}` (detail includes `attachments`, `pinned`, `tags`, `parent_note_id`, `child_count` and `path`: the ancestors from the top level, folders then notes), `PATCH /notes/{id}/move`, `GET /notes/{id}/children` (the notes, with their `child_count`, and the links directly under a note). `POST` and `move` take `folder_id` or `parent_note_id`, never both; neither means the top level |
+| Links       | `POST /links`, `GET /links` (paginated), `GET/PATCH/DELETE /links/{id}`, `PATCH /links/{id}/move` (same `folder_id` / `parent_note_id` rule as notes)                                                                                                                                                                                                                                                                                                                                  |
+| Attachments | `POST /notes/{noteId}/attachments` and `POST /folders/{folderId}/attachments` (multipart field `file`), `GET /attachments/{id}` (metadata), `GET /attachments/{id}/content` (download, needs the Bearer header), `DELETE /attachments/{id}`                                                                                                                                                                                                                                            |
+| Search/tags | `GET /search?q=&type=note,link&tag=&page=&size=`, `GET /tags` (`[{name, count}]`)                                                                                                                                                                                                                                                                                                                                                                                                      |
+| Trash       | `GET /trash`, `DELETE /trash` (empty), `POST /trash/{folders\|notes\|links\|attachments}/{id}/restore`, `DELETE /trash/{folders\|notes\|links\|attachments}/{id}`                                                                                                                                                                                                                                                                                                                      |
 
-| Area  | Endpoints                                                                                                                                                                                                                                                                                                                    |
-| ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Auth  | `POST /signup` (email, password ≥ 8, optional username; account is created inactive), `POST /users/activate` (email activation token; `404` unknown, `410` expired), `POST /login` (email + password), `PUT /token-renew` and `DELETE /token-renew` (logout), both with `{ "token": "..." }` in the body and a Bearer header |
-| Users | `GET/POST /users`, `GET/PATCH/DELETE /users/{id}`, `PATCH /users/{id}/change-password`                                                                                                                                                                                                                                       |
+Conventions the client relies on:
 
-**Implemented in the backend but not yet published in OpenAPI**: the `Notes` module (folders, notes, attachments, trash; see `librenotes/src/Notes`). Until it is documented, the generated client has no types for it and the frontend works against the `mock` adapter.
+- **Nesting**: a document can sit under another document. "Top level" means no folder _and_ no parent document, so nested items do not appear there; moving to the top level means both are empty. Creating or moving takes a destination (`root`, a folder or a document). Cycles are refused (`note.cycle_detected`).
+- **Lists** answer `{ meta: { page, size, total, last_page }, data: [...] }`; parameters `page`, `size` (max 100), `orderBy` (`updated_at`, `created_at`, `title`), `orderDirection`. Responses are snake_case.
+- **Errors** are `{ "code": "note.not_found", "message": "...", "params": {}, "status": 404 }` with stable string codes (`security.bad_credentials`, `folder.not_found`, `link.invalid_url`, `tag.invalid`, `attachment.too_large`, `attachment.empty`, `search.query_too_short`, `notes.parent_folder_in_trash`...). Request-validation failures are `400 { "errors": ["[field] message"] }`. `429` on too many login/renew attempts.
+- **Session**: the access token (JWT, 15 minutes, payload `{id}`) goes in `Authorization: Bearer`. Refresh tokens are single-use and rotated by `PUT /token-renew`; reusing a revoked one revokes all of the user's tokens, so concurrent renewals must share one request and the new refresh token must be stored before retrying anything.
+- **Tags** are normalized by the backend (trimmed, lower-cased, ≤ 20 per item, ≤ 50 chars).
+- **Trash exists** (soft delete with restore): the MVP list in §9 had it as backlog, but the API supports it, so the UI can offer a Trash view cheaply. Attachments follow their note.
+- **Self-registration needs email activation** before login: the UI needs a "check your email" screen and an `/activate?token=` route.
+- **Search** is substring-based and case/accent-insensitive, with a plain-text `snippet` per result for the client to highlight.
+- Downloads cannot be plain `<a href>` / `<img src>` because they need the Bearer header: fetch as a Blob and use an object URL.
 
-**Missing for the MVP** (full proposal in the backend repo: `librenotes/etc/specs/notes-data-model.md`): `GET /me` and a `locale` field on the user, attachments bound to a note (today they belong to a folder) and a file download endpoint, saved links, tags, pinned notes, paginated note lists, and `GET /search`. Also, the module currently uses camelCase in responses; the backend plans to move to snake_case before we integrate.
-
-**Known issues to settle with the backend**
-
-- Auth model differs from §4.6: there is a single token (`/login` returns a JWT; `/token-renew` swaps it for a new one while it is still valid) instead of access + refresh tokens. The `/login` and `/signup` success bodies are not described in the OpenAPI document.
-- Self-registration requires **email activation** before login, so the UI needs a "check your email" screen and an `/activate?token=` route (previously out of the MVP).
-- Error bodies are `{ "code": "security.bad_credentials", "message": "...", "params": [], "status": 401 }` (string codes, usable as i18n keys), but the OpenAPI document documents a different shape (`Error`, `ErrorNotFound`…); validation errors (`422`) carry `details`. Our client follows the real bodies.
-- `POST /signup` with an empty body returns `500` (`Undefined array key "email"`) instead of `400`.
-- The OpenAPI document is invalid: empty schemas are serialized as `[]` instead of `{}` (5 places). `scripts/generate-api.mjs` normalizes them; the root cause should be fixed in the backend.
-- CORS is open (`Access-Control-Allow-Origin: *`), which is fine for a Bearer-token API but should be restricted in production.
-
-Expected endpoints (initial contract for the missing resources, to be agreed with the backend):
-
-| Resource    | Endpoints                                                                                        |
-| ----------- | ------------------------------------------------------------------------------------------------ |
-| Auth        | `POST /auth/register`, `/auth/login`, `/auth/logout`, `/auth/refresh`; `GET/PATCH /me`           |
-| Documents   | `GET/POST /documents`, `GET/PATCH/DELETE /documents/:id`                                         |
-| Folders     | `GET/POST /folders`, `PATCH/DELETE /folders/:id`                                                 |
-| Links       | `GET/POST /links`, `PATCH/DELETE /links/:id`                                                     |
-| Attachments | `POST /documents/:id/attachments` (multipart), `DELETE /attachments/:id`; authenticated download |
-| Search      | `GET /search?q=&type=document,link&tag=`                                                         |
-| Errors      | `{ "error": { "code": "...", "message": "..." } }` with stable codes                             |
+Known backend issues (reported in the backend spec, not blocking): any authenticated user can read/modify/delete another user through `/users/{id}`, CORS is `*`, and the `Configuration` module's tests need `CONFIGURATION_ENCRYPTION_KEYS` locally.
 
 ## 7. Project structure
 
@@ -251,7 +285,7 @@ src/
 ## 8. Non-functional requirements
 
 - First load < 200 KB gzipped JS on the initial route (lazy-load the editor).
-- Markdown is always sanitized when rendered; no unsanitized `dangerouslySetInnerHTML`.
+- Markdown never renders raw HTML: `rehype-raw` is not used, so markup typed in a note is shown as text and cannot run, links and images only keep http(s), mailto, tel and relative URLs, external links open with `noopener noreferrer nofollow` and images are requested without a referrer. A sanitizer was deliberately not added on top: with raw HTML off it protects nothing more, and it silently deletes legitimate text such as `Vec<String>`. If raw HTML is ever enabled, `rehype-sanitize` must come with it (the tests fail otherwise). No `dangerouslySetInnerHTML` anywhere.
 - Security: access JWT in memory only, refresh token rotated by the backend, strict CSP, CORS configured for the frontend origin, attachments served with `Content-Disposition` and content type verified by the backend.
 - On sign-out the TanStack Query cache is cleared so data does not leak between users.
 - Lint rule forbidding string literals in JSX (`eslint-plugin-i18next`) and a check that `es` and `en` have the same keys.
@@ -274,21 +308,23 @@ src/
 
 ## 10. Delivery plan
 
-1. **Bootstrap**: Vite + React + TS, Tailwind, ESLint/Prettier, Vitest, router, i18n (es/en) and an empty layout.
-2. **Data layer** (interfaces, HTTP client, mock adapter) + types + tests.
-3. **Authentication**: login, register, protected routes, session refresh, language selector.
-4. **Documents**: CRUD, editor, preview, autosave.
-5. **Folders and tags** + sidebar.
+1. ✅ **Bootstrap**: Vite + React + TS, Tailwind, ESLint/Prettier, Vitest, router, i18n (es/en) and an empty layout.
+2. ✅ **Data layer** (interfaces, HTTP client with session renewal, mock adapter, contract and end-to-end tests).
+3. ✅ **Authentication**: login, register, "check your email" and activation pages, protected routes, session restore and renewal, language selector saved to the profile.
+4. ✅ **Documents**: create, edit, delete and pin; Markdown editor with preview; autosave.
+5. **Folders, nesting and tags**: ✅ tree sidebar (folders and documents that hold documents), breadcrumbs, folder page, create / rename / move / delete, drag & drop; tags UI pending.
 6. **Links**.
 7. **Attachments**.
 8. **Search** and shortcuts.
 9. Polish: theme, responsive, empty/error states, accessibility, translation review.
 
-Steps 4–8 can proceed against the `mock` adapter until the backend publishes its contract.
+The backend already serves every resource these steps need (see §6), so they can be built against the real API; the `mock` adapter remains useful for unit tests and for working offline.
 
 ## 11. Open questions
 
-- Backend: document the `/login` and `/signup` responses, add the MVP resources listed in §6 (documents, folders, links, attachments, search, `/me`), and fix the OpenAPI/`signup` issues above.
-- Session model: confirm whether `/token-renew` accepts an expired JWT (grace period) or only a valid one; this decides how the frontend recovers after being idle.
-- JWT header authentication is already decided; revisit later whether to move the refresh token to an `HttpOnly` cookie (requires same-site or CORS with credentials).
+- Confirm that the backend will restrict `/users/{id}` to admins or the owner (security issue, see the backend spec §9).
+- Backend CORS: `Access-Control-Allow-Headers` must list `Authorization` explicitly (`etc/docker/nginx/conf/app.conf` in the backend) and `Access-Control-Allow-Origin` should be restricted to the frontend origin(s) before production; until then the frontend relies on the development proxy.
+- Backend: the JWT authenticator answers `401` with the key `type` instead of `code` (`{"type":"security.unauthenticated",...}`) while every other error uses `code`. The client accepts both; it would be cleaner if the backend were consistent.
+- Concurrent edits: the backend has no versioning, so two tabs or devices editing one document overwrite each other. Do we want optimistic concurrency (an `updated_at` check) before the MVP ships?
+- Do we expose the Trash view in the MVP (the API supports it) or keep it for later?
 - Total storage quota per user (the per-file limit is 50 MB).

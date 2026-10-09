@@ -10,15 +10,53 @@ npm install
 npm run dev
 ```
 
+By default the app talks to the Symfony backend through a same-origin proxy: the browser calls `/backend/...`
+and the dev server forwards it to `BACKEND_PROXY_TARGET` (default `http://localhost`). The proxy is needed because
+the backend's CORS configuration does not yet allow the `Authorization` header from another origin.
+
+To work without a backend, set `VITE_DATA_ADAPTER=mock` in `.env`: an in-memory fake with demo data
+(sign in with `demo@example.com` / `demo12345`). It only exists in development builds.
+
 | Script                 | Description                                                                   |
 | ---------------------- | ----------------------------------------------------------------------------- |
 | `npm run dev`          | Development server                                                            |
 | `npm run build`        | Typecheck + production build                                                  |
-| `npm test`             | Tests (Vitest)                                                                |
+| `npm test`             | Unit tests (Vitest)                                                           |
+| `npm run test:e2e`     | Smoke test of the data layer against a **running backend** (see below)        |
 | `npm run lint`         | ESLint (includes the no-literal-strings-in-JSX rule)                          |
 | `npm run format`       | Prettier                                                                      |
 | `npm run api:fetch`    | Download the backend's OpenAPI document (`/api/doc.json`) into `openapi.json` |
 | `npm run api:generate` | Generate `src/data/api/schema.d.ts` from `openapi.json`                       |
+
+## Data layer (`src/data`)
+
+Everything the UI needs from the server goes through two interfaces, `AuthRepository` and `NotesRepository`
+(`repositories.ts`), working with the domain types in `types.ts` (camelCase, strict) and failing with `ApiError`
+(`errors.ts`, whose `code` is the backend's stable error code, usable as a translation key).
+
+| Piece                           | Role                                                                                                    |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `http/`                         | Adapter for the real API: typed client from the OpenAPI schema, mappers, multipart upload with progress |
+| `http/client.ts`                | Adds the Bearer token; on `401` renews the session **once** (refresh tokens are single-use) and retries |
+| `session.ts`                    | Access token in memory, refresh token in `localStorage`                                                 |
+| `mock/`                         | In-memory backend with the same behaviour and error codes, for development and tests                    |
+| `contract/`                     | Behaviour every implementation must share; run against the mock                                         |
+| `create.ts`, `DataProvider.tsx` | Choose the adapter from `VITE_DATA_ADAPTER` and expose it with `useRepositories()`                      |
+| `rules.ts`                      | Backend rules (tag normalization, URL check...) reusable by forms                                       |
+
+### End-to-end smoke test
+
+`npm run test:e2e` exercises the HTTP adapter against a live backend. It registers one throwaway account,
+runs through every endpoint (including renewing an expired token and uploading a file), then deletes everything it
+created. It needs `docker` to read the activation token from the backend's MySQL container, and uses 2 of the
+backend's 5 logins per 15 minutes. Override the defaults with `E2E_API_URL`, `E2E_MYSQL_CONTAINER`,
+`E2E_MYSQL_DATABASE` and `E2E_PHP_CONTAINER`. Do not point it at a database you care about.
+
+## Tree (`src/features/tree`)
+
+The sidebar is a tree of folders, documents (which can hold other documents) and links, following the ARIA tree
+pattern. Branches load when opened; `queries.ts` holds the data hooks and the actions (create folder, rename, move,
+delete) and invalidates everything that depends on the structure at once. Moving works by dragging and with a dialog.
 
 ## Structure
 

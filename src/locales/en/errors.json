@@ -1,0 +1,51 @@
+{
+  "unknown": "Something went wrong. Please try again.",
+  "network_error": "We could not reach the server. Check your connection and try again.",
+  "invalid_response": "The server sent an unexpected response.",
+  "aborted": "The operation was cancelled.",
+  "validation_error": "Some of the data is not valid. Review the form and try again.",
+  "security": {
+    "bad_credentials": "The email or password is not correct.",
+    "inactive_user": "Your account is not active yet. Open the activation link we emailed you.",
+    "too_many_attempts": "Too many attempts. Wait a few minutes and try again.",
+    "unauthenticated": "You need to sign in to continue.",
+    "invalid_token": "Your session is no longer valid. Please sign in again.",
+    "expired_token": "Your session has expired. Please sign in again."
+  },
+  "user": {
+    "email_already_exists": "There is already an account with this email.",
+    "invalid_activation_token": "This activation link is not valid or was already used.",
+    "activation_token_expired": "This activation link has expired.",
+    "locale_unsupported": "This language is not supported."
+  },
+  "note": {
+    "not_found": "This document no longer exists.",
+    "cycle_detected": "A document can't be moved inside itself or inside one of its own sub-documents.",
+    "parent_not_found": "The document you chose no longer exists."
+  },
+  "folder": {
+    "not_found": "This folder no longer exists.",
+    "cycle_detected": "A folder cannot be moved inside itself."
+  },
+  "link": {
+    "not_found": "This link no longer exists.",
+    "invalid_url": "Enter a full web address starting with http:// or https://."
+  },
+  "attachment": {
+    "not_found": "This file no longer exists.",
+    "too_large": "The file is too large (the limit is 50 MB).",
+    "empty": "The file is empty."
+  },
+  "tag": {
+    "invalid": "Tags must have 1 to 50 characters and there can be at most 20."
+  },
+  "search": {
+    "query_too_short": "Type at least 2 characters to search."
+  },
+  "notes": {
+    "not_in_trash": "This item is not in the trash.",
+    "parent_folder_in_trash": "Restore its folder first.",
+    "parent_note_in_trash": "Restore its document first.",
+    "invalid_location": "An item can be in a folder or under a document, not both."
+  }
+}
