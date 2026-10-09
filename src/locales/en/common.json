@@ -1,0 +1,22 @@
+{
+  "appName": "LibreNotes",
+  "nav": {
+    "home": "Home",
+    "links": "Links",
+    "signIn": "Sign in",
+    "signUp": "Create account"
+  },
+  "language": {
+    "label": "Language",
+    "es": "Español",
+    "en": "English"
+  },
+  "home": {
+    "title": "Your notes",
+    "empty": "You don't have any documents yet."
+  },
+  "notFound": {
+    "title": "Page not found",
+    "back": "Back to home"
+  }
+}

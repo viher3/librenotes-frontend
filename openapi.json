@@ -1,0 +1,1940 @@
+{
+  "openapi": "3.0.0",
+  "info": { "title": "Symfony DDD Core", "version": "0.0.2" },
+  "servers": [{ "url": "http:\/\/localhost" }],
+  "paths": {
+    "\/signup": {
+      "post": {
+        "tags": ["User"],
+        "summary": "Public self-registration",
+        "description": "Creates a new user account, always inactive and with an unvalidated email. An activation email is sent (when enabled) with a link to POST \/users\/activate.\n",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application\/json": { "schema": { "$ref": "#\/components\/schemas\/SignUpRequest" } }
+          }
+        },
+        "responses": {
+          "201": { "description": "Created" },
+          "400": { "description": "Invalid data" },
+          "409": { "description": "Email already exists" },
+          "500": { "description": "Internal server error" }
+        }
+      }
+    },
+    "\/users\/activate": {
+      "post": {
+        "tags": ["User"],
+        "summary": "Activate a self-registered account",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application\/json": {
+              "schema": { "$ref": "#\/components\/schemas\/ActivateAccountRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Activated" },
+          "400": { "description": "Invalid data" },
+          "404": { "description": "Unknown activation token" },
+          "410": { "description": "Activation token expired" },
+          "500": { "description": "Internal server error" }
+        }
+      }
+    },
+    "\/users": {
+      "get": {
+        "tags": ["User"],
+        "summary": "Search users",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/UsersResponse" } }
+            }
+          },
+          "500": { "description": "Internal server error" }
+        }
+      },
+      "post": {
+        "tags": ["User"],
+        "summary": "Create user (admin only)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application\/json": {
+              "schema": { "$ref": "#\/components\/schemas\/UserCreateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Created" },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden \u2014 requires ROLE_ADMIN" },
+          "500": { "description": "Internal server error" }
+        },
+        "security": [{ "Bearer": [] }]
+      }
+    },
+    "\/users\/{id}": {
+      "get": {
+        "tags": ["User"],
+        "summary": "Get user",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "User ID",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/UsersResponse" } }
+            }
+          },
+          "500": { "description": "Internal server error" }
+        }
+      },
+      "delete": {
+        "tags": ["User"],
+        "summary": "Delete user",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "User ID",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Deleted" },
+          "500": { "description": "Internal server error" }
+        },
+        "security": [{ "Bearer": [] }]
+      },
+      "patch": {
+        "tags": ["User"],
+        "summary": "Update user",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "User ID",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application\/json": {
+              "schema": { "$ref": "#\/components\/schemas\/UserUpdateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Updated" },
+          "500": { "description": "Internal server error" }
+        },
+        "security": [{ "Bearer": [] }]
+      }
+    },
+    "\/users\/{id}\/change-password": {
+      "patch": {
+        "tags": ["User"],
+        "summary": "Update user password",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "User ID",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application\/json": {
+              "schema": { "$ref": "#\/components\/schemas\/ChangeUserPasswordRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Password updated correctly" },
+          "400": { "description": "Invalid data" },
+          "401": { "description": "Unauthorized" },
+          "404": { "description": "User not found" },
+          "500": { "description": "Internal server error" }
+        },
+        "security": [{ "Bearer": [] }]
+      }
+    },
+    "\/login": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "User authentication",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application\/json": { "schema": { "$ref": "#\/components\/schemas\/LoginRequest" } }
+          }
+        },
+        "responses": {
+          "200": { "description": "Success" },
+          "500": { "description": "Internal server error" }
+        }
+      }
+    },
+    "\/token-renew": {
+      "put": {
+        "tags": ["Authentication"],
+        "summary": "Renew JWT token",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application\/json": {
+              "schema": { "properties": { "token": { "type": "string" } }, "type": "object" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application\/json": {
+                "schema": { "$ref": "#\/components\/schemas\/RenewTokenResponse" }
+              }
+            }
+          },
+          "500": { "description": "Internal server error" }
+        },
+        "security": [{ "Bearer": [] }]
+      },
+      "delete": {
+        "tags": ["Authentication"],
+        "summary": "Logout",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application\/json": {
+              "schema": { "properties": { "token": { "type": "string" } }, "type": "object" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Success" },
+          "500": { "description": "Internal server error" }
+        },
+        "security": [{ "Bearer": [] }]
+      }
+    },
+    "\/configurations": {
+      "get": {
+        "tags": ["Configuration"],
+        "summary": "Search configurations",
+        "parameters": [
+          {
+            "name": "filters",
+            "in": "query",
+            "description": "JSON array of {field, operator, value}, e.g. [{\u0022field\u0022:\u0022key\u0022,\u0022operator\u0022:\u0022like\u0022,\u0022value\u0022:\u0022mail.\u0022}]",
+            "schema": { "$ref": "#\/components\/schemas\/FiltersParameter" }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": { "$ref": "#\/components\/schemas\/PageParameter" }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "schema": { "$ref": "#\/components\/schemas\/ItemsPerPageParameter" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application\/json": {
+                "schema": { "$ref": "#\/components\/schemas\/ConfigurationSearchResponse" }
+              }
+            }
+          },
+          "500": { "description": "Internal server error" }
+        },
+        "security": [{ "Bearer": [] }]
+      },
+      "post": {
+        "tags": ["Configuration"],
+        "summary": "Create configuration",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application\/json": {
+              "schema": { "$ref": "#\/components\/schemas\/ConfigurationCreateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Created" },
+          "400": { "description": "Invalid request body" },
+          "409": { "description": "Key already exists" },
+          "422": { "description": "Value does not match the declared type" },
+          "500": { "description": "Internal server error" }
+        },
+        "security": [{ "Bearer": [] }]
+      }
+    },
+    "\/configurations\/{key}": {
+      "get": {
+        "tags": ["Configuration"],
+        "summary": "Get configuration",
+        "parameters": [
+          { "name": "key", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application\/json": {
+                "schema": { "$ref": "#\/components\/schemas\/ConfigurationDetailResponse" }
+              }
+            }
+          },
+          "404": { "description": "Configuration not found" },
+          "500": { "description": "Internal server error" }
+        },
+        "security": [{ "Bearer": [] }]
+      },
+      "delete": {
+        "tags": ["Configuration"],
+        "summary": "Delete configuration",
+        "parameters": [
+          { "name": "key", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "204": { "description": "Deleted" },
+          "404": { "description": "Configuration not found" },
+          "500": { "description": "Internal server error" }
+        },
+        "security": [{ "Bearer": [] }]
+      },
+      "patch": {
+        "tags": ["Configuration"],
+        "summary": "Update configuration value",
+        "description": "Partial update \u2014 only the fields sent are changed. The key itself is immutable.",
+        "parameters": [
+          { "name": "key", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application\/json": {
+              "schema": { "$ref": "#\/components\/schemas\/ConfigurationUpdateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Updated" },
+          "404": { "description": "Configuration not found" },
+          "422": { "description": "Value does not match the declared type" },
+          "500": { "description": "Internal server error" }
+        },
+        "security": [{ "Bearer": [] }]
+      }
+    },
+    "\/configurations\/{key}\/history": {
+      "get": {
+        "tags": ["Configuration"],
+        "summary": "Get configuration change history",
+        "description": "Returns an empty page for an unknown or already-deleted key rather than 404 \u2014 the ledger is meant to stay readable after the live configuration is gone.\n",
+        "parameters": [
+          { "name": "key", "in": "path", "required": true, "schema": { "type": "string" } },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": { "$ref": "#\/components\/schemas\/PageParameter" }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "schema": { "$ref": "#\/components\/schemas\/ItemsPerPageParameter" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application\/json": {
+                "schema": { "$ref": "#\/components\/schemas\/ConfigurationHistoryResponse" }
+              }
+            }
+          },
+          "500": { "description": "Internal server error" }
+        },
+        "security": [{ "Bearer": [] }]
+      }
+    },
+    "\/notifications": {
+      "get": {
+        "tags": ["Notification"],
+        "summary": "Search notifications",
+        "parameters": [
+          {
+            "name": "filters",
+            "in": "query",
+            "description": "JSON array of {field, operator, value}, e.g. [{\u0022field\u0022:\u0022status\u0022,\u0022operator\u0022:\u0022equals\u0022,\u0022value\u0022:\u0022failed\u0022}]",
+            "schema": { "$ref": "#\/components\/schemas\/FiltersParameter" }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": { "$ref": "#\/components\/schemas\/PageParameter" }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "schema": { "$ref": "#\/components\/schemas\/ItemsPerPageParameter" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application\/json": {
+                "schema": { "$ref": "#\/components\/schemas\/NotificationSearchResponse" }
+              }
+            }
+          },
+          "500": { "description": "Internal server error" }
+        },
+        "security": [{ "Bearer": [] }]
+      }
+    },
+    "\/notifications\/{id}": {
+      "get": {
+        "tags": ["Notification"],
+        "summary": "Get notification by id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application\/json": {
+                "schema": { "$ref": "#\/components\/schemas\/NotificationDetailResponse" }
+              }
+            }
+          },
+          "404": { "description": "Notification not found" },
+          "500": { "description": "Internal server error" }
+        },
+        "security": [{ "Bearer": [] }]
+      }
+    },
+    "\/notifications\/{id}\/retry": {
+      "post": {
+        "tags": ["Notification"],
+        "summary": "Retry a failed notification",
+        "description": "Moves a notification back to \u0022pending\u0022 and re-dispatches delivery, re-rendering against the template\u0027s current content. Only valid from \u0022failed\u0022 \u2014 retrying a \u0022pending\u0022 or \u0022sent\u0022 notification returns 409.\n",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "OK" },
+          "404": { "description": "Notification not found" },
+          "409": { "description": "Notification is not in a retryable state" },
+          "500": { "description": "Internal server error" }
+        },
+        "security": [{ "Bearer": [] }]
+      }
+    },
+    "\/notification-templates": {
+      "get": {
+        "tags": ["Notification"],
+        "summary": "Search notification templates",
+        "parameters": [
+          {
+            "name": "filters",
+            "in": "query",
+            "schema": { "$ref": "#\/components\/schemas\/FiltersParameter" }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": { "$ref": "#\/components\/schemas\/PageParameter" }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "schema": { "$ref": "#\/components\/schemas\/ItemsPerPageParameter" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application\/json": {
+                "schema": { "$ref": "#\/components\/schemas\/NotificationTemplateSearchResponse" }
+              }
+            }
+          },
+          "500": { "description": "Internal server error" }
+        },
+        "security": [{ "Bearer": [] }]
+      },
+      "post": {
+        "tags": ["Notification"],
+        "summary": "Create notification template",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application\/json": {
+              "schema": { "$ref": "#\/components\/schemas\/NotificationTemplateCreateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Created" },
+          "400": { "description": "Invalid request body" },
+          "409": { "description": "A template already exists for this key\/channel\/locale" },
+          "422": { "description": "Invalid channel or key format" },
+          "500": { "description": "Internal server error" }
+        },
+        "security": [{ "Bearer": [] }]
+      }
+    },
+    "\/notification-templates\/{id}": {
+      "get": {
+        "tags": ["Notification"],
+        "summary": "Get notification template by id",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application\/json": {
+                "schema": { "$ref": "#\/components\/schemas\/NotificationTemplateDetailResponse" }
+              }
+            }
+          },
+          "404": { "description": "Notification template not found" },
+          "500": { "description": "Internal server error" }
+        },
+        "security": [{ "Bearer": [] }]
+      },
+      "delete": {
+        "tags": ["Notification"],
+        "summary": "Delete notification template",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "204": { "description": "No content" },
+          "404": { "description": "Notification template not found" },
+          "500": { "description": "Internal server error" }
+        },
+        "security": [{ "Bearer": [] }]
+      },
+      "patch": {
+        "tags": ["Notification"],
+        "summary": "Update notification template",
+        "description": "Partial update \u2014 only the fields sent are changed.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application\/json": {
+              "schema": { "$ref": "#\/components\/schemas\/NotificationTemplateUpdateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "OK" },
+          "400": { "description": "Invalid request body" },
+          "404": { "description": "Notification template not found" },
+          "500": { "description": "Internal server error" }
+        },
+        "security": [{ "Bearer": [] }]
+      }
+    },
+    "\/folders": {
+      "post": {
+        "tags": ["Folder"],
+        "summary": "Create folder",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application\/json": {
+              "schema": { "$ref": "#\/components\/schemas\/CreateFolderRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application\/json": {
+                "schema": { "$ref": "#\/components\/schemas\/CreatedResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid data",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "422": {
+            "description": "Parent folder not found",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          }
+        },
+        "security": [{ "Bearer": [] }]
+      }
+    },
+    "\/folders\/contents": {
+      "get": {
+        "tags": ["Folder"],
+        "summary": "List the contents of a folder (root when folder_id is omitted)",
+        "parameters": [
+          {
+            "name": "folder_id",
+            "in": "query",
+            "description": "Folder to list. Omit for the root level.",
+            "required": false,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application\/json": {
+                "schema": { "$ref": "#\/components\/schemas\/FolderContentsResponse" }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or owned by another user)",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          }
+        },
+        "security": [{ "Bearer": [] }]
+      }
+    },
+    "\/folders\/{id}": {
+      "delete": {
+        "tags": ["Folder"],
+        "summary": "Move folder (with its contents) to the trash",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Folder ID",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "OK" },
+          "404": {
+            "description": "Not found (or owned by another user)",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          }
+        },
+        "security": [{ "Bearer": [] }]
+      },
+      "patch": {
+        "tags": ["Folder"],
+        "summary": "Rename folder",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Folder ID",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application\/json": {
+              "schema": { "$ref": "#\/components\/schemas\/RenameFolderRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "OK" },
+          "400": {
+            "description": "Invalid data",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "404": {
+            "description": "Not found (or owned by another user)",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          }
+        },
+        "security": [{ "Bearer": [] }]
+      }
+    },
+    "\/folders\/{id}\/move": {
+      "patch": {
+        "tags": ["Folder"],
+        "summary": "Move folder to another parent (null = root)",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Folder ID",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application\/json": {
+              "schema": { "$ref": "#\/components\/schemas\/MoveFolderRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "OK" },
+          "400": {
+            "description": "Invalid data",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "404": {
+            "description": "Not found (or owned by another user)",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "422": {
+            "description": "Target folder not found or move would create a cycle (folder.cycle_detected)",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          }
+        },
+        "security": [{ "Bearer": [] }]
+      }
+    },
+    "\/folders\/{folderId}\/attachments": {
+      "post": {
+        "tags": ["Attachment"],
+        "summary": "Upload a file to a folder",
+        "parameters": [
+          {
+            "name": "folderId",
+            "in": "path",
+            "description": "Folder ID",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart\/form-data": {
+              "schema": { "$ref": "#\/components\/schemas\/UploadAttachmentRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application\/json": {
+                "schema": { "$ref": "#\/components\/schemas\/CreatedResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing \u0022file\u0022 part",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "404": {
+            "description": "Not found (or owned by another user)",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          }
+        },
+        "security": [{ "Bearer": [] }]
+      }
+    },
+    "\/notes": {
+      "post": {
+        "tags": ["Note"],
+        "summary": "Create note",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application\/json": {
+              "schema": { "$ref": "#\/components\/schemas\/CreateNoteRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application\/json": {
+                "schema": { "$ref": "#\/components\/schemas\/CreatedResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid data",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "422": {
+            "description": "Folder not found",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          }
+        },
+        "security": [{ "Bearer": [] }]
+      }
+    },
+    "\/notes\/{id}": {
+      "get": {
+        "tags": ["Note"],
+        "summary": "Get note",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Note ID",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application\/json": {
+                "schema": { "$ref": "#\/components\/schemas\/NoteDetailResponse" }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or owned by another user)",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          }
+        },
+        "security": [{ "Bearer": [] }]
+      },
+      "delete": {
+        "tags": ["Note"],
+        "summary": "Move note to the trash",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Note ID",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "OK" },
+          "404": {
+            "description": "Not found (or owned by another user)",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          }
+        },
+        "security": [{ "Bearer": [] }]
+      },
+      "patch": {
+        "tags": ["Note"],
+        "summary": "Update note title and\/or content",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Note ID",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application\/json": {
+              "schema": { "$ref": "#\/components\/schemas\/UpdateNoteRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "OK" },
+          "400": {
+            "description": "Invalid data",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "404": {
+            "description": "Not found (or owned by another user)",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          }
+        },
+        "security": [{ "Bearer": [] }]
+      }
+    },
+    "\/notes\/{id}\/move": {
+      "patch": {
+        "tags": ["Note"],
+        "summary": "Move note to a folder (null = root)",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Note ID",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application\/json": { "schema": { "$ref": "#\/components\/schemas\/MoveNoteRequest" } }
+          }
+        },
+        "responses": {
+          "200": { "description": "OK" },
+          "400": {
+            "description": "Invalid data",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "404": {
+            "description": "Not found (or owned by another user)",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "422": {
+            "description": "Target folder not found",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          }
+        },
+        "security": [{ "Bearer": [] }]
+      }
+    },
+    "\/attachments\/{id}": {
+      "get": {
+        "tags": ["Attachment"],
+        "summary": "Get attachment metadata",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Attachment ID",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application\/json": {
+                "schema": { "$ref": "#\/components\/schemas\/AttachmentDetailResponse" }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or owned by another user)",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          }
+        },
+        "security": [{ "Bearer": [] }]
+      },
+      "delete": {
+        "tags": ["Attachment"],
+        "summary": "Move attachment to the trash",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Attachment ID",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "OK" },
+          "404": {
+            "description": "Not found (or owned by another user)",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          }
+        },
+        "security": [{ "Bearer": [] }]
+      }
+    },
+    "\/trash": {
+      "get": {
+        "tags": ["Trash"],
+        "summary": "List everything in the trash",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/TrashResponse" } }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          }
+        },
+        "security": [{ "Bearer": [] }]
+      },
+      "delete": {
+        "tags": ["Trash"],
+        "summary": "Permanently delete everything in the trash",
+        "responses": {
+          "200": { "description": "OK" },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          }
+        },
+        "security": [{ "Bearer": [] }]
+      }
+    },
+    "\/trash\/folders\/{id}\/restore": {
+      "post": {
+        "tags": ["Trash"],
+        "summary": "Restore a folder from the trash",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Folder ID",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "OK" },
+          "404": {
+            "description": "Not found (or owned by another user)",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "409": {
+            "description": "Not in the trash (notes.not_in_trash)",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          }
+        },
+        "security": [{ "Bearer": [] }]
+      }
+    },
+    "\/trash\/folders\/{id}": {
+      "delete": {
+        "tags": ["Trash"],
+        "summary": "Permanently delete a folder from the trash",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Folder ID",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "OK" },
+          "404": {
+            "description": "Not found (or owned by another user)",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "409": {
+            "description": "Not in the trash (notes.not_in_trash)",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          }
+        },
+        "security": [{ "Bearer": [] }]
+      }
+    },
+    "\/trash\/notes\/{id}\/restore": {
+      "post": {
+        "tags": ["Trash"],
+        "summary": "Restore a note from the trash",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Note ID",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "OK" },
+          "404": {
+            "description": "Not found (or owned by another user)",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "409": {
+            "description": "Not in the trash, or its parent folder is still in the trash (notes.not_in_trash \/ notes.parent_folder_in_trash)",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          }
+        },
+        "security": [{ "Bearer": [] }]
+      }
+    },
+    "\/trash\/notes\/{id}": {
+      "delete": {
+        "tags": ["Trash"],
+        "summary": "Permanently delete a note from the trash",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Note ID",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "OK" },
+          "404": {
+            "description": "Not found (or owned by another user)",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "409": {
+            "description": "Not in the trash (notes.not_in_trash)",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          }
+        },
+        "security": [{ "Bearer": [] }]
+      }
+    },
+    "\/trash\/attachments\/{id}\/restore": {
+      "post": {
+        "tags": ["Trash"],
+        "summary": "Restore a attachment from the trash",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Attachment ID",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "OK" },
+          "404": {
+            "description": "Not found (or owned by another user)",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "409": {
+            "description": "Not in the trash, or its parent folder is still in the trash (notes.not_in_trash \/ notes.parent_folder_in_trash)",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          }
+        },
+        "security": [{ "Bearer": [] }]
+      }
+    },
+    "\/trash\/attachments\/{id}": {
+      "delete": {
+        "tags": ["Trash"],
+        "summary": "Permanently delete a attachment from the trash",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Attachment ID",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "OK" },
+          "404": {
+            "description": "Not found (or owned by another user)",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "409": {
+            "description": "Not in the trash (notes.not_in_trash)",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          }
+        },
+        "security": [{ "Bearer": [] }]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "UserCreateRequest": {
+        "required": ["email", "password"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "email": { "type": "string" },
+          "password": { "type": "string" },
+          "username": { "type": "string" }
+        },
+        "type": "object"
+      },
+      "SignUpRequest": {
+        "required": ["email", "password"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "email": { "type": "string" },
+          "password": { "type": "string", "minLength": 8 },
+          "username": { "type": "string" }
+        },
+        "type": "object"
+      },
+      "ActivateAccountRequest": {
+        "required": ["token"],
+        "properties": { "token": { "type": "string" } },
+        "type": "object"
+      },
+      "UserUpdateRequest": {
+        "properties": {
+          "username": { "type": "string" },
+          "email": { "type": "string" },
+          "password": { "type": "string" },
+          "role": { "type": "integer", "default": 0 },
+          "active": { "type": "boolean", "default": true },
+          "emailValidated": { "type": "boolean", "default": true }
+        },
+        "type": "object"
+      },
+      "UserDetailResponse": {
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "username": { "type": "string" },
+          "email": { "type": "string" },
+          "role": {
+            "properties": { "id": { "type": "integer" }, "name": { "type": "string" } },
+            "type": "object"
+          },
+          "active": { "type": "boolean", "default": true },
+          "emailValidated": { "type": "boolean", "default": true },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "lastLoginAt": { "type": "string", "format": "date-time" }
+        },
+        "type": "object"
+      },
+      "UserItemResponse": {
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "username": { "type": "string" },
+          "email": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "lastLoginAt": { "type": "string", "format": "date-time" }
+        },
+        "type": "object"
+      },
+      "UsersResponse": {
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": { "$ref": "#\/components\/schemas\/UserItemResponse" }
+          },
+          "size": { "type": "integer" },
+          "total": { "type": "integer" },
+          "page": { "type": "integer" },
+          "last": { "type": "integer" }
+        },
+        "type": "object"
+      },
+      "ChangeUserPasswordRequest": {
+        "required": ["currentPassword", "newPassword"],
+        "properties": {
+          "currentPassword": { "type": "string", "maxLength": 20, "minLength": 8 },
+          "newPassword": { "type": "string", "maxLength": 20, "minLength": 8 }
+        },
+        "type": "object"
+      },
+      "LoginRequest": {
+        "properties": {
+          "email": { "type": "string", "format": "email" },
+          "password": { "type": "string", "format": "password" }
+        },
+        "type": "object"
+      },
+      "RenewTokenResponse": {
+        "properties": {
+          "data": { "properties": { "token": { "type": "string" } }, "type": "object" }
+        },
+        "type": "object"
+      },
+      "ConfigurationCreateRequest": {
+        "required": ["key", "value", "type"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "key": {
+            "description": "Dot-namespaced, e.g. mail.sender_name. Immutable once created.",
+            "type": "string"
+          },
+          "value": { "type": "string" },
+          "type": { "type": "string", "enum": ["string", "integer", "boolean", "json"] },
+          "description": { "type": "string", "nullable": true },
+          "is_sensitive": {
+            "description": "Encrypted at rest and never returned in plaintext once set.",
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "type": "object"
+      },
+      "ConfigurationUpdateRequest": {
+        "description": "All fields optional \u2014 only the ones sent are changed.",
+        "properties": {
+          "value": { "type": "string" },
+          "type": { "type": "string", "enum": ["string", "integer", "boolean", "json"] },
+          "description": { "type": "string", "nullable": true },
+          "is_sensitive": { "type": "boolean" }
+        },
+        "type": "object"
+      },
+      "ConfigurationDetailResponse": {
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "key": { "type": "string" },
+          "type": { "type": "string", "enum": ["string", "integer", "boolean", "json"] },
+          "description": { "type": "string", "nullable": true },
+          "is_sensitive": { "type": "boolean" },
+          "value": {
+            "description": "Always null when is_sensitive is true \u2014 this endpoint never reveals a sensitive value.",
+            "type": "string",
+            "nullable": true
+          },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        },
+        "type": "object"
+      },
+      "ConfigurationSearchResponse": {
+        "properties": {
+          "meta": { "$ref": "#\/components\/schemas\/ConfigurationPageMeta" },
+          "data": {
+            "type": "array",
+            "items": { "$ref": "#\/components\/schemas\/ConfigurationDetailResponse" }
+          }
+        },
+        "type": "object"
+      },
+      "ConfigurationHistoryEntry": {
+        "properties": {
+          "action": { "type": "string", "enum": ["created", "updated", "deleted"] },
+          "previous_value": { "type": "string", "nullable": true },
+          "new_value": { "type": "string", "nullable": true },
+          "changed_by": { "type": "string", "format": "uuid" },
+          "changed_at": { "type": "string", "format": "date-time" }
+        },
+        "type": "object"
+      },
+      "ConfigurationHistoryResponse": {
+        "properties": {
+          "meta": { "$ref": "#\/components\/schemas\/ConfigurationPageMeta" },
+          "data": {
+            "type": "array",
+            "items": { "$ref": "#\/components\/schemas\/ConfigurationHistoryEntry" }
+          }
+        },
+        "type": "object"
+      },
+      "ConfigurationPageMeta": {
+        "properties": {
+          "page": { "type": "integer" },
+          "size": { "type": "integer" },
+          "total": { "type": "integer" },
+          "last_page": { "type": "integer" }
+        },
+        "type": "object"
+      },
+      "NotificationDetailResponse": {
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "channel": { "type": "string", "enum": ["email"] },
+          "template_key": { "type": "string" },
+          "locale": { "type": "string" },
+          "recipient": { "type": "string" },
+          "recipient_id": { "type": "string", "format": "uuid", "nullable": true },
+          "payload": { "type": "object" },
+          "subject": { "type": "string", "nullable": true },
+          "status": { "type": "string", "enum": ["pending", "sent", "failed"] },
+          "attempts": { "type": "integer" },
+          "last_error": { "type": "string", "nullable": true },
+          "provider_message_id": { "type": "string", "nullable": true },
+          "sent_at": { "type": "string", "format": "date-time", "nullable": true },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        },
+        "type": "object"
+      },
+      "NotificationSearchResponse": {
+        "properties": {
+          "meta": { "$ref": "#\/components\/schemas\/NotificationPageMeta" },
+          "data": {
+            "type": "array",
+            "items": { "$ref": "#\/components\/schemas\/NotificationDetailResponse" }
+          }
+        },
+        "type": "object"
+      },
+      "NotificationPageMeta": {
+        "properties": {
+          "page": { "type": "integer" },
+          "size": { "type": "integer" },
+          "total": { "type": "integer" },
+          "last_page": { "type": "integer" }
+        },
+        "type": "object"
+      },
+      "NotificationTemplateCreateRequest": {
+        "required": ["key", "channel", "locale", "subject", "body"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "key": {
+            "description": "Dot-namespaced, e.g. user.welcome. Together with channel and locale, must be unique.",
+            "type": "string"
+          },
+          "channel": { "type": "string", "enum": ["email"] },
+          "locale": {
+            "description": "e.g. en, es, en_US. Falls back to \u0022en\u0022 at delivery time when no exact-locale template exists.",
+            "type": "string"
+          },
+          "subject": {
+            "description": "Sandboxed Twig source (if\/for only, a short filter allowlist, no method\/property access).",
+            "type": "string"
+          },
+          "body": {
+            "description": "Sandboxed Twig source, same restrictions as subject.",
+            "type": "string"
+          },
+          "is_active": { "type": "boolean", "default": true }
+        },
+        "type": "object"
+      },
+      "NotificationTemplateUpdateRequest": {
+        "description": "All fields optional \u2014 only the ones sent are changed. key\/channel\/locale are immutable once created.",
+        "properties": {
+          "subject": { "type": "string" },
+          "body": { "type": "string" },
+          "is_active": { "type": "boolean" }
+        },
+        "type": "object"
+      },
+      "NotificationTemplateDetailResponse": {
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "key": { "type": "string" },
+          "channel": { "type": "string", "enum": ["email"] },
+          "locale": { "type": "string" },
+          "subject": { "type": "string" },
+          "body": { "type": "string" },
+          "is_active": { "type": "boolean" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        },
+        "type": "object"
+      },
+      "NotificationTemplateSearchResponse": {
+        "properties": {
+          "meta": { "$ref": "#\/components\/schemas\/NotificationPageMeta" },
+          "data": {
+            "type": "array",
+            "items": { "$ref": "#\/components\/schemas\/NotificationTemplateDetailResponse" }
+          }
+        },
+        "type": "object"
+      },
+      "CreatedResponse": {
+        "required": ["id"],
+        "properties": { "id": { "type": "string", "format": "uuid" } },
+        "type": "object"
+      },
+      "CreateFolderRequest": {
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string", "maxLength": 255, "minLength": 1 },
+          "parent_folder_id": { "type": "string", "format": "uuid", "nullable": true }
+        },
+        "type": "object"
+      },
+      "RenameFolderRequest": {
+        "required": ["name"],
+        "properties": { "name": { "type": "string", "maxLength": 255, "minLength": 1 } },
+        "type": "object"
+      },
+      "MoveFolderRequest": {
+        "properties": {
+          "parent_folder_id": { "type": "string", "format": "uuid", "nullable": true }
+        },
+        "type": "object"
+      },
+      "MoveNoteRequest": {
+        "properties": { "folder_id": { "type": "string", "format": "uuid", "nullable": true } },
+        "type": "object"
+      },
+      "CreateNoteRequest": {
+        "required": ["title"],
+        "properties": {
+          "title": { "type": "string", "maxLength": 255, "minLength": 1 },
+          "content": { "description": "Markdown", "type": "string" },
+          "folder_id": { "type": "string", "format": "uuid", "nullable": true }
+        },
+        "type": "object"
+      },
+      "UpdateNoteRequest": {
+        "properties": {
+          "title": { "type": "string", "maxLength": 255, "minLength": 1 },
+          "content": { "description": "Markdown", "type": "string" }
+        },
+        "type": "object"
+      },
+      "UploadAttachmentRequest": {
+        "required": ["file"],
+        "properties": { "file": { "type": "string", "format": "binary" } },
+        "type": "object"
+      },
+      "FolderSummary": {
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "name": { "type": "string" },
+          "created_at": { "type": "string", "format": "date-time" }
+        },
+        "type": "object"
+      },
+      "NoteSummary": {
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "title": { "type": "string" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        },
+        "type": "object"
+      },
+      "AttachmentSummary": {
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "file_name": { "type": "string" },
+          "mime_type": { "type": "string" },
+          "size_bytes": { "type": "integer" },
+          "created_at": { "type": "string", "format": "date-time" }
+        },
+        "type": "object"
+      },
+      "FolderContentsResponse": {
+        "properties": {
+          "folder": {
+            "description": "The listed folder; null at the root level.",
+            "properties": {
+              "id": { "type": "string", "format": "uuid" },
+              "name": { "type": "string" },
+              "parent_folder_id": { "type": "string", "format": "uuid", "nullable": true }
+            },
+            "type": "object",
+            "nullable": true
+          },
+          "subfolders": {
+            "type": "array",
+            "items": { "$ref": "#\/components\/schemas\/FolderSummary" }
+          },
+          "notes": { "type": "array", "items": { "$ref": "#\/components\/schemas\/NoteSummary" } },
+          "attachments": {
+            "type": "array",
+            "items": { "$ref": "#\/components\/schemas\/AttachmentSummary" }
+          }
+        },
+        "type": "object"
+      },
+      "NoteDetailResponse": {
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "title": { "type": "string" },
+          "content": { "description": "Markdown", "type": "string" },
+          "folder_id": { "type": "string", "format": "uuid", "nullable": true },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        },
+        "type": "object"
+      },
+      "AttachmentDetailResponse": {
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "folder_id": { "type": "string", "format": "uuid" },
+          "file_name": { "type": "string" },
+          "mime_type": { "type": "string" },
+          "size_bytes": { "type": "integer" },
+          "created_at": { "type": "string", "format": "date-time" }
+        },
+        "type": "object"
+      },
+      "TrashResponse": {
+        "properties": {
+          "folders": {
+            "type": "array",
+            "items": {
+              "properties": {
+                "id": { "type": "string", "format": "uuid" },
+                "name": { "type": "string" },
+                "parent_folder_id": { "type": "string", "format": "uuid", "nullable": true },
+                "deleted_at": { "type": "string", "format": "date-time" }
+              },
+              "type": "object"
+            }
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "properties": {
+                "id": { "type": "string", "format": "uuid" },
+                "title": { "type": "string" },
+                "folder_id": { "type": "string", "format": "uuid", "nullable": true },
+                "deleted_at": { "type": "string", "format": "date-time" }
+              },
+              "type": "object"
+            }
+          },
+          "attachments": {
+            "type": "array",
+            "items": {
+              "properties": {
+                "id": { "type": "string", "format": "uuid" },
+                "file_name": { "type": "string" },
+                "folder_id": { "type": "string", "format": "uuid" },
+                "deleted_at": { "type": "string", "format": "date-time" }
+              },
+              "type": "object"
+            }
+          }
+        },
+        "type": "object"
+      },
+      "ResponseOk": {
+        "properties": {
+          "_result": {
+            "description": "Operation result (shape depends on the endpoint)",
+            "nullable": true
+          },
+          "_info": { "$ref": "#\/components\/schemas\/Info" },
+          "_error": { "type": "array", "items": { "type": "object" }, "example": [] }
+        },
+        "type": "object"
+      },
+      "ResponseNotFound": {
+        "properties": {
+          "_result": { "type": "array", "items": { "type": "object" }, "example": [] },
+          "_info": { "$ref": "#\/components\/schemas\/Info" },
+          "_error": { "$ref": "#\/components\/schemas\/ErrorNotFound" }
+        },
+        "type": "object"
+      },
+      "ResponseUnprocessableContent": {
+        "properties": {
+          "_result": { "type": "array", "items": { "type": "object" }, "example": [] },
+          "_info": { "$ref": "#\/components\/schemas\/Info" },
+          "_error": { "$ref": "#\/components\/schemas\/ErrorUnprocessableContent" }
+        },
+        "type": "object"
+      },
+      "Info": {
+        "properties": {
+          "host": { "type": "string" },
+          "uri": { "type": "string" },
+          "method": { "type": "string" },
+          "params": { "type": "array", "items": { "type": "object" } },
+          "time": { "type": "number" },
+          "status": { "type": "integer" }
+        },
+        "type": "object"
+      },
+      "Clock": {
+        "properties": {
+          "date": { "type": "string" },
+          "timezone_type": { "type": "integer" },
+          "timezone": { "type": "string" }
+        },
+        "type": "object"
+      },
+      "ErrorNotFound": {
+        "properties": {
+          "code": { "type": "string" },
+          "details": {
+            "properties": { "code": { "type": "string" }, "message": { "type": "string" } },
+            "type": "object"
+          },
+          "status_code": { "type": "integer", "example": 404 },
+          "message": { "type": "string" },
+          "reference": { "type": "string" },
+          "action": { "type": "string" }
+        },
+        "type": "object"
+      },
+      "ErrorUnprocessableContent": {
+        "properties": {
+          "code": { "type": "string" },
+          "details": {
+            "properties": { "code": { "type": "string" }, "message": { "type": "string" } },
+            "type": "object"
+          },
+          "status_code": { "type": "integer", "example": 422 },
+          "message": { "type": "string" },
+          "reference": { "type": "string" },
+          "action": { "type": "string" }
+        },
+        "type": "object"
+      },
+      "ApiError": {
+        "description": "Body of every error response. `code` is a stable identifier (e.g. `security.bad_credentials`, `note.not_found`) meant to be mapped to a translation key by clients.\n",
+        "required": ["code", "message", "status"],
+        "properties": {
+          "code": { "type": "string", "example": "note.not_found" },
+          "message": { "type": "string" },
+          "params": { "type": "array", "items": { "type": "object" } },
+          "status": { "type": "integer", "example": 404 }
+        },
+        "type": "object"
+      },
+      "FiltersParameter": {
+        "type": "string",
+        "example": "[{\u0022field\u0022:\u0022name\u0022,\u0022operator\u0022:\u0022like\u0022,\u0022value\u0022:\u0022Digi\u0022}]"
+      },
+      "PageParameter": { "type": "integer", "example": 1 },
+      "ItemsPerPageParameter": { "type": "integer", "example": 12 },
+      "OrderByParameter": { "type": "string", "example": "" },
+      "OrderDirection": { "type": "string", "example": "" },
+      "Error": {
+        "required": ["code", "message"],
+        "properties": {
+          "code": { "type": "integer", "format": "int32" },
+          "message": { "type": "string" }
+        },
+        "type": "object"
+      }
+    },
+    "securitySchemes": { "Bearer": { "type": "apiKey", "name": "Authorization", "in": "header" } }
+  },
+  "security": [{ "apiKeyAuth": [] }],
+  "tags": [
+    { "name": "User", "description": "User" },
+    { "name": "Authentication", "description": "Authentication" },
+    { "name": "Configuration", "description": "Configuration" },
+    { "name": "Notification", "description": "Notification" },
+    { "name": "Folder", "description": "Folder" },
+    { "name": "Attachment", "description": "Attachment" },
+    { "name": "Note", "description": "Note" },
+    { "name": "Trash", "description": "Trash" }
+  ]
+}
