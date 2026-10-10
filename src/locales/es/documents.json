@@ -26,7 +26,10 @@
     "pin": "Fijar",
     "unpin": "Desfijar",
     "delete": "Eliminar",
-    "emptyPreview": "Todavía no hay nada que previsualizar."
+    "emptyPreview": "Todavía no hay nada que previsualizar.",
+    "modeVisual": "Visual",
+    "modeMarkdown": "Markdown",
+    "modeLabel": "Modo de edición"
   },
   "status": {
     "saved": "Guardado",
@@ -49,5 +52,82 @@
   "loadError": {
     "title": "No hemos podido abrir este documento",
     "retry": "Reintentar"
+  },
+  "visual": {
+    "placeholder": "Escribe «/» para ver los bloques…",
+    "blocksLabel": "Bloques",
+    "noBlocks": "Ningún bloque coincide.",
+    "toolbar": "Formato de texto",
+    "linkAddress": "Dirección del enlace",
+    "linkInvalid": "Escribe una dirección web que empiece por http://, https://, mailto: o tel:",
+    "apply": "Aplicar",
+    "marks": {
+      "bold": "Negrita",
+      "italic": "Cursiva",
+      "strike": "Tachado",
+      "code": "Código",
+      "link": "Enlace"
+    },
+    "markGlyph": {
+      "bold": "N",
+      "italic": "K",
+      "strike": "T",
+      "code": "</>",
+      "link": "Enlace"
+    },
+    "blocks": {
+      "heading1": {
+        "label": "Título 1",
+        "hint": "Título grande de sección",
+        "keywords": "h1 titulo encabezado"
+      },
+      "heading2": {
+        "label": "Título 2",
+        "hint": "Título mediano de sección",
+        "keywords": "h2 subtitulo encabezado"
+      },
+      "heading3": {
+        "label": "Título 3",
+        "hint": "Título pequeño de sección",
+        "keywords": "h3 encabezado"
+      },
+      "bullet": {
+        "label": "Lista con viñetas",
+        "hint": "Una lista sencilla",
+        "keywords": "ul lista viñetas"
+      },
+      "numbered": {
+        "label": "Lista numerada",
+        "hint": "Una lista con números",
+        "keywords": "ol lista numeros"
+      },
+      "task": {
+        "label": "Lista de tareas",
+        "hint": "Tareas con casillas",
+        "keywords": "tareas todo casilla checklist"
+      },
+      "quote": {
+        "label": "Cita",
+        "hint": "Destaca un pasaje",
+        "keywords": "citar blockquote"
+      },
+      "code": {
+        "label": "Bloque de código",
+        "hint": "Código en monoespaciado",
+        "keywords": "codigo fragmento pre"
+      },
+      "table": {
+        "label": "Tabla",
+        "hint": "Filas y columnas",
+        "keywords": "tabla cuadricula"
+      },
+      "divider": {
+        "label": "Divisor",
+        "hint": "Una línea horizontal",
+        "keywords": "hr regla linea separador"
+      }
+    },
+    "lossy": "Parte de este documento usa Markdown que el editor visual no puede mostrar con exactitud, así que editarlo aquí podría cambiarlo.",
+    "editAsMarkdown": "Editar como Markdown"
   }
 }

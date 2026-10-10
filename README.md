@@ -81,6 +81,12 @@ results of an older text are never shown for a newer one.
 into a drawer on narrow screens; `src/features/trash` is the trash page. `src/locales/locales.test.ts` fails when a
 translation is missing in one language or its placeholders differ.
 
+## Editor (`src/features/documents`)
+
+Documents are edited visually (Milkdown, in `visual/`) and stored as Markdown; a per-document switch opens the source
+in CodeMirror. `visual/markdown.test.ts` is the round-trip corpus (Markdown → editor → Markdown) and the safety tests
+(no raw HTML as DOM, no `javascript:` links). Spec: [etc/specs/wysiwyg-editor.md](./etc/specs/wysiwyg-editor.md).
+
 ## Structure
 
 See §7 of the spec. UI texts live in `src/locales/<es|en>/*.json`.

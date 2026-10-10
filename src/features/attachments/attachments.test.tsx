@@ -430,24 +430,7 @@ describe('attachments of a document', () => {
       )
     })
 
-    it('adds it at the end when only the preview is open', async () => {
-      const mock = await signedInBackend()
-      const { note, stored, user } = await openNote(mock, [png()])
-      await setEditorText('text')
-      await user.click(screen.getByRole('button', { name: 'Preview' }))
-
-      await user.click(
-        within(panel()).getByRole('button', { name: 'Insert diagram [v2].png into the document' }),
-      )
-
-      await waitFor(async () =>
-        expect((await mock.notes.getNote(note.id)).content).toBe(
-          `text\n\n![diagram \\[v2\\].png](attachment:${stored[0].id})\n`,
-        ),
-      )
-    })
-
-    it('shows an inserted image in the preview, loaded with the session', async () => {
+    it('shows an inserted image in the visual editor, loaded with the session', async () => {
       const mock = await signedInBackend()
       const createObjectURL = vi.fn(() => 'blob:image-1')
       Object.assign(URL, { createObjectURL, revokeObjectURL: vi.fn() })
@@ -456,29 +439,28 @@ describe('attachments of a document', () => {
       await mock.notes.updateNote(note.id, { content: `![a diagram](attachment:${picture.id})` })
       const download = vi.spyOn(mock.notes, 'downloadAttachment')
 
-      await renderApp(`/doc/${note.id}`, mock)
+      await renderApp(`/doc/${note.id}`, mock, { editorMode: 'visual' })
 
-      const preview = await screen.findByRole('region', { name: 'Preview' })
-      await waitFor(() =>
-        expect(within(preview).getByRole('img', { name: 'a diagram' })).toHaveAttribute(
-          'src',
-          'blob:image-1',
-        ),
-      )
+      const page = await screen.findByTestId('visual-editor')
+      const image = await within(page).findByAltText('a diagram')
+      await waitFor(() => expect(image).toHaveAttribute('src', 'blob:image-1'))
+      expect(image).toHaveAttribute('data-state', 'ready')
       expect(download).toHaveBeenCalledWith(picture.id)
     })
 
-    it('says so when the image cannot be loaded', async () => {
+    it('marks an image that cannot be loaded, without requesting its raw address', async () => {
       const mock = await signedInBackend()
       const note = await mock.notes.createNote({ title: 'Broken' })
       await mock.notes.updateNote(note.id, {
         content: '![gone](attachment:00000000-0000-4000-8000-000000000000)',
       })
 
-      await renderApp(`/doc/${note.id}`, mock)
+      await renderApp(`/doc/${note.id}`, mock, { editorMode: 'visual' })
 
-      const preview = await screen.findByRole('region', { name: 'Preview' })
-      expect(await within(preview).findByText('The image could not be loaded.')).toBeInTheDocument()
+      const page = await screen.findByTestId('visual-editor')
+      const image = await within(page).findByAltText('gone')
+      await waitFor(() => expect(image).toHaveAttribute('data-state', 'error'))
+      expect(image).not.toHaveAttribute('src')
     })
 
     it('does not let a link or another kind of address use the attachment scheme', async () => {
@@ -487,20 +469,15 @@ describe('attachments of a document', () => {
       await mock.notes.updateNote(note.id, {
         content: `[click](attachment:abc) ![odd](attachment:../../etc/passwd) ![x](javascript:alert(1)) ![long](attachment:${'a'.repeat(65)})`,
       })
-
       const download = vi.spyOn(mock.notes, 'downloadAttachment')
-      await renderApp(`/doc/${note.id}`, mock)
 
-      const preview = await screen.findByRole('region', { name: 'Preview' })
-      await within(preview).findByText('click')
+      await renderApp(`/doc/${note.id}`, mock, { editorMode: 'visual' })
+
+      const page = await screen.findByTestId('visual-editor')
+      await waitFor(() => expect(page.textContent).toContain('[click](attachment:abc)'))
+      expect(page.querySelector('a')).toBeNull()
+      expect(page.querySelector('img:not(.ProseMirror-separator)')).toBeNull()
       expect(download).not.toHaveBeenCalled()
-      expect(within(preview).getByText('click').closest('a')).not.toHaveAttribute(
-        'href',
-        'attachment:abc',
-      )
-      for (const image of preview.querySelectorAll('img')) {
-        expect(image.getAttribute('src') ?? '').not.toMatch(/^(attachment|javascript):/)
-      }
     })
   })
 

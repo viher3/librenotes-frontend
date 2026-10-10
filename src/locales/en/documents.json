@@ -26,7 +26,10 @@
     "pin": "Pin",
     "unpin": "Unpin",
     "delete": "Delete",
-    "emptyPreview": "Nothing to preview yet."
+    "emptyPreview": "Nothing to preview yet.",
+    "modeVisual": "Visual",
+    "modeMarkdown": "Markdown",
+    "modeLabel": "Editing mode"
   },
   "status": {
     "saved": "Saved",
@@ -49,5 +52,82 @@
   "loadError": {
     "title": "We couldn't open this document",
     "retry": "Try again"
+  },
+  "visual": {
+    "placeholder": "Type “/” for blocks…",
+    "blocksLabel": "Blocks",
+    "noBlocks": "No blocks match.",
+    "toolbar": "Text formatting",
+    "linkAddress": "Link address",
+    "linkInvalid": "Enter a web address starting with http://, https://, mailto: or tel:",
+    "apply": "Apply",
+    "marks": {
+      "bold": "Bold",
+      "italic": "Italic",
+      "strike": "Strikethrough",
+      "code": "Code",
+      "link": "Link"
+    },
+    "markGlyph": {
+      "bold": "B",
+      "italic": "I",
+      "strike": "S",
+      "code": "</>",
+      "link": "Link"
+    },
+    "blocks": {
+      "heading1": {
+        "label": "Heading 1",
+        "hint": "Big section title",
+        "keywords": "h1 title heading"
+      },
+      "heading2": {
+        "label": "Heading 2",
+        "hint": "Medium section title",
+        "keywords": "h2 subtitle heading"
+      },
+      "heading3": {
+        "label": "Heading 3",
+        "hint": "Small section title",
+        "keywords": "h3 heading"
+      },
+      "bullet": {
+        "label": "Bulleted list",
+        "hint": "A simple list",
+        "keywords": "ul list unordered"
+      },
+      "numbered": {
+        "label": "Numbered list",
+        "hint": "A list with numbers",
+        "keywords": "ol list ordered"
+      },
+      "task": {
+        "label": "To-do list",
+        "hint": "Track tasks with checkboxes",
+        "keywords": "todo task checkbox checklist"
+      },
+      "quote": {
+        "label": "Quote",
+        "hint": "Set a passage apart",
+        "keywords": "blockquote citation"
+      },
+      "code": {
+        "label": "Code block",
+        "hint": "Monospaced code",
+        "keywords": "code snippet pre"
+      },
+      "table": {
+        "label": "Table",
+        "hint": "Rows and columns",
+        "keywords": "grid table"
+      },
+      "divider": {
+        "label": "Divider",
+        "hint": "A horizontal line",
+        "keywords": "hr rule line separator"
+      }
+    },
+    "lossy": "Part of this document uses Markdown the visual editor can't show exactly, so editing here may change it.",
+    "editAsMarkdown": "Edit as Markdown"
   }
 }

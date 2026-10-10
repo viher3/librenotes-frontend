@@ -27,14 +27,19 @@ async function signedInBackend(): Promise<Backend> {
 /** Opens a freshly created document in the app. */
 async function openDocument(
   mock: Backend,
-  input: { title?: string; content?: string; pinned?: boolean } = {},
+  input: {
+    title?: string
+    content?: string
+    pinned?: boolean
+    editorMode?: 'visual' | 'markdown' | 'keep'
+  } = {},
 ) {
   const note = await mock.notes.createNote({
     title: input.title ?? 'Plan',
     content: input.content ?? '# Hello',
     pinned: input.pinned,
   })
-  const app = await renderApp(`/doc/${note.id}`, mock)
+  const app = await renderApp(`/doc/${note.id}`, mock, { editorMode: input.editorMode })
   await screen.findByLabelText('Document title')
   return { note, ...app }
 }
@@ -206,31 +211,38 @@ describe('home', () => {
 })
 
 describe('document page', () => {
-  it('shows the document in the editor and rendered next to it', async () => {
+  it('shows the document as a page in the visual editor, and as source in the Markdown editor', async () => {
     const mock = await signedInBackend()
-    await openDocument(mock, { title: 'Plan', content: '# Big title\n\nSome **bold** text' })
+    await openDocument(mock, {
+      title: 'Plan',
+      content: '# Big title\n\nSome **bold** text',
+      editorMode: 'visual',
+    })
 
     expect(screen.getByLabelText('Document title')).toHaveValue('Plan')
-    expect(await editorText()).toBe('# Big title\n\nSome **bold** text')
-    const preview = screen.getByRole('region', { name: 'Preview' })
-    expect(within(preview).getByRole('heading', { name: 'Big title' })).toBeInTheDocument()
-    expect(within(preview).getByText('bold').tagName).toBe('STRONG')
+    const page = await screen.findByTestId('visual-editor')
+    expect(await within(page).findByRole('heading', { name: 'Big title' })).toBeInTheDocument()
+    expect(within(page).getByText('bold').tagName).toBe('STRONG')
+    expect(document.querySelector('.cm-editor')).not.toBeInTheDocument()
     expect(document.title).toBe('Plan · LibreNotes')
     expect(status()).toHaveTextContent('Saved')
   })
 
-  it('saves what is typed after a pause, only the changed field, and updates the preview at once', async () => {
+  it('opens in the Markdown editor with the source, and has no preview pane', async () => {
+    const mock = await signedInBackend()
+    await openDocument(mock, { title: 'Plan', content: '# Big title\n\nSome **bold** text' })
+
+    expect(await editorText()).toBe('# Big title\n\nSome **bold** text')
+    expect(screen.queryByRole('region', { name: 'Preview' })).not.toBeInTheDocument()
+  })
+
+  it('saves what is typed after a pause, only the changed field', async () => {
     const mock = await signedInBackend()
     const { note } = await openDocument(mock)
     const update = vi.spyOn(mock.notes, 'updateNote')
 
     await setEditorText('# Changed\n\nBody')
 
-    expect(
-      within(screen.getByRole('region', { name: 'Preview' })).getByRole('heading', {
-        name: 'Changed',
-      }),
-    ).toBeInTheDocument()
     await waitFor(() => expect(status()).toHaveTextContent('Saved'))
     expect(update).toHaveBeenCalledTimes(1)
     expect(update).toHaveBeenCalledWith(note.id, { content: '# Changed\n\nBody' })
@@ -373,38 +385,58 @@ describe('document page', () => {
     expect(saved.defaultPrevented).toBe(false)
   })
 
-  it('switches between editing, split and preview, and remembers the choice', async () => {
+  it('switches between the visual and the Markdown editor, remembering the choice per document', async () => {
     const mock = await signedInBackend()
-    const { user, unmount, note } = await openDocument(mock)
-    const preview = () => screen.queryByRole('region', { name: 'Preview' })
-    const editor = () => document.querySelector('.cm-editor')
+    const { user, unmount, note } = await openDocument(mock, {
+      content: '# Hello',
+      editorMode: 'visual',
+    })
+    const source = () => document.querySelector('.cm-editor')
+    const visual = () => screen.queryByTestId('visual-editor')
+    await screen.findByTestId('visual-editor')
 
-    expect(preview()).toBeInTheDocument()
-    expect(editor()).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Visual' })).toHaveAttribute('aria-pressed', 'true')
+    expect(source()).not.toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Preview' }))
-    expect(preview()).toBeInTheDocument()
-    expect(editor()).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Preview' })).toHaveAttribute('aria-pressed', 'true')
-
-    await user.click(screen.getByRole('button', { name: 'Edit' }))
-    expect(preview()).not.toBeInTheDocument()
-    expect(editor()).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Markdown' }))
+    expect(await editorText()).toBe('# Hello')
+    expect(visual()).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Markdown' })).toHaveAttribute('aria-pressed', 'true')
 
     unmount()
-    await renderApp(`/doc/${note.id}`, mock)
+    await renderApp(`/doc/${note.id}`, mock, { editorMode: 'keep' })
     await screen.findByLabelText('Document title')
-    expect(preview()).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Edit' })).toHaveAttribute('aria-pressed', 'true')
+    expect(await editorText()).toBe('# Hello')
+
+    const other = await mock.notes.createNote({ title: 'Other' })
+    await renderApp(`/doc/${other.id}`, mock, { editorMode: 'keep' })
+    expect(await screen.findByTestId('visual-editor')).toBeInTheDocument()
   })
 
-  it('says when there is nothing to preview', async () => {
+  it('carries what was typed in the source over to the visual editor', async () => {
     const mock = await signedInBackend()
-    await openDocument(mock, { content: '' })
+    const { user } = await openDocument(mock, { content: 'first' })
 
+    await setEditorText('# From the source')
+    await user.click(screen.getByRole('button', { name: 'Visual' }))
+
+    const page = await screen.findByTestId('visual-editor')
     expect(
-      within(screen.getByRole('region', { name: 'Preview' })).getByText('Nothing to preview yet.'),
+      await within(page).findByRole('heading', { name: 'From the source' }),
     ).toBeInTheDocument()
+  })
+
+  it('shows a prompt on an empty document in the visual editor', async () => {
+    const mock = await signedInBackend()
+    await openDocument(mock, { content: '', editorMode: 'visual' })
+
+    const page = await screen.findByTestId('visual-editor')
+    await waitFor(() =>
+      expect(page.querySelector('[data-placeholder]')).toHaveAttribute(
+        'data-placeholder',
+        'Type “/” for blocks…',
+      ),
+    )
   })
 
   it('pins and unpins, and the home page reflects it', async () => {
@@ -589,7 +621,8 @@ describe('document page', () => {
     expect(await screen.findByLabelText('Título del documento')).toHaveValue('Plan')
     expect(screen.getByRole('button', { name: 'Fijar' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Eliminar' })).toBeInTheDocument()
-    expect(screen.getByRole('region', { name: 'Vista previa' })).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: 'Modo de edición' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Visual' })).toBeInTheDocument()
     await waitFor(() =>
       expect(screen.getAllByRole('status').some((el) => el.textContent === 'Guardado')).toBe(true),
     )

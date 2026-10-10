@@ -19,20 +19,20 @@ Web app for storing notes in Markdown, links and file attachments. Inspired by N
 
 ## 2. Stack
 
-| Area            | Choice                                               | Reason                                                                          |
-| --------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------- |
-| Build           | Vite + React 19 + TypeScript                         | Project requirement; typed from the start                                       |
-| Routing         | React Router                                         | Routes `/`, `/doc/:id`, `/folder/:id`                                           |
-| Server state    | TanStack Query                                       | Caching, invalidation, loading states                                           |
-| UI state        | Zustand (minimal)                                    | Sidebar open/closed, editor mode                                                |
-| Editor          | CodeMirror 6 (`@uiw/react-codemirror`)               | Lightweight Markdown editing with syntax highlighting                           |
-| Markdown render | `react-markdown` + `remark-gfm` + `rehype-highlight` | GFM (tables, task lists), highlighted code; raw HTML is never rendered (see §8) |
-| Styles          | Tailwind CSS                                         | Speed; light/dark theme                                                         |
-| i18n            | i18next + react-i18next                              | Multilingual (es/en initially), language detection and manual switcher          |
-| Forms           | React Hook Form + Zod                                | Login/register and form validation                                              |
-| Tests           | Vitest + Testing Library                             | Integrated with Vite                                                            |
-| API client      | `openapi-typescript` + `openapi-fetch`               | Types and client generated from the Symfony backend's OpenAPI definition        |
-| Quality         | ESLint + Prettier                                    | —                                                                               |
+| Area         | Choice                                                                          | Reason                                                                   |
+| ------------ | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| Build        | Vite + React 19 + TypeScript                                                    | Project requirement; typed from the start                                |
+| Routing      | React Router                                                                    | Routes `/`, `/doc/:id`, `/folder/:id`                                    |
+| Server state | TanStack Query                                                                  | Caching, invalidation, loading states                                    |
+| UI state     | Zustand (minimal)                                                               | Sidebar open/closed, editor mode                                         |
+| Editor       | Milkdown (ProseMirror + remark) visual editor; CodeMirror 6 for Markdown source | WYSIWYG over Markdown (see [wysiwyg-editor.md](./wysiwyg-editor.md))     |
+| Markdown     | remark (inside Milkdown), GFM preset                                            | Tables, task lists, footnotes; raw HTML is kept as inert text (see §8)   |
+| Styles       | Tailwind CSS                                                                    | Speed; light/dark theme                                                  |
+| i18n         | i18next + react-i18next                                                         | Multilingual (es/en initially), language detection and manual switcher   |
+| Forms        | React Hook Form + Zod                                                           | Login/register and form validation                                       |
+| Tests        | Vitest + Testing Library                                                        | Integrated with Vite                                                     |
+| API client   | `openapi-typescript` + `openapi-fetch`                                          | Types and client generated from the Symfony backend's OpenAPI definition |
+| Quality      | ESLint + Prettier                                                               | —                                                                        |
 
 ## 3. Data model
 
@@ -93,8 +93,8 @@ interface Attachment {
 Implemented. The backend calls them _notes_.
 
 - **Create** a document with the sidebar button or `Ctrl/Cmd+N`. Browsers reserve that combination for "new window" and often never deliver it to the page, so `Alt+N` works too. The document is named "Untitled" in the active language and opens with that title selected, so typing names it. Activating it twice in a row creates one document.
-- **Edit** the title (header field) and the content (CodeMirror 6 Markdown editor, loaded on demand). The document opens from a snapshot: changes made elsewhere while it is open are not merged in (last write wins).
-- **View**: _Edit_, _Split_ (default) and _Preview_, remembered in the browser. The preview updates as you type.
+- **Edit** the title (header field) and the content. The content is edited **visually by default** (Notion-like blocks: headings, lists, tasks, quotes, code, tables, images; `/` menu and a floating toolbar) and the stored format stays Markdown. A _Visual / Markdown_ switch in the header opens the source (CodeMirror 6) instead; the choice is remembered per document in the browser. Full behaviour, safety rules and round-trip guarantees: [wysiwyg-editor.md](./wysiwyg-editor.md). The document opens from a snapshot: changes made elsewhere while it is open are not merged in (last write wins).
+- Opening a document never rewrites it: only a user edit is reported (and then saved). When the visual editor cannot show a document exactly (e.g. reference-style links) it says so and offers _Edit as Markdown_.
 - **Autosave** with an 800 ms debounce and a status indicator (_Saved_ / _Saving…_ / _Couldn't save — retrying…_):
   - only the fields that changed are sent, one request at a time (edits made while saving go out right after);
   - a failure never clears the screen: it is retried after 2, 5, 15 and then every 30 seconds, or at once if the user types again;
@@ -138,8 +138,8 @@ Implemented for documents and folders (`src/features/attachments`):
 - **Attach**: _Attach files_ button (several at once) or drop files anywhere on the document or folder page. Files are sent one after another, each with a progress bar; a failed one stays in the list with _Try again_ and _Dismiss_ (dismissing cancels an upload in flight).
 - **Limit**: 50 MB per file (`MAX_ATTACHMENT_BYTES`). Files over it, and empty files, are refused in the browser without calling the server; the backend enforces the real limit.
 - **List** of the files with size, _Download_ and _Delete_ (asks first; the file goes to the trash). Downloads need the session, so the bytes are fetched through the data layer and handed to the browser as an object URL.
-- **Images**: png, jpeg, gif and webp (the types the backend serves inline) get _Insert_, which writes `![name](attachment:ID)` at the cursor (at the end when only the preview is open). The preview resolves `attachment:ID` through the data layer. The scheme is accepted for images only and the id may contain nothing but letters, digits, `_` and `-`; links, other schemes and path-like ids stay blocked.
-- A drop is taken before CodeMirror sees it (which would paste the file's bytes into the text), and only drags that carry files are treated as drops.
+- **Images**: png, jpeg, gif and webp (the types the backend serves inline) get _Insert_, which writes `![name](attachment:ID)` at the cursor of the visual or the source editor. The visual editor resolves `attachment:ID` through the data layer. The scheme is accepted for images only and the id may contain nothing but letters, digits, `_` and `-`; links, other schemes and path-like ids stay blocked.
+- A drop is taken before either editor sees it (CodeMirror would paste the file's bytes into the text), and only drags that carry files are treated as drops.
 - Not done: files at the top level (the backend has none), showing files as rows in the tree.
 
 ### 4.5 Search
@@ -185,18 +185,18 @@ Implemented (`src/features/search`):
 
 ## 5. Screens and routes
 
-| Route         | Content                                     |
-| ------------- | ------------------------------------------- |
-| `/login`      | Sign in (public)                            |
-| `/register`   | Sign up (public)                            |
-| `/`           | Home: recent and pinned documents           |
-| `/doc/:id`    | Document editor/preview + attachments panel |
-| `/folder/:id` | Folder contents                             |
-| `/link/:id`   | Link page (edit, open, delete)              |
-| `/links`      | Link list                                   |
-| `/trash`      | Trash: restore or delete for good           |
-| `/tag/:name`  | Items with that tag                         |
-| `*`           | 404                                         |
+| Route         | Content                                    |
+| ------------- | ------------------------------------------ |
+| `/login`      | Sign in (public)                           |
+| `/register`   | Sign up (public)                           |
+| `/`           | Home: recent and pinned documents          |
+| `/doc/:id`    | Visual/Markdown editor + attachments panel |
+| `/folder/:id` | Folder contents                            |
+| `/link/:id`   | Link page (edit, open, delete)             |
+| `/links`      | Link list                                  |
+| `/trash`      | Trash: restore or delete for good          |
+| `/tag/:name`  | Items with that tag                        |
+| `*`           | 404                                        |
 
 Layout: **Sidebar** (left) · **Main content** · optional **right side panel** (attachments, metadata) on `/doc/:id`.
 
@@ -284,7 +284,7 @@ src/
   app/            # providers, router, layout, protected routes
   features/
     auth/         # login, register, session
-    documents/    # editor, preview, list
+    documents/    # visual editor (visual/), Markdown editor, list
     folders/
     links/
     attachments/
@@ -301,7 +301,7 @@ src/
 ## 8. Non-functional requirements
 
 - First load < 200 KB gzipped JS on the initial route (lazy-load the editor).
-- Markdown never renders raw HTML: `rehype-raw` is not used, so markup typed in a note is shown as text and cannot run, links and images only keep http(s), mailto, tel and relative URLs, external links open with `noopener noreferrer nofollow` and images are requested without a referrer. A sanitizer was deliberately not added on top: with raw HTML off it protects nothing more, and it silently deletes legitimate text such as `Vec<String>`. If raw HTML is ever enabled, `rehype-sanitize` must come with it (the tests fail otherwise). No `dangerouslySetInnerHTML` anywhere.
+- The editors never turn raw HTML into DOM: markup typed in a note is kept as inert text (Milkdown's `html` node is rendered with `textContent`) and written back unchanged, so `Vec<String>` and `<script>` both survive as text and nothing in a note can run. Links and images only keep http(s), mailto, tel, relative and `#` addresses (images also `attachment:ID`); anything else stays as the text it was typed as. External links open with `noopener noreferrer nofollow` and external images are requested without a referrer. No `dangerouslySetInnerHTML` anywhere. (`react-markdown`, `rehype-highlight` and `remark-gfm` were removed with the preview.)
 - Security: access JWT in memory only, refresh token rotated by the backend, strict CSP, CORS configured for the frontend origin, attachments served with `Content-Disposition` and content type verified by the backend.
 - On sign-out the TanStack Query cache is cleared so data does not leak between users.
 - Lint rule forbidding string literals in JSX (`eslint-plugin-i18next`) and a check that `es` and `en` have the same keys.
@@ -327,7 +327,7 @@ src/
 1. ✅ **Bootstrap**: Vite + React + TS, Tailwind, ESLint/Prettier, Vitest, router, i18n (es/en) and an empty layout.
 2. ✅ **Data layer** (interfaces, HTTP client with session renewal, mock adapter, contract and end-to-end tests).
 3. ✅ **Authentication**: login, register, "check your email" and activation pages, protected routes, session restore and renewal, language selector saved to the profile.
-4. ✅ **Documents**: create, edit, delete and pin; Markdown editor with preview; autosave.
+4. ✅ **Documents**: create, edit, delete and pin; visual (WYSIWYG) editor over Markdown with a source mode; autosave.
 5. ✅ **Folders, nesting and tags**: tree sidebar (folders and documents that hold documents), breadcrumbs, folder page, create / rename / move / delete, drag & drop; tag editor, tag list and tag page.
 6. ✅ **Links**: link page with autosave, creation dialog from every entry point, link list, links in the tree and breadcrumbs.
 7. ✅ **Attachments**: upload with progress (button and drop), download, delete, images embedded in documents, files on folder pages.

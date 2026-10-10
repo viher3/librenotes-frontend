@@ -29,81 +29,83 @@ body {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
-/* Syntax highlighting of code blocks in the preview (highlight.js token classes) */
-.prose pre code.hljs {
-  background: transparent;
-  padding: 0;
+/* Visual (WYSIWYG) editor: Milkdown/ProseMirror content, styled with the typography plugin plus what it lacks. */
+.visual-editor .milkdown {
+  height: 100%;
 }
-.hljs-comment,
-.hljs-quote {
-  color: #6b7280;
-  font-style: italic;
+.visual-editor .ProseMirror {
+  @apply prose prose-neutral dark:prose-invert max-w-none min-h-full p-4 break-words outline-none;
 }
-.hljs-keyword,
-.hljs-selector-tag,
-.hljs-literal,
-.hljs-doctag {
-  color: #7c3aed;
+.visual-editor .ProseMirror > * + * {
+  margin-top: 0.75em;
 }
-.hljs-string,
-.hljs-regexp,
-.hljs-addition,
-.hljs-attribute {
-  color: #047857;
+.visual-editor .ProseMirror p.is-empty::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  @apply text-neutral-500;
 }
-.hljs-number,
-.hljs-symbol,
-.hljs-bullet {
-  color: #b45309;
+/* Lists draw their own marker from data-label (bullets, numbers, task boxes). */
+.visual-editor .ProseMirror ul,
+.visual-editor .ProseMirror ol {
+  list-style: none;
+  padding-inline-start: 0;
 }
-.hljs-title,
-.hljs-section,
-.hljs-name,
-.hljs-built_in,
-.hljs-type {
-  color: #1d4ed8;
+.visual-editor .ProseMirror li {
+  position: relative;
+  padding-inline-start: 1.75rem;
+  margin: 0.25rem 0;
 }
-.hljs-variable,
-.hljs-template-variable,
-.hljs-attr {
-  color: #be123c;
+.visual-editor .ProseMirror li::before {
+  content: attr(data-label);
+  position: absolute;
+  inset-inline-start: 0.25rem;
+  @apply text-neutral-600 dark:text-neutral-400;
 }
-.hljs-deletion {
-  color: #b91c1c;
+.visual-editor .ProseMirror li[data-item-type='task']::before {
+  content: '';
+  top: 0.35em;
+  width: 1rem;
+  height: 1rem;
+  cursor: pointer;
+  border: 2px solid currentColor;
+  border-radius: 0.25rem;
 }
-[data-theme='dark'] .hljs-comment,
-[data-theme='dark'] .hljs-quote {
-  color: #9ca3af;
+.visual-editor .ProseMirror li[data-item-type='task'][data-checked='true']::before {
+  content: '✓';
+  display: grid;
+  place-items: center;
+  font-size: 0.75rem;
+  line-height: 1;
+  @apply border-indigo-600 bg-indigo-600 text-white;
 }
-[data-theme='dark'] .hljs-keyword,
-[data-theme='dark'] .hljs-selector-tag,
-[data-theme='dark'] .hljs-literal,
-[data-theme='dark'] .hljs-doctag {
-  color: #c4b5fd;
+.visual-editor .ProseMirror li[data-item-type='task'][data-checked='true'] > p {
+  @apply text-neutral-500 line-through;
 }
-[data-theme='dark'] .hljs-string,
-[data-theme='dark'] .hljs-regexp,
-[data-theme='dark'] .hljs-addition,
-[data-theme='dark'] .hljs-attribute {
-  color: #6ee7b7;
+.visual-editor .ProseMirror li > p {
+  margin: 0;
 }
-[data-theme='dark'] .hljs-number,
-[data-theme='dark'] .hljs-symbol,
-[data-theme='dark'] .hljs-bullet {
-  color: #fcd34d;
+.visual-editor .ProseMirror pre {
+  @apply overflow-auto rounded-md bg-neutral-100 p-3 dark:bg-neutral-900;
 }
-[data-theme='dark'] .hljs-title,
-[data-theme='dark'] .hljs-section,
-[data-theme='dark'] .hljs-name,
-[data-theme='dark'] .hljs-built_in,
-[data-theme='dark'] .hljs-type {
-  color: #93c5fd;
+.visual-editor .ProseMirror pre code {
+  @apply bg-transparent p-0;
 }
-[data-theme='dark'] .hljs-variable,
-[data-theme='dark'] .hljs-template-variable,
-[data-theme='dark'] .hljs-attr {
-  color: #fda4af;
+.visual-editor .ProseMirror table {
+  border-collapse: collapse;
 }
-[data-theme='dark'] .hljs-deletion {
-  color: #fca5a5;
+.visual-editor .ProseMirror th,
+.visual-editor .ProseMirror td {
+  @apply border border-neutral-300 px-2 py-1 dark:border-neutral-700;
+}
+.visual-editor .ProseMirror img[data-state='loading'],
+.visual-editor .ProseMirror img[data-state='error'] {
+  @apply inline-block min-h-8 min-w-24 rounded border border-dashed border-neutral-400 text-sm text-neutral-600 dark:text-neutral-400;
+}
+.visual-editor .ProseMirror img.ProseMirror-selectednode {
+  @apply outline-2 outline-indigo-500;
+}
+.visual-editor .ProseMirror span[data-type='html'] {
+  @apply rounded bg-neutral-100 px-1 font-mono text-sm dark:bg-neutral-800;
 }

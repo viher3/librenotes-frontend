@@ -1,4 +1,4 @@
-import { lazy, Suspense, useDeferredValue, useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { Alert } from '@/components/Alert'
@@ -8,12 +8,11 @@ import { isApiError } from '@/data/errors'
 import type { Note } from '@/data/types'
 import { errorMessage } from '@/features/auth/errors'
 import { Breadcrumbs } from '@/components/Breadcrumbs'
-import { MarkdownPreview } from './MarkdownPreview'
 import { AttachmentsPanel } from '@/features/attachments/AttachmentsPanel'
 import { imageMarkdown } from '@/features/attachments/files'
 import { useAttachmentUploads } from '@/features/attachments/queries'
 import { useFileDrop } from '@/features/attachments/useFileDrop'
-import type { MarkdownEditorHandle } from './MarkdownEditor'
+import type { EditorHandle } from './visual/VisualEditor'
 import { useNewLink } from '@/features/links/NewLinkProvider'
 import { SubDocuments } from './SubDocuments'
 import { TagEditor } from '@/features/tags/TagEditor'
@@ -23,9 +22,10 @@ import { useDeleteNote, useNote, useSaveNote } from './queries'
 import { SaveIndicator } from './SaveIndicator'
 import { useAutosave } from './useAutosave'
 import { useSaveGuards } from './useSaveGuards'
-import { useViewMode, type ViewMode } from './useViewMode'
+import { useEditorMode, type EditorMode } from './useEditorMode'
 
-// CodeMirror and its language support are large: they load only when a document is opened.
+// Both editors are large: only the one in use is loaded.
+const VisualEditor = lazy(() => import('./visual/VisualEditor'))
 const MarkdownEditor = lazy(() => import('./MarkdownEditor'))
 
 const MAX_TITLE_LENGTH = 255
@@ -80,14 +80,15 @@ function DocumentEditor({ note }: { note: Note }) {
   const isNew = (useLocation().state as { isNew?: boolean } | null)?.isNew === true
   const save = useSaveNote(note.id)
   const deleteNote = useDeleteNote()
-  const [mode, setMode] = useViewMode()
+  const [mode, setMode] = useEditorMode(note.id)
   const [pinned, setPinned] = useState(note.pinned)
   const [pinError, setPinError] = useState(false)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const [lossy, setLossy] = useState(false)
   const titleRef = useRef<HTMLInputElement>(null)
   const { createDocument, pending: creating, error: createError } = useNewDocument()
   const newLink = useNewLink()
-  const editor = useRef<MarkdownEditorHandle>(null)
+  const editor = useRef<EditorHandle>(null)
   const uploads = useAttachmentUploads({ type: 'note', id: note.id })
   const { dragging, dropProps } = useFileDrop(uploads.add)
 
@@ -98,7 +99,6 @@ function DocumentEditor({ note }: { note: Note }) {
   })
   const titleMissing = !isTitleValid(draft.title)
   const knownTags = useTags().data?.map((tag) => tag.name) ?? []
-  const preview = useDeferredValue(draft.content)
 
   // A brand-new document opens with its placeholder title selected, so typing names it.
   useEffect(() => {
@@ -135,15 +135,12 @@ function DocumentEditor({ note }: { note: Note }) {
       },
     })
 
-  // Embeds an attached image where the cursor is; without an open editor (preview only) it goes at the end.
+  // Embeds an attached image where the cursor is; while the editor is still loading it goes at the end.
   const insertImage = (attachment: Note['attachments'][number]) => {
     const markup = imageMarkdown(attachment)
     if (editor.current) editor.current.insert(markup)
     else setField('content', `${draft.content}${draft.content === '' ? '' : '\n\n'}${markup}\n`)
   }
-
-  const showEditor = mode !== 'preview'
-  const showPreview = mode !== 'edit'
 
   return (
     <div className="flex h-full min-h-[28rem] flex-col gap-3" {...dropProps}>
@@ -166,7 +163,7 @@ function DocumentEditor({ note }: { note: Note }) {
           status={status}
           problem={titleMissing ? t('status.titleRequired') : undefined}
         />
-        <ViewSwitch mode={mode} onChange={setMode} />
+        <ModeSwitch mode={mode} onChange={setMode} />
         <Button variant="secondary" onClick={() => void togglePin()} aria-pressed={pinned}>
           {pinned ? t('editor.unpin') : t('editor.pin')}
         </Button>
@@ -182,6 +179,18 @@ function DocumentEditor({ note }: { note: Note }) {
       />
 
       {pinError && <Alert tone="error">{t('pinFailed')}</Alert>}
+      {lossy && mode === 'visual' && (
+        <Alert>
+          <span>{t('visual.lossy')}</span>{' '}
+          <Button
+            variant="ghost"
+            className="px-2 py-0.5 text-xs"
+            onClick={() => setMode('markdown')}
+          >
+            {t('visual.editAsMarkdown')}
+          </Button>
+        </Alert>
+      )}
       {createError && <Alert tone="error">{createError}</Alert>}
 
       <SubDocuments
@@ -199,42 +208,36 @@ function DocumentEditor({ note }: { note: Note }) {
         onInsert={insertImage}
       />
 
-      <div
-        className={`grid min-h-0 flex-1 gap-3 ${mode === 'split' ? 'grid-rows-2 md:grid-cols-2 md:grid-rows-1' : ''}`}
-      >
-        {showEditor && (
-          <div className="min-h-0 overflow-auto rounded-md border border-neutral-200 dark:border-neutral-800">
-            <Suspense
-              fallback={
-                <p className="p-3 text-sm text-neutral-600 dark:text-neutral-400">
-                  {t('common:loading')}
-                </p>
-              }
-            >
-              <MarkdownEditor
-                value={draft.content}
-                onChange={(value) => setField('content', value)}
-                label={t('editor.contentLabel')}
-                handleRef={editor}
-                autoFocus={!isNew}
-              />
-            </Suspense>
-          </div>
-        )}
-        {showPreview && (
-          <section
-            aria-label={t('editor.previewLabel')}
-            className="min-h-0 overflow-auto rounded-md border border-neutral-200 p-4 dark:border-neutral-800"
-          >
-            {draft.content.trim() === '' ? (
-              <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                {t('editor.emptyPreview')}
-              </p>
-            ) : (
-              <MarkdownPreview source={preview} />
-            )}
-          </section>
-        )}
+      <div className="min-h-[16rem] flex-1 overflow-auto rounded-md border border-neutral-200 dark:border-neutral-800">
+        <Suspense
+          fallback={
+            <p className="p-3 text-sm text-neutral-600 dark:text-neutral-400">
+              {t('common:loading')}
+            </p>
+          }
+        >
+          {mode === 'visual' ? (
+            <VisualEditor
+              // Another mode or another document starts from a clean editor.
+              key={`visual-${note.id}`}
+              value={draft.content}
+              onChange={(value) => setField('content', value)}
+              label={t('editor.contentLabel')}
+              autoFocus={!isNew}
+              handleRef={editor}
+              onLossy={() => setLossy(true)}
+            />
+          ) : (
+            <MarkdownEditor
+              key={`markdown-${note.id}`}
+              value={draft.content}
+              onChange={(value) => setField('content', value)}
+              label={t('editor.contentLabel')}
+              autoFocus={!isNew}
+              handleRef={editor}
+            />
+          )}
+        </Suspense>
       </div>
 
       {confirmingDelete && (
@@ -262,15 +265,21 @@ function DocumentEditor({ note }: { note: Note }) {
   )
 }
 
-function ViewSwitch({ mode, onChange }: { mode: ViewMode; onChange: (mode: ViewMode) => void }) {
+function ModeSwitch({
+  mode,
+  onChange,
+}: {
+  mode: EditorMode
+  onChange: (mode: EditorMode) => void
+}) {
   const { t } = useTranslation('documents')
   return (
     <div
       role="group"
-      aria-label={t('editor.viewMode')}
+      aria-label={t('editor.modeLabel')}
       className="inline-flex overflow-hidden rounded-md border border-neutral-300 dark:border-neutral-700"
     >
-      {(['edit', 'split', 'preview'] as const).map((value) => (
+      {(['visual', 'markdown'] as const).map((value) => (
         <button
           key={value}
           type="button"
@@ -278,7 +287,7 @@ function ViewSwitch({ mode, onChange }: { mode: ViewMode; onChange: (mode: ViewM
           onClick={() => onChange(value)}
           className={`px-3 py-2 text-sm ${mode === value ? 'bg-neutral-200 font-medium dark:bg-neutral-800' : 'hover:bg-neutral-100 dark:hover:bg-neutral-900'}`}
         >
-          {t(`editor.mode.${value}`)}
+          {value === 'visual' ? t('editor.modeVisual') : t('editor.modeMarkdown')}
         </button>
       ))}
     </div>

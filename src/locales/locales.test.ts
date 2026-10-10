@@ -51,7 +51,14 @@ describe('translations', () => {
         (key) => key in es && es[key] === en[key] && /[a-z]{4,}/i.test(en[key]),
       )
       // Allowed: product names, units and similar that read the same in both languages.
-      const allowed = new Set(['appName', 'language.en', 'language.es', 'shortcut'])
+      const allowed = new Set([
+        'appName',
+        'language.en',
+        'language.es',
+        'shortcut',
+        'editor.modeVisual',
+        'editor.modeMarkdown',
+      ])
       expect(same.filter((key) => !allowed.has(key))).toEqual([])
     })
   })
