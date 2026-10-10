@@ -26,6 +26,20 @@ export const tagKeys = {
   links: (name: string) => [...tagKeys.all, 'links', name] as const,
 }
 
+export const trashKeys = {
+  all: ['trash'] as const,
+}
+
+export const searchKeys = {
+  /** The results of one search text. */
+  query: (q: string) => ['search', q] as const,
+}
+
+export const attachmentKeys = {
+  /** The bytes of one file, for images shown inside documents. */
+  content: (id: ID) => ['attachments', 'content', id] as const,
+}
+
 export const treeKeys = {
   all: ['tree'] as const,
   /** The contents of a folder; `null` is the top level. */
@@ -45,5 +59,6 @@ export function invalidateStructure(queryClient: QueryClient) {
     queryClient.invalidateQueries({ queryKey: noteKeys.all }),
     queryClient.invalidateQueries({ queryKey: tagKeys.all }),
     queryClient.invalidateQueries({ queryKey: linkKeys.all }),
+    queryClient.invalidateQueries({ queryKey: trashKeys.all }),
   ])
 }

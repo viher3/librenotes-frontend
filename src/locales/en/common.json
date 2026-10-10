@@ -5,7 +5,8 @@
     "links": "Links",
     "signIn": "Sign in",
     "signUp": "Create account",
-    "signOut": "Sign out"
+    "signOut": "Sign out",
+    "trash": "Trash"
   },
   "language": {
     "label": "Language",
@@ -26,5 +27,16 @@
     "passwordMin": "Use at least {{count}} characters",
     "passwordMismatch": "The passwords do not match",
     "usernameLength": "Use between {{min}} and {{max}} characters"
+  },
+  "theme": {
+    "label": "Theme",
+    "dark": "Dark",
+    "light": "Light"
+  },
+  "skipToContent": "Skip to content",
+  "menu": {
+    "open": "Open menu",
+    "close": "Close menu",
+    "sidebar": "Sidebar"
   }
 }

@@ -1,0 +1,20 @@
+{
+  "open": "Buscar",
+  "shortcut": "Ctrl K",
+  "title": "Buscar",
+  "label": "Buscar documentos y enlaces",
+  "placeholder": "Buscar documentos y enlaces…",
+  "hint": "Escribe al menos 2 caracteres.",
+  "searching": "Buscando…",
+  "none": "Sin resultados para «{{query}}».",
+  "count": "{{count}} resultado",
+  "count_other": "{{count}} resultados",
+  "showing": "Mostrando los primeros {{shown}} de {{total}}. Afina la búsqueda para acotar.",
+  "results": "Resultados",
+  "document": "Documento",
+  "link": "Enlace",
+  "error": "No hemos podido buscar ahora.",
+  "retry": "Reintentar",
+  "close": "Cerrar",
+  "untitled": "Sin título"
+}

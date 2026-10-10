@@ -11,18 +11,28 @@ import { siteName } from '@/features/links/hostname'
 import { useNewLink } from '@/features/links/NewLinkProvider'
 import { useFolderContents } from '@/features/tree/queries'
 import { Alert } from '@/components/Alert'
+import { AttachmentsPanel } from '@/features/attachments/AttachmentsPanel'
+import { useAttachmentUploads } from '@/features/attachments/queries'
+import { useFileDrop } from '@/features/attachments/useFileDrop'
 
 /** The contents of one folder: its sub-folders, documents and links, with the way back up. */
 export default function FolderPage() {
   const { id = '' } = useParams()
+  // Another folder starts clean: files still uploading must not end up in the wrong place.
+  return <FolderView key={id} id={id} />
+}
+
+function FolderView({ id }: { id: string }) {
   const { t, i18n } = useTranslation('tree')
   const query = useFolderContents(id)
   const { createDocument, pending, error } = useNewDocument()
   const newLink = useNewLink()
+  const uploads = useAttachmentUploads({ type: 'folder', id })
+  const { dragging, dropProps } = useFileDrop(uploads.add)
 
   if (query.isPending) {
     return (
-      <p role="status" className="text-sm text-neutral-500">
+      <p role="status" className="text-sm text-neutral-600 dark:text-neutral-400">
         {t('loading')}
       </p>
     )
@@ -54,13 +64,13 @@ export default function FolderPage() {
     )
   }
 
-  const { folder, subfolders, notes, links } = query.data
+  const { folder, subfolders, notes, links, attachments } = query.data
   if (!folder) return null // the top level is the home page
   const language = i18n.resolvedLanguage ?? 'en'
-  const empty = subfolders.length + notes.length + links.length === 0
+  const empty = subfolders.length + notes.length + links.length + attachments.length === 0
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-5" {...dropProps}>
       <Breadcrumbs path={folder.path} current={folder.name} />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-2xl font-semibold">{folder.name}</h2>
@@ -82,7 +92,7 @@ export default function FolderPage() {
       {error && <Alert tone="error">{error}</Alert>}
 
       {empty && (
-        <p className="rounded-lg border border-dashed border-neutral-300 p-8 text-center text-sm text-neutral-500 dark:border-neutral-700">
+        <p className="rounded-lg border border-dashed border-neutral-300 p-8 text-center text-sm text-neutral-600 dark:text-neutral-400 dark:border-neutral-700">
           {t('folderPage.empty')}
         </p>
       )}
@@ -120,6 +130,12 @@ export default function FolderPage() {
           ))}
         </CardSection>
       )}
+      <AttachmentsPanel
+        owner={{ type: 'folder', id: folder.id }}
+        attachments={attachments}
+        uploads={uploads}
+        dragging={dragging}
+      />
     </div>
   )
 }

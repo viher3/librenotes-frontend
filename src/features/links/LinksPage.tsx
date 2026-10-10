@@ -33,7 +33,7 @@ export default function LinksPage() {
       )}
 
       {query.isPending && (
-        <p role="status" className="text-sm text-neutral-500">
+        <p role="status" className="text-sm text-neutral-600 dark:text-neutral-400">
           {t('common:loading')}
         </p>
       )}
@@ -41,7 +41,9 @@ export default function LinksPage() {
       {query.isSuccess && links.length === 0 && (
         <div className="rounded-lg border border-dashed border-neutral-300 p-8 text-center dark:border-neutral-700">
           <p className="font-medium">{t('list.empty')}</p>
-          <p className="mt-1 text-sm text-neutral-500">{t('list.emptyHint')}</p>
+          <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+            {t('list.emptyHint')}
+          </p>
         </div>
       )}
 

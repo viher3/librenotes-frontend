@@ -47,7 +47,7 @@ export function MoveDialog({ node, name, onMove, onClose }: MoveDialogProps) {
 
   return (
     <Modal title={t('moveDialog.title', { name })} width="md" busy={busy} onClose={onClose}>
-      <p className="mt-1 text-sm text-neutral-500">{t('moveDialog.hint')}</p>
+      <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">{t('moveDialog.hint')}</p>
       {failure && (
         <div className="mt-3">
           <Alert tone="error">{failure}</Alert>
@@ -132,7 +132,7 @@ function PickerBranch({ parent, level, ...rest }: PickerProps & { parent: Parent
 
   if (query.isPending) {
     return (
-      <li className="px-2 py-1 text-xs text-neutral-500" style={pad}>
+      <li className="px-2 py-1 text-xs text-neutral-600 dark:text-neutral-400" style={pad}>
         <span role="status">{t('loading')}</span>
       </li>
     )
@@ -222,7 +222,7 @@ function PickerRow({
             type="button"
             aria-label={isOpen ? t('collapse', { name: label }) : t('expand', { name: label })}
             onClick={() => rest.toggle(rowKey)}
-            className="grid size-5 place-items-center rounded text-xs text-neutral-500 hover:bg-neutral-200 dark:hover:bg-neutral-700"
+            className="grid size-5 place-items-center rounded text-xs text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700"
           >
             <span aria-hidden="true" className={isOpen ? 'rotate-90' : ''}>
               {CHEVRON}
@@ -234,7 +234,9 @@ function PickerRow({
         <span aria-hidden="true">{icon}</span>
         <span className="min-w-0 flex-1 truncate">{label}</span>
         {isSelf ? (
-          <span className="text-xs text-neutral-500">{t('moveDialog.itself')}</span>
+          <span className="text-xs text-neutral-600 dark:text-neutral-400">
+            {t('moveDialog.itself')}
+          </span>
         ) : (
           <PickButton
             target={label}

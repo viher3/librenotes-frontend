@@ -18,3 +18,8 @@ export function useRepositories(): Repositories {
   if (!repositories) throw new Error('useRepositories must be used inside <DataProvider>')
   return repositories
 }
+
+/** Like `useRepositories`, but `null` outside a provider (for components that also render without the app). */
+export function useOptionalRepositories(): Repositories | null {
+  return useContext(DataContext)
+}

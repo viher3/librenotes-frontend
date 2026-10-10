@@ -11,11 +11,11 @@ export function TagList() {
 
   return (
     <details open className="group/tags shrink-0">
-      <summary className="cursor-pointer text-xs font-semibold tracking-wide text-neutral-500 uppercase select-none">
+      <summary className="cursor-pointer text-xs font-semibold tracking-wide text-neutral-600 dark:text-neutral-400 uppercase select-none">
         {t('title')}
       </summary>
       {query.isSuccess && tags.length === 0 ? (
-        <p className="mt-1 text-xs text-neutral-500">{t('list.empty')}</p>
+        <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">{t('list.empty')}</p>
       ) : (
         <ul aria-label={t('title')} className="mt-1 flex max-h-36 flex-col gap-0.5 overflow-y-auto">
           {tags.map(({ name, count }) => (
@@ -32,7 +32,7 @@ export function TagList() {
                 }
               >
                 <span className="truncate">{name}</span>
-                <span className="text-xs text-neutral-500">{count}</span>
+                <span className="text-xs text-neutral-600 dark:text-neutral-400">{count}</span>
               </NavLink>
             </li>
           ))}

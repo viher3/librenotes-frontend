@@ -46,7 +46,7 @@ export function LoginPage() {
     <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
       <div>
         <h1 className="text-xl font-semibold">{t('login.title')}</h1>
-        <p className="text-sm text-neutral-500">{t('login.subtitle')}</p>
+        <p className="text-sm text-neutral-600 dark:text-neutral-400">{t('login.subtitle')}</p>
       </div>
 
       {expired && <Alert tone="info">{t('login.sessionExpired')}</Alert>}
@@ -72,7 +72,7 @@ export function LoginPage() {
         {isSubmitting ? t('login.submitting') : t('login.submit')}
       </Button>
 
-      <p className="text-center text-sm text-neutral-500">
+      <p className="text-center text-sm text-neutral-600 dark:text-neutral-400">
         {t('login.noAccount')}{' '}
         <Link to="/register" className="font-medium text-indigo-600 underline dark:text-indigo-400">
           {t('login.createAccount')}

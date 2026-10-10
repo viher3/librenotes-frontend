@@ -88,7 +88,7 @@ export function TagEditor({ tags, onChange, suggestions = [] }: TagEditorProps) 
                 type="button"
                 aria-label={t('editor.remove', { name })}
                 onClick={() => remove(name)}
-                className="ms-1 grid size-5 place-items-center rounded-full text-neutral-500 hover:bg-neutral-200 hover:text-neutral-900 dark:hover:bg-neutral-700 dark:hover:text-neutral-100"
+                className="ms-1 grid size-5 place-items-center rounded-full text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 hover:text-neutral-900 dark:hover:bg-neutral-700 dark:hover:text-neutral-100"
               >
                 <span aria-hidden="true">{REMOVE}</span>
               </button>

@@ -27,7 +27,7 @@ export default function LinkPage() {
 
   if (query.isPending) {
     return (
-      <p role="status" className="text-sm text-neutral-500">
+      <p role="status" className="text-sm text-neutral-600 dark:text-neutral-400">
         {t('common:loading')}
       </p>
     )

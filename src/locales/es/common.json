@@ -5,7 +5,8 @@
     "links": "Enlaces",
     "signIn": "Iniciar sesión",
     "signUp": "Crear cuenta",
-    "signOut": "Cerrar sesión"
+    "signOut": "Cerrar sesión",
+    "trash": "Papelera"
   },
   "language": {
     "label": "Idioma",
@@ -26,5 +27,16 @@
     "passwordMin": "Usa al menos {{count}} caracteres",
     "passwordMismatch": "Las contraseñas no coinciden",
     "usernameLength": "Usa entre {{min}} y {{max}} caracteres"
+  },
+  "theme": {
+    "label": "Tema",
+    "dark": "Oscuro",
+    "light": "Claro"
+  },
+  "skipToContent": "Saltar al contenido",
+  "menu": {
+    "open": "Abrir menú",
+    "close": "Cerrar menú",
+    "sidebar": "Barra lateral"
   }
 }

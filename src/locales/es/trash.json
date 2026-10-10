@@ -1,0 +1,31 @@
+{
+  "title": "Papelera",
+  "intro": "Lo eliminado se queda aquí hasta que lo borres definitivamente. Un documento vuelve con todo lo que tenía dentro.",
+  "empty": "La papelera está vacía.",
+  "loadError": "No hemos podido cargar la papelera.",
+  "retry": "Reintentar",
+  "deleted": "Eliminado {{when}}",
+  "restore": "Restaurar",
+  "restoreLabel": "Restaurar {{name}}",
+  "deleteForever": "Eliminar para siempre",
+  "deleteForeverLabel": "Eliminar {{name}} para siempre",
+  "emptyTrash": "Vaciar papelera",
+  "sections": {
+    "folders": "Carpetas",
+    "notes": "Documentos",
+    "links": "Enlaces",
+    "attachments": "Archivos"
+  },
+  "confirmDelete": {
+    "title": "¿Eliminar definitivamente?",
+    "body": "«{{name}}» se eliminará de forma permanente. No se puede deshacer.",
+    "confirm": "Eliminar para siempre",
+    "cancel": "Cancelar"
+  },
+  "confirmEmpty": {
+    "title": "¿Vaciar la papelera?",
+    "body": "Todo lo que hay en la papelera se eliminará de forma permanente. No se puede deshacer.",
+    "confirm": "Vaciar papelera",
+    "cancel": "Cancelar"
+  }
+}

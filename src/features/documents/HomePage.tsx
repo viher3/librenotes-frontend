@@ -23,7 +23,7 @@ function DocumentCard({ note }: { note: NoteSummary }) {
           )}
           <span className="truncate">{note.title}</span>
         </span>
-        <span className="text-xs text-neutral-500">
+        <span className="text-xs text-neutral-600 dark:text-neutral-400">
           {t('home.updated', {
             when: formatRelativeTime(note.updatedAt, i18n.resolvedLanguage ?? 'en'),
           })}
@@ -49,7 +49,9 @@ function Section({ title, notes }: { title: string; notes: NoteSummary[] }) {
   if (notes.length === 0) return null
   return (
     <section aria-label={title} className="flex flex-col gap-2">
-      <h3 className="text-sm font-semibold tracking-wide text-neutral-500 uppercase">{title}</h3>
+      <h3 className="text-sm font-semibold tracking-wide text-neutral-600 dark:text-neutral-400 uppercase">
+        {title}
+      </h3>
       <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
         {notes.map((note) => (
           <DocumentCard key={note.id} note={note} />
@@ -102,7 +104,9 @@ export function HomePage() {
       {isEmpty && (
         <div className="rounded-lg border border-dashed border-neutral-300 p-8 text-center dark:border-neutral-700">
           <p className="font-medium">{t('home.empty')}</p>
-          <p className="mt-1 text-sm text-neutral-500">{t('home.emptyHint')}</p>
+          <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+            {t('home.emptyHint')}
+          </p>
         </div>
       )}
 

@@ -5,7 +5,9 @@ import { Link } from 'react-router-dom'
 export function CardSection({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section aria-label={title} className="flex flex-col gap-2">
-      <h3 className="text-sm font-semibold tracking-wide text-neutral-500 uppercase">{title}</h3>
+      <h3 className="text-sm font-semibold tracking-wide text-neutral-600 dark:text-neutral-400 uppercase">
+        {title}
+      </h3>
       <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">{children}</ul>
     </section>
   )
@@ -31,7 +33,9 @@ export function ItemCard({ to, href, icon, title, detail }: ItemCardProps) {
         <span aria-hidden="true">{icon}</span>
         <span className="truncate">{title}</span>
       </span>
-      {detail && <span className="truncate text-xs text-neutral-500">{detail}</span>}
+      {detail && (
+        <span className="truncate text-xs text-neutral-600 dark:text-neutral-400">{detail}</span>
+      )}
     </>
   )
   return (

@@ -29,7 +29,9 @@ export function SubDocuments({
       className="flex flex-wrap items-center gap-2 text-sm"
       data-branch={branchKey('note', noteId)}
     >
-      <h3 className="font-medium text-neutral-500">{t('subDocuments.title')}</h3>
+      <h3 className="font-medium text-neutral-600 dark:text-neutral-400">
+        {t('subDocuments.title')}
+      </h3>
       {notes.map((note) => (
         <Link
           key={note.id}
@@ -51,7 +53,7 @@ export function SubDocuments({
         </Link>
       ))}
       {!hasChildren && !query.isPending && (
-        <span className="text-neutral-500">{t('subDocuments.none')}</span>
+        <span className="text-neutral-600 dark:text-neutral-400">{t('subDocuments.none')}</span>
       )}
       <Button variant="ghost" className="px-2 py-0.5 text-xs" onClick={onAdd} disabled={adding}>
         {t('subDocuments.add')}

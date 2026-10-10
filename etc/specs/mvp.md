@@ -122,7 +122,7 @@ Everything lives in one **tree** in the sidebar, like a workspace of pages: fold
   - Names are trimmed and lower-cased and duplicates are ignored, as the backend does. Longer than 50 characters or more than 20 tags are refused on the spot with a message, so an autosave never fails because of a tag. Tags are saved by the same autosave as the text.
   - The sidebar lists every tag in use with how many items carry it, most used first, and follows changes (tagging, deleting) without reloading.
   - `/tag/:name` lists the documents and links that carry a tag (newest first, 20 at a time, _Show more_). The address is case-insensitive.
-- Files attached to a folder are not shown in the tree yet (attachments are step 7).
+- Files attached to a folder are listed on the folder page (not as rows of the tree).
 
 ### 4.3 Links
 
@@ -133,17 +133,25 @@ Everything lives in one **tree** in the sidebar, like a workspace of pages: fold
 
 ### 4.4 Attachments
 
-- Attach files to a document: button and _drag & drop_ onto the editor.
-- Limit: 50 MB per file (a configuration constant; the backend enforces the real limit and the frontend validates before uploading).
-- List of the document's attachments with download and delete.
-- Images: "insert into document" option, which adds `![name](url)` at the cursor position.
-- Upload progress bar and error handling.
+Implemented for documents and folders (`src/features/attachments`):
+
+- **Attach**: _Attach files_ button (several at once) or drop files anywhere on the document or folder page. Files are sent one after another, each with a progress bar; a failed one stays in the list with _Try again_ and _Dismiss_ (dismissing cancels an upload in flight).
+- **Limit**: 50 MB per file (`MAX_ATTACHMENT_BYTES`). Files over it, and empty files, are refused in the browser without calling the server; the backend enforces the real limit.
+- **List** of the files with size, _Download_ and _Delete_ (asks first; the file goes to the trash). Downloads need the session, so the bytes are fetched through the data layer and handed to the browser as an object URL.
+- **Images**: png, jpeg, gif and webp (the types the backend serves inline) get _Insert_, which writes `![name](attachment:ID)` at the cursor (at the end when only the preview is open). The preview resolves `attachment:ID` through the data layer. The scheme is accepted for images only and the id may contain nothing but letters, digits, `_` and `-`; links, other schemes and path-like ids stay blocked.
+- A drop is taken before CodeMirror sees it (which would paste the file's bytes into the text), and only drags that carry files are treated as drops.
+- Not done: files at the top level (the backend has none), showing files as rows in the tree.
 
 ### 4.5 Search
 
-- Global search box (`Ctrl/Cmd+K`) over document titles and content and link titles.
-- Results with a highlighted snippet; Enter opens the result.
-- Search runs on the backend via `GET /search?q=` (debounced ~300 ms, cancelling the previous request); the frontend does not index content.
+Implemented (`src/features/search`):
+
+- **Search dialog**, opened with `Ctrl/Cmd+K` from anywhere in the signed-in area (also while typing in the editor; the browser's own use of the shortcut is suppressed) or with the sidebar's _Search_ button. Escape closes it and gives the focus back.
+- Searches document titles and content and link titles, notes and addresses. Nothing is sent below 2 characters; typing is debounced (300 ms) and only the answer to the latest text is shown, results of an older text are hidden as soon as the text changes so Enter never opens something that no longer matches.
+- Results: type (document / link), title, snippet and address with the matched terms marked (case-insensitive, characters taken literally), the total, and a note when more than the first 20 matched.
+- **Keyboard** (ARIA combobox + listbox): Up/Down move through the results and wrap around, Enter opens the selected one (`/doc/:id` or `/link/:id`), click opens too.
+- Runs on the backend via `GET /search?q=`; the frontend does not index content.
+- Not done: a full results page, filtering by type or tag from the dialog.
 
 ### 4.6 Authentication
 
@@ -168,10 +176,12 @@ Everything lives in one **tree** in the sidebar, like a workspace of pages: fold
 
 ### 4.8 General
 
-- Light/dark theme: **dark by default** (set via `data-theme="dark"` on `<html>`), with a manual switcher to light; the choice is persisted in `localStorage`.
-- Responsive layout: collapsible sidebar on small screens.
+- Light/dark theme: **dark by default** (set via `data-theme="dark"` on `<html>`), with a switcher in the sidebar and on the sign-in pages; the choice is persisted in `localStorage` (`librenotes.theme`) and also themes the editor.
+- Responsive layout: below 768 px the sidebar is a drawer opened from a top bar; it closes when something is chosen, on Escape and on a click outside, and while closed it is `inert` (out of the tab order and the accessibility tree).
 - Empty, loading and error states in every view.
-- Basic accessibility: keyboard navigation, ARIA labels, adequate contrast.
+- Accessibility: a _Skip to content_ link, named landmarks, keyboard operation of the tree, search, dialogs and menus, `lang` following the interface language, and secondary text at WCAG AA contrast in both themes.
+- **Trash** (`/trash`): lists deleted folders, documents, links and files with _Restore_ and _Delete forever_ (asks first), and _Empty trash_ (asks first). Restoring something whose folder or document is still in the trash explains what to restore first.
+- Translations: a test keeps `es` and `en` in step (same keys and placeholders, nothing left untranslated).
 
 ## 5. Screens and routes
 
@@ -184,6 +194,7 @@ Everything lives in one **tree** in the sidebar, like a workspace of pages: fold
 | `/folder/:id` | Folder contents                             |
 | `/link/:id`   | Link page (edit, open, delete)              |
 | `/links`      | Link list                                   |
+| `/trash`      | Trash: restore or delete for good           |
 | `/tag/:name`  | Items with that tag                         |
 | `*`           | 404                                         |
 
@@ -319,9 +330,9 @@ src/
 4. ✅ **Documents**: create, edit, delete and pin; Markdown editor with preview; autosave.
 5. ✅ **Folders, nesting and tags**: tree sidebar (folders and documents that hold documents), breadcrumbs, folder page, create / rename / move / delete, drag & drop; tag editor, tag list and tag page.
 6. ✅ **Links**: link page with autosave, creation dialog from every entry point, link list, links in the tree and breadcrumbs.
-7. **Attachments**.
-8. **Search** and shortcuts.
-9. Polish: theme, responsive, empty/error states, accessibility, translation review.
+7. ✅ **Attachments**: upload with progress (button and drop), download, delete, images embedded in documents, files on folder pages.
+8. ✅ **Search** and shortcuts: `Ctrl/Cmd+K` search dialog with snippets and keyboard navigation (plus the existing `Ctrl/Alt+N` new document and `Ctrl/Cmd+S` save).
+9. ✅ Polish: theme switcher, responsive drawer, skip link and contrast pass, trash page, translation parity test.
 
 The backend already serves every resource these steps need (see §6), so they can be built against the real API; the `mock` adapter remains useful for unit tests and for working offline.
 

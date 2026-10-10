@@ -360,7 +360,7 @@ export function SidebarTree() {
         <div className="flex items-center justify-between gap-2">
           <h2
             id="tree-title"
-            className="text-xs font-semibold tracking-wide text-neutral-500 uppercase"
+            className="text-xs font-semibold tracking-wide text-neutral-600 dark:text-neutral-400 uppercase"
           >
             {t('title')}
           </h2>

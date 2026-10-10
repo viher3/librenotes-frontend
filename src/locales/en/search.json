@@ -1,0 +1,20 @@
+{
+  "open": "Search",
+  "shortcut": "Ctrl K",
+  "title": "Search",
+  "label": "Search documents and links",
+  "placeholder": "Search documents and links…",
+  "hint": "Type at least 2 characters.",
+  "searching": "Searching…",
+  "none": "No results for “{{query}}”.",
+  "count": "{{count}} result",
+  "count_other": "{{count}} results",
+  "showing": "Showing the first {{shown}} of {{total}}. Refine your search to narrow it down.",
+  "results": "Results",
+  "document": "Document",
+  "link": "Link",
+  "error": "We couldn't search right now.",
+  "retry": "Try again",
+  "close": "Close",
+  "untitled": "Untitled"
+}

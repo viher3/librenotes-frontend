@@ -62,7 +62,7 @@ export function RegisterPage() {
     <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
       <div>
         <h1 className="text-xl font-semibold">{t('register.title')}</h1>
-        <p className="text-sm text-neutral-500">{t('register.subtitle')}</p>
+        <p className="text-sm text-neutral-600 dark:text-neutral-400">{t('register.subtitle')}</p>
       </div>
 
       {failure && <Alert tone="error">{failure}</Alert>}
@@ -101,7 +101,7 @@ export function RegisterPage() {
         {isSubmitting ? t('register.submitting') : t('register.submit')}
       </Button>
 
-      <p className="text-center text-sm text-neutral-500">
+      <p className="text-center text-sm text-neutral-600 dark:text-neutral-400">
         {t('register.haveAccount')}{' '}
         <Link to="/login" className="font-medium text-indigo-600 underline dark:text-indigo-400">
           {t('register.signIn')}

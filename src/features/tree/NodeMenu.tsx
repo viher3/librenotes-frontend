@@ -87,7 +87,7 @@ export function NodeMenu({ name, items }: { name: string; items: MenuItem[] }) {
           const rect = event.currentTarget.getBoundingClientRect()
           setPosition({ top: rect.bottom + 4, left: rect.right })
         }}
-        className="rounded px-1.5 py-0.5 text-neutral-500 opacity-0 group-hover/row:opacity-100 group-focus-within/row:opacity-100 hover:bg-neutral-200 focus-visible:opacity-100 aria-expanded:opacity-100 dark:hover:bg-neutral-700"
+        className="rounded px-1.5 py-0.5 text-neutral-600 dark:text-neutral-400 opacity-0 group-hover/row:opacity-100 group-focus-within/row:opacity-100 hover:bg-neutral-200 focus-visible:opacity-100 aria-expanded:opacity-100 dark:hover:bg-neutral-700"
       >
         <span aria-hidden="true">{ELLIPSIS}</span>
       </button>

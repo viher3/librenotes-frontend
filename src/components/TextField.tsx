@@ -29,7 +29,7 @@ export function TextField({ label, error, hint, className = '', ...input }: Text
         {...input}
       />
       {hint && (
-        <p id={hintId} className="text-xs text-neutral-500">
+        <p id={hintId} className="text-xs text-neutral-600 dark:text-neutral-400">
           {hint}
         </p>
       )}
@@ -79,7 +79,7 @@ export function TextAreaField({
         {...input}
       />
       {hint && (
-        <p id={hintId} className="text-xs text-neutral-500">
+        <p id={hintId} className="text-xs text-neutral-600 dark:text-neutral-400">
           {hint}
         </p>
       )}

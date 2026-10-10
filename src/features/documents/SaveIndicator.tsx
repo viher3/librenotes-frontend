@@ -14,7 +14,10 @@ export function SaveIndicator({ status, problem }: { status: SaveStatus; problem
       : status === 'error'
         ? t('status.error')
         : t('status.saving'))
-  const tone = problem || status === 'error' ? 'text-red-600 dark:text-red-400' : 'text-neutral-500'
+  const tone =
+    problem || status === 'error'
+      ? 'text-red-600 dark:text-red-400'
+      : 'text-neutral-600 dark:text-neutral-400'
   return (
     <p role="status" aria-live="polite" className={`text-sm ${tone}`}>
       {text}

@@ -40,7 +40,7 @@ export default function TagPage() {
 
   if (notes.isPending || links.isPending) {
     return (
-      <p role="status" className="text-sm text-neutral-500">
+      <p role="status" className="text-sm text-neutral-600 dark:text-neutral-400">
         {t('common:loading')}
       </p>
     )
@@ -55,7 +55,7 @@ export default function TagPage() {
 
       {noteItems.length + linkItems.length === 0 && (
         <div className="flex flex-col items-start gap-3">
-          <p className="rounded-lg border border-dashed border-neutral-300 p-8 text-sm text-neutral-500 dark:border-neutral-700">
+          <p className="rounded-lg border border-dashed border-neutral-300 p-8 text-sm text-neutral-600 dark:text-neutral-400 dark:border-neutral-700">
             {t('page.empty', { name })}
           </p>
           <Link

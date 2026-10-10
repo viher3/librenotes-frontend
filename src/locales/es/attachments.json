@@ -1,0 +1,28 @@
+{
+  "title": "Adjuntos",
+  "attach": "Adjuntar archivos",
+  "hint": "Suelta archivos en cualquier parte de esta página o usa «Adjuntar archivos». Hasta 50 MB cada uno.",
+  "dropping": "Suelta los archivos para adjuntarlos",
+  "empty": "Todavía no hay archivos adjuntos.",
+  "download": "Descargar",
+  "downloadLabel": "Descargar {{name}}",
+  "downloadFailed": "No se pudo descargar {{name}}. Inténtalo de nuevo.",
+  "delete": "Eliminar",
+  "deleteLabel": "Eliminar {{name}}",
+  "insert": "Insertar",
+  "insertLabel": "Insertar {{name}} en el documento",
+  "uploading": "Subiendo {{name}}",
+  "progress": "Progreso de la subida de {{name}}",
+  "retry": "Reintentar",
+  "dismiss": "Descartar",
+  "deleteDialog": {
+    "title": "¿Eliminar este archivo?",
+    "body": "«{{name}}» se moverá a la papelera.",
+    "confirm": "Eliminar",
+    "cancel": "Cancelar"
+  },
+  "image": {
+    "loading": "Cargando imagen…",
+    "failed": "No se pudo cargar la imagen."
+  }
+}

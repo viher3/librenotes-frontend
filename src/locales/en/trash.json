@@ -1,0 +1,31 @@
+{
+  "title": "Trash",
+  "intro": "Deleted items stay here until you delete them for good. A document comes back with everything that was under it.",
+  "empty": "The trash is empty.",
+  "loadError": "We couldn't load the trash.",
+  "retry": "Try again",
+  "deleted": "Deleted {{when}}",
+  "restore": "Restore",
+  "restoreLabel": "Restore {{name}}",
+  "deleteForever": "Delete forever",
+  "deleteForeverLabel": "Delete {{name}} forever",
+  "emptyTrash": "Empty trash",
+  "sections": {
+    "folders": "Folders",
+    "notes": "Documents",
+    "links": "Links",
+    "attachments": "Files"
+  },
+  "confirmDelete": {
+    "title": "Delete this for good?",
+    "body": "“{{name}}” will be deleted permanently. This can't be undone.",
+    "confirm": "Delete forever",
+    "cancel": "Cancel"
+  },
+  "confirmEmpty": {
+    "title": "Empty the trash?",
+    "body": "Everything in the trash will be deleted permanently. This can't be undone.",
+    "confirm": "Empty trash",
+    "cancel": "Cancel"
+  }
+}

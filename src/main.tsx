@@ -4,7 +4,10 @@ import { RouterProvider } from 'react-router-dom'
 import { Providers } from '@/app/Providers'
 import { router } from '@/app/router'
 import { createRepositories } from '@/data/create'
+import { applyStoredTheme } from '@/lib/theme'
 import './index.css'
+
+applyStoredTheme()
 
 async function bootstrap() {
   const root = createRoot(document.getElementById('root')!)

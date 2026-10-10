@@ -9,7 +9,10 @@ const hrefOf = (item: PathItem) =>
 export function Breadcrumbs({ path, current }: { path: PathItem[]; current: string }) {
   const { t } = useTranslation('tree')
   return (
-    <nav aria-label={t('breadcrumb.label')} className="text-sm text-neutral-500">
+    <nav
+      aria-label={t('breadcrumb.label')}
+      className="text-sm text-neutral-600 dark:text-neutral-400"
+    >
       <ol className="flex flex-wrap items-center gap-x-1">
         <li>
           <Link to="/" className="hover:underline">

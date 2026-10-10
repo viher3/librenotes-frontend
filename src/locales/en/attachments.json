@@ -1,0 +1,28 @@
+{
+  "title": "Attachments",
+  "attach": "Attach files",
+  "hint": "Drop files anywhere on this page or use “Attach files”. Up to 50 MB each.",
+  "dropping": "Drop the files to attach them",
+  "empty": "No files attached yet.",
+  "download": "Download",
+  "downloadLabel": "Download {{name}}",
+  "downloadFailed": "Couldn't download {{name}}. Try again.",
+  "delete": "Delete",
+  "deleteLabel": "Delete {{name}}",
+  "insert": "Insert",
+  "insertLabel": "Insert {{name}} into the document",
+  "uploading": "Uploading {{name}}",
+  "progress": "Upload progress of {{name}}",
+  "retry": "Try again",
+  "dismiss": "Dismiss",
+  "deleteDialog": {
+    "title": "Delete this file?",
+    "body": "“{{name}}” will be moved to the trash.",
+    "confirm": "Delete",
+    "cancel": "Cancel"
+  },
+  "image": {
+    "loading": "Loading image…",
+    "failed": "The image could not be loaded."
+  }
+}

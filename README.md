@@ -64,6 +64,23 @@ A link has its own page (`/link/:id`) with autosave, like documents, and a list 
 `useNewLink().open(destination?)`, the dialog every "new link" entry point uses. Only `http(s)` addresses are accepted
 (checked in the form and by the backend).
 
+## Attachments (`src/features/attachments`)
+
+`AttachmentsPanel` lists the files of a document or folder; `useAttachmentUploads` sends them one at a time with
+progress and keeps failures for retry. Files need the session, so downloads and embedded images go through the data
+layer (`downloadAttachment`) instead of a plain URL: documents embed an image as `![name](attachment:ID)`.
+
+## Search (`src/features/search`)
+
+`SearchProvider` binds `Ctrl/Cmd+K` and renders `SearchDialog`, a combobox over `GET /search`. Text is debounced and
+results of an older text are never shown for a newer one.
+
+## Theme, layout and trash
+
+`src/lib/theme.ts` holds the dark/light choice (dark by default, saved in `localStorage`); `AppLayout` turns the sidebar
+into a drawer on narrow screens; `src/features/trash` is the trash page. `src/locales/locales.test.ts` fails when a
+translation is missing in one language or its placeholders differ.
+
 ## Structure
 
 See §7 of the spec. UI texts live in `src/locales/<es|en>/*.json`.

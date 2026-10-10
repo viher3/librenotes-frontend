@@ -9,6 +9,11 @@ import type { Note } from '@/data/types'
 import { errorMessage } from '@/features/auth/errors'
 import { Breadcrumbs } from '@/components/Breadcrumbs'
 import { MarkdownPreview } from './MarkdownPreview'
+import { AttachmentsPanel } from '@/features/attachments/AttachmentsPanel'
+import { imageMarkdown } from '@/features/attachments/files'
+import { useAttachmentUploads } from '@/features/attachments/queries'
+import { useFileDrop } from '@/features/attachments/useFileDrop'
+import type { MarkdownEditorHandle } from './MarkdownEditor'
 import { useNewLink } from '@/features/links/NewLinkProvider'
 import { SubDocuments } from './SubDocuments'
 import { TagEditor } from '@/features/tags/TagEditor'
@@ -33,7 +38,7 @@ export default function DocumentPage() {
 
   if (query.isPending) {
     return (
-      <p role="status" className="text-sm text-neutral-500">
+      <p role="status" className="text-sm text-neutral-600 dark:text-neutral-400">
         {t('common:loading')}
       </p>
     )
@@ -82,6 +87,9 @@ function DocumentEditor({ note }: { note: Note }) {
   const titleRef = useRef<HTMLInputElement>(null)
   const { createDocument, pending: creating, error: createError } = useNewDocument()
   const newLink = useNewLink()
+  const editor = useRef<MarkdownEditorHandle>(null)
+  const uploads = useAttachmentUploads({ type: 'note', id: note.id })
+  const { dragging, dropProps } = useFileDrop(uploads.add)
 
   const { draft, status, setField, flush, discard } = useAutosave({
     initial: { title: note.title, content: note.content, tags: note.tags },
@@ -127,11 +135,18 @@ function DocumentEditor({ note }: { note: Note }) {
       },
     })
 
+  // Embeds an attached image where the cursor is; without an open editor (preview only) it goes at the end.
+  const insertImage = (attachment: Note['attachments'][number]) => {
+    const markup = imageMarkdown(attachment)
+    if (editor.current) editor.current.insert(markup)
+    else setField('content', `${draft.content}${draft.content === '' ? '' : '\n\n'}${markup}\n`)
+  }
+
   const showEditor = mode !== 'preview'
   const showPreview = mode !== 'edit'
 
   return (
-    <div className="flex h-full min-h-[28rem] flex-col gap-3">
+    <div className="flex h-full min-h-[28rem] flex-col gap-3" {...dropProps}>
       <Breadcrumbs path={note.path} current={draft.title.trim() || t('untitled')} />
       <div className="flex flex-wrap items-center gap-3">
         <input
@@ -176,18 +191,31 @@ function DocumentEditor({ note }: { note: Note }) {
         onAddLink={() => newLink.open({ type: 'note', id: note.id })}
       />
 
+      <AttachmentsPanel
+        owner={{ type: 'note', id: note.id }}
+        attachments={note.attachments}
+        uploads={uploads}
+        dragging={dragging}
+        onInsert={insertImage}
+      />
+
       <div
         className={`grid min-h-0 flex-1 gap-3 ${mode === 'split' ? 'grid-rows-2 md:grid-cols-2 md:grid-rows-1' : ''}`}
       >
         {showEditor && (
           <div className="min-h-0 overflow-auto rounded-md border border-neutral-200 dark:border-neutral-800">
             <Suspense
-              fallback={<p className="p-3 text-sm text-neutral-500">{t('common:loading')}</p>}
+              fallback={
+                <p className="p-3 text-sm text-neutral-600 dark:text-neutral-400">
+                  {t('common:loading')}
+                </p>
+              }
             >
               <MarkdownEditor
                 value={draft.content}
                 onChange={(value) => setField('content', value)}
                 label={t('editor.contentLabel')}
+                handleRef={editor}
                 autoFocus={!isNew}
               />
             </Suspense>
@@ -199,7 +227,9 @@ function DocumentEditor({ note }: { note: Note }) {
             className="min-h-0 overflow-auto rounded-md border border-neutral-200 p-4 dark:border-neutral-800"
           >
             {draft.content.trim() === '' ? (
-              <p className="text-sm text-neutral-500">{t('editor.emptyPreview')}</p>
+              <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                {t('editor.emptyPreview')}
+              </p>
             ) : (
               <MarkdownPreview source={preview} />
             )}

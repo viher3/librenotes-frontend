@@ -11,7 +11,10 @@ export function returnPath(state: unknown): string {
 export function Loading() {
   const { t } = useTranslation()
   return (
-    <p role="status" className="grid min-h-screen place-items-center text-sm text-neutral-500">
+    <p
+      role="status"
+      className="grid min-h-screen place-items-center text-sm text-neutral-600 dark:text-neutral-400"
+    >
       {t('loading')}
     </p>
   )

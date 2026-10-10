@@ -26,7 +26,11 @@ export function TreeBranch({ parent, level }: { parent: BranchParent; level: num
 
   if (query.isPending) {
     return (
-      <li role="none" className="px-2 py-1 text-xs text-neutral-500" style={indent(level)}>
+      <li
+        role="none"
+        className="px-2 py-1 text-xs text-neutral-600 dark:text-neutral-400"
+        style={indent(level)}
+      >
         <span role="status">{t('loading')}</span>
       </li>
     )
@@ -58,7 +62,11 @@ export function TreeBranch({ parent, level }: { parent: BranchParent; level: num
 
   if (folders.length + notes.length + links.length === 0) {
     return (
-      <li role="none" className="px-2 py-1 text-xs text-neutral-500" style={indent(level)}>
+      <li
+        role="none"
+        className="px-2 py-1 text-xs text-neutral-600 dark:text-neutral-400"
+        style={indent(level)}
+      >
         {t('empty')}
       </li>
     )
@@ -286,7 +294,7 @@ function TreeItem({
             tabIndex={-1}
             aria-label={open ? t('collapse', { name: label }) : t('expand', { name: label })}
             onClick={() => tree.toggle(key)}
-            className="grid size-5 shrink-0 place-items-center rounded text-xs text-neutral-500 hover:bg-neutral-200 dark:hover:bg-neutral-700"
+            className="grid size-5 shrink-0 place-items-center rounded text-xs text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700"
           >
             <span aria-hidden="true" className={open ? 'rotate-90' : ''}>
               {CHEVRON}
