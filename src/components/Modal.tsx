@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, type ReactNode, type RefObject } from 'react'
+import { createPortal } from 'react-dom'
 
 interface ModalProps {
   title: string
@@ -60,7 +61,9 @@ export function Modal({
     }
   }
 
-  return (
+  // Portalled to <body>: a transformed ancestor (the sidebar drawer) would otherwise become the containing block
+  // of `fixed` and the dialog would be centred on it instead of on the viewport.
+  return createPortal(
     <div
       className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4"
       onMouseDown={(event) => event.target === event.currentTarget && !busy && onClose()}
@@ -80,6 +83,7 @@ export function Modal({
         </h2>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

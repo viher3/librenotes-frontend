@@ -77,7 +77,7 @@ describe('opening the search', () => {
   ])('opens with %s, with the cursor in the box', async (_name, keys) => {
     const mock = await signedInBackend()
     const { user } = await renderApp('/', mock)
-    await screen.findByRole('button', { name: 'New document' })
+    await screen.findByRole('button', { name: /Search/ })
 
     await user.keyboard(keys)
 
@@ -114,7 +114,7 @@ describe('opening the search', () => {
   it('takes the shortcut away from the browser', async () => {
     const mock = await signedInBackend()
     await renderApp('/', mock)
-    await screen.findByRole('button', { name: 'New document' })
+    await screen.findByRole('button', { name: /Search/ })
 
     const event = new KeyboardEvent('keydown', {
       key: 'k',
@@ -131,7 +131,7 @@ describe('opening the search', () => {
   it('ignores other combinations with K', async () => {
     const mock = await signedInBackend()
     const { user } = await renderApp('/', mock)
-    await screen.findByRole('button', { name: 'New document' })
+    await screen.findByRole('button', { name: /Search/ })
 
     await user.keyboard('k{Shift>}{Control>}k{/Control}{/Shift}{Alt>}{Control>}k{/Control}{/Alt}')
 

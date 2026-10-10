@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { findEditor } from '@/test/editor'
 import { ACCOUNT, createBackend, renderApp } from '@/test/renderApp'
 import { applyStoredTheme, storedTheme } from '@/lib/theme'
+import { openAccount } from '@/test/createMenu'
 
 async function signedInBackend() {
   const mock = await createBackend()
@@ -46,6 +47,7 @@ describe('theme', () => {
     const mock = await signedInBackend()
     const { user } = await renderApp('/', mock)
 
+    await openAccount(user)
     const select = await screen.findByRole('combobox', { name: 'Theme' })
     expect(select).toHaveValue('dark')
     await user.selectOptions(select, 'light')
@@ -72,6 +74,7 @@ describe('theme', () => {
     const dark = async () => (await findEditor()).state.facet(EditorView.darkTheme)
     expect(await dark()).toBe(true)
 
+    await openAccount(user)
     await user.selectOptions(screen.getByRole('combobox', { name: 'Theme' }), 'light')
 
     await waitFor(async () => expect(await dark()).toBe(false))

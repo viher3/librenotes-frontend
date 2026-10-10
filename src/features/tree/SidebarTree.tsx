@@ -10,7 +10,6 @@ import {
 import { useTranslation } from 'react-i18next'
 import { useMatch, useNavigate } from 'react-router-dom'
 import { Alert } from '@/components/Alert'
-import { Button } from '@/components/Button'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { PromptDialog } from '@/components/PromptDialog'
 import type { Destination, ID, PathItem } from '@/data/types'
@@ -22,6 +21,7 @@ import { useNewLink } from '@/features/links/NewLinkProvider'
 import { DRAG_TYPE, canDrop, destinationOf, parseNode, type DropTarget } from './dnd'
 import { branchKey, useExpandedBranches } from './expanded'
 import { MoveDialog } from './MoveDialog'
+import { NodeMenu } from './NodeMenu'
 import { useFolderContents, useTreeActions, type NodeRef } from './queries'
 import { TreeContext, type TreeAction, type TreeContextValue } from './TreeContext'
 import { TreeBranch } from './TreeBranch'
@@ -37,7 +37,8 @@ export function SidebarTree() {
   const navigate = useNavigate()
   const expanded = useExpandedBranches()
   const actions = useTreeActions()
-  const { createDocument } = useNewDocument()
+  const { createDocument, error: createError } = useNewDocument()
+  const { t: tLinks } = useTranslation('links')
   const newLink = useNewLink()
   const [activeKey, setActiveKey] = useState<string | null>(null)
   const [dialog, setDialog] = useState<Dialog | null>(null)
@@ -364,19 +365,38 @@ export function SidebarTree() {
           >
             {t('title')}
           </h2>
-          <Button
-            variant="ghost"
-            className="px-2 py-0.5 text-xs"
-            onClick={() => {
-              setProblem(null)
-              setDialog({ type: 'newFolder', parentFolderId: null as ID | null })
+          <NodeMenu
+            name={t('title')}
+            trigger={{
+              label: t('create.open'),
+              content: <span aria-hidden="true">+</span>,
+              className:
+                'rounded px-2 py-0.5 text-base leading-none text-neutral-600 hover:bg-neutral-200 aria-expanded:bg-neutral-200 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:aria-expanded:bg-neutral-700',
             }}
-          >
-            {t('newFolder')}
-          </Button>
+            items={[
+              {
+                id: 'new-document',
+                label: tDocs('new'),
+                onSelect: () => onAction({ type: 'newDocument', destination: { type: 'root' } }),
+              },
+              {
+                id: 'new-link',
+                label: tLinks('new'),
+                onSelect: () => onAction({ type: 'newLink', destination: { type: 'root' } }),
+              },
+              {
+                id: 'new-folder',
+                label: t('newFolder'),
+                onSelect: () => {
+                  setProblem(null)
+                  setDialog({ type: 'newFolder', parentFolderId: null as ID | null })
+                },
+              },
+            ]}
+          />
         </div>
 
-        {problem && <Alert tone="error">{problem}</Alert>}
+        {(problem ?? createError) && <Alert tone="error">{problem ?? createError}</Alert>}
 
         <div
           className={`min-h-0 flex-1 overflow-y-auto rounded-md ${overKey === 'root' ? 'bg-indigo-50 ring-2 ring-indigo-500 dark:bg-indigo-950' : ''}`}

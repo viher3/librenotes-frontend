@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ELLIPSIS } from '@/components/glyphs'
 
@@ -13,7 +13,16 @@ export interface MenuItem {
  * The "…" button of a tree row and its menu. The menu is positioned against the viewport so the sidebar's own
  * scrolling cannot clip it, opens on the first item, and closes with Escape, Tab, a click outside or a choice.
  */
-export function NodeMenu({ name, items }: { name: string; items: MenuItem[] }) {
+export function NodeMenu({
+  name,
+  items,
+  trigger,
+}: {
+  name: string
+  items: MenuItem[]
+  /** A visible, tabbable trigger (a section header's "+") instead of the row's hover-only "…". */
+  trigger?: { label: string; content: ReactNode; className?: string }
+}) {
   const { t } = useTranslation('tree')
   const [position, setPosition] = useState<{ top: number; left: number } | null>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
@@ -76,26 +85,30 @@ export function NodeMenu({ name, items }: { name: string; items: MenuItem[] }) {
       <button
         ref={buttonRef}
         type="button"
-        data-menu-button
-        tabIndex={-1}
+        data-menu-button={trigger ? undefined : ''}
+        tabIndex={trigger ? undefined : -1}
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label={t('actions.open', { name })}
+        aria-label={trigger ? trigger.label : t('actions.open', { name })}
         onClick={(event) => {
           event.stopPropagation()
           if (open) return close(false)
           const rect = event.currentTarget.getBoundingClientRect()
           setPosition({ top: rect.bottom + 4, left: rect.right })
         }}
-        className="rounded px-1.5 py-0.5 text-neutral-600 dark:text-neutral-400 opacity-0 group-hover/row:opacity-100 group-focus-within/row:opacity-100 hover:bg-neutral-200 focus-visible:opacity-100 aria-expanded:opacity-100 dark:hover:bg-neutral-700"
+        className={
+          trigger
+            ? (trigger.className ?? '')
+            : 'rounded px-1.5 py-0.5 text-neutral-600 dark:text-neutral-400 opacity-0 group-hover/row:opacity-100 group-focus-within/row:opacity-100 hover:bg-neutral-200 focus-visible:opacity-100 aria-expanded:opacity-100 dark:hover:bg-neutral-700'
+        }
       >
-        <span aria-hidden="true">{ELLIPSIS}</span>
+        {trigger ? trigger.content : <span aria-hidden="true">{ELLIPSIS}</span>}
       </button>
       {open && (
         <div
           ref={menuRef}
           role="menu"
-          aria-label={t('actions.open', { name })}
+          aria-label={trigger ? trigger.label : t('actions.open', { name })}
           onKeyDown={onMenuKeyDown}
           style={{
             position: 'fixed',

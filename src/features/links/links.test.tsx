@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '@/data/errors'
 import { AUTOSAVE_DEFAULTS } from '@/features/documents/useAutosave'
 import { ACCOUNT, createBackend, renderApp } from '@/test/renderApp'
+import { createFromSidebar } from '@/test/createMenu'
 
 type Backend = Awaited<ReturnType<typeof createBackend>>
 type App = Awaited<ReturnType<typeof renderApp>>
@@ -377,7 +378,7 @@ describe('new link dialog', () => {
     const mock = await signedInBackend()
     const { user, router } = await renderApp('/', mock)
 
-    await user.click(await screen.findByRole('button', { name: 'New link' }))
+    await createFromSidebar(user, 'New link')
     const dialog = await screen.findByRole('dialog', { name: 'New link' })
     expect(within(dialog).getByLabelText('Web address')).toHaveFocus()
     await fill(user, { url: '  https://www.example.com/page?x=1  ' })
@@ -400,7 +401,7 @@ describe('new link dialog', () => {
     const mock = await signedInBackend()
     const { user } = await renderApp('/', mock)
 
-    await user.click(await screen.findByRole('button', { name: 'New link' }))
+    await createFromSidebar(user, 'New link')
     const dialog = await fill(user, {
       url: 'https://symfony.com',
       title: 'Symfony docs',
@@ -422,7 +423,7 @@ describe('new link dialog', () => {
     const mock = await signedInBackend()
     const create = vi.spyOn(mock.notes, 'createLink')
     const { user } = await renderApp('/', mock)
-    await user.click(await screen.findByRole('button', { name: 'New link' }))
+    await createFromSidebar(user, 'New link')
     const dialog = await screen.findByRole('dialog', { name: 'New link' })
 
     await user.click(within(dialog).getByRole('button', { name: 'Save link' }))
@@ -449,7 +450,7 @@ describe('new link dialog', () => {
       new ApiError({ status: 0, code: 'network_error' }),
     )
     const { user } = await renderApp('/', mock)
-    await user.click(await screen.findByRole('button', { name: 'New link' }))
+    await createFromSidebar(user, 'New link')
     const dialog = await fill(user, { url: 'https://a.co', note: 'keep me' })
 
     await user.click(within(dialog).getByRole('button', { name: 'Save link' }))
@@ -472,7 +473,7 @@ describe('new link dialog', () => {
         (input) => new Promise((resolve) => (release = () => resolve(original(input)))),
       )
     const { user } = await renderApp('/', mock)
-    await user.click(await screen.findByRole('button', { name: 'New link' }))
+    await createFromSidebar(user, 'New link')
     const dialog = await fill(user, { url: 'https://a.co' })
 
     await user.click(within(dialog).getByRole('button', { name: 'Save link' }))
@@ -489,13 +490,13 @@ describe('new link dialog', () => {
     const mock = await signedInBackend()
     const { user } = await renderApp('/', mock)
 
-    await user.click(await screen.findByRole('button', { name: 'New link' }))
+    await createFromSidebar(user, 'New link')
     await user.click(
       within(await screen.findByRole('dialog')).getByRole('button', { name: 'Cancel' }),
     )
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'New link' }))
+    await createFromSidebar(user, 'New link')
     await screen.findByRole('dialog')
     await user.keyboard('{Escape}')
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()

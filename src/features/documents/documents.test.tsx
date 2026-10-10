@@ -5,6 +5,7 @@ import i18n from '@/lib/i18n'
 import { editorText, setEditorText } from '@/test/editor'
 import { ACCOUNT, createBackend, renderApp } from '@/test/renderApp'
 import { AUTOSAVE_DEFAULTS } from './useAutosave'
+import { createFromSidebar } from '@/test/createMenu'
 
 type Backend = Awaited<ReturnType<typeof createBackend>>
 
@@ -108,7 +109,7 @@ describe('home', () => {
     [
       'the button',
       async (user: Awaited<ReturnType<typeof renderApp>>['user']) =>
-        user.click(await screen.findByRole('button', { name: 'New document', hidden: false })),
+        createFromSidebar(user, 'New document'),
     ],
     [
       'Ctrl+N',
@@ -163,7 +164,7 @@ describe('home', () => {
     await mock.auth.updateProfile({ locale: 'es' })
     const { user } = await renderApp('/', mock)
 
-    await user.click(await screen.findByRole('button', { name: 'Nuevo documento' }))
+    await createFromSidebar(user, 'Nuevo documento', 'Crear nuevo')
 
     expect(await screen.findByLabelText('Título del documento')).toHaveValue('Sin título')
   })
@@ -201,7 +202,7 @@ describe('home', () => {
     )
     const { user } = await renderApp('/', mock)
 
-    await user.click(await screen.findByRole('button', { name: 'New document' }))
+    await createFromSidebar(user, 'New document')
 
     expect((await screen.findAllByRole('alert'))[0]).toHaveTextContent(
       'We could not reach the server',

@@ -2,13 +2,11 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { Button } from '@/components/Button'
-import { LanguageSwitcher } from '@/components/LanguageSwitcher'
-import { ThemeSwitcher } from '@/components/ThemeSwitcher'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
-import { useAuth, useUser } from '@/features/auth/AuthProvider'
+import { UserMenu } from '@/features/auth/UserMenu'
 import { useNewDocument, useNewDocumentShortcut } from '@/features/documents/useNewDocument'
 import { TagList } from '@/features/tags/TagList'
-import { NewLinkProvider, useNewLink } from '@/features/links/NewLinkProvider'
+import { NewLinkProvider } from '@/features/links/NewLinkProvider'
 import { SearchProvider, useSearch } from '@/features/search/SearchProvider'
 import { SidebarTree } from '@/features/tree/SidebarTree'
 import { Alert } from '@/components/Alert'
@@ -33,13 +31,9 @@ export function AppLayout() {
 
 function Shell() {
   const { t } = useTranslation()
-  const user = useUser()
-  const { logout } = useAuth()
-  const { t: tDocs } = useTranslation('documents')
-  const { createDocument, pending, error } = useNewDocument()
+  const { createDocument, error } = useNewDocument()
   useNewDocumentShortcut(createDocument)
   const { t: tLinks } = useTranslation('links')
-  const newLink = useNewLink()
   const search = useSearch()
   const { t: tSearch } = useTranslation('search')
   const desktop = useMediaQuery('(min-width: 768px)')
@@ -119,23 +113,7 @@ function Shell() {
         }`}
       >
         <h1 className="hidden text-lg font-semibold md:block">{t('appName')}</h1>
-        <Button onClick={() => createDocument()} disabled={pending}>
-          {pending ? tDocs('creating') : tDocs('new')}
-        </Button>
-        <Button variant="secondary" onClick={() => newLink.open()}>
-          {tLinks('new')}
-        </Button>
-        <Button
-          variant="secondary"
-          onClick={search.open}
-          className="justify-between"
-          aria-keyshortcuts="Control+K Meta+K"
-        >
-          <span>{tSearch('open')}</span>
-          <kbd className="text-xs text-neutral-600 dark:text-neutral-400">
-            {tSearch('shortcut')}
-          </kbd>
-        </Button>
+        <UserMenu />
         {error && <Alert tone="error">{error}</Alert>}
         <nav className="flex flex-col gap-1">
           <NavLink to="/" end className={linkClass}>
@@ -144,26 +122,23 @@ function Shell() {
           <NavLink to="/links" className={linkClass}>
             {tLinks('nav')}
           </NavLink>
+          <button
+            type="button"
+            onClick={search.open}
+            aria-keyshortcuts="Control+K Meta+K"
+            className={`${linkClass({ isActive: false })} flex w-full items-center justify-between text-start`}
+          >
+            <span>{tSearch('open')}</span>
+            <kbd className="text-xs text-neutral-600 dark:text-neutral-400">
+              {tSearch('shortcut')}
+            </kbd>
+          </button>
           <NavLink to="/trash" className={linkClass}>
             {t('nav.trash')}
           </NavLink>
         </nav>
         <SidebarTree />
         <TagList />
-        <div className="flex flex-col gap-3 border-t border-neutral-200 pt-3 dark:border-neutral-800">
-          <div className="text-sm">
-            <p className="text-xs text-neutral-600 dark:text-neutral-400">
-              {t('userMenu.signedInAs')}
-            </p>
-            <p className="truncate font-medium">{user.username}</p>
-            <p className="truncate text-xs text-neutral-600 dark:text-neutral-400">{user.email}</p>
-          </div>
-          <ThemeSwitcher />
-          <LanguageSwitcher />
-          <Button variant="secondary" onClick={() => void logout()}>
-            {t('nav.signOut')}
-          </Button>
-        </div>
       </aside>
       <main
         id="main"

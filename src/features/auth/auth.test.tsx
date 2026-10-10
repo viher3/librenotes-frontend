@@ -4,6 +4,7 @@ import { activationTokenFor } from '@/data/mock'
 import { ApiError } from '@/data/errors'
 import i18n from '@/lib/i18n'
 import { ACCOUNT, createBackend, renderApp } from '@/test/renderApp'
+import { openAccount } from '@/test/createMenu'
 
 afterEach(() => {
   vi.restoreAllMocks()
@@ -182,6 +183,7 @@ describe('session', () => {
     await mock.auth.login(ACCOUNT.email, ACCOUNT.password)
     const { user, router } = await renderApp('/', mock)
 
+    await openAccount(user)
     await user.click(await screen.findByRole('button', { name: 'Sign out' }))
 
     expect(await screen.findByRole('heading', { name: 'Sign in' })).toBeInTheDocument()
@@ -403,6 +405,7 @@ describe('language', () => {
     const updateProfile = vi.spyOn(mock.auth, 'updateProfile')
     const { user } = await renderApp('/', mock)
 
+    await openAccount(user)
     await user.selectOptions(await screen.findByRole('combobox', { name: 'Language' }), 'es')
 
     expect(await screen.findByRole('heading', { name: 'Tus documentos' })).toBeInTheDocument()
@@ -429,6 +432,7 @@ describe('language', () => {
     )
     const { user } = await renderApp('/', mock)
 
+    await openAccount(user)
     await user.selectOptions(await screen.findByRole('combobox', { name: 'Language' }), 'es')
 
     expect(await screen.findByRole('heading', { name: 'Tus documentos' })).toBeInTheDocument()

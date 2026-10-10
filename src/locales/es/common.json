@@ -19,7 +19,10 @@
   },
   "loading": "Cargando…",
   "userMenu": {
-    "signedInAs": "Sesión iniciada como"
+    "signedInAs": "Sesión iniciada como",
+    "title": "Cuenta",
+    "open": "Opciones de cuenta de {{name}}",
+    "close": "Cerrar"
   },
   "validation": {
     "required": "Este campo es obligatorio",

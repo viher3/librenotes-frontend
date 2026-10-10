@@ -83,5 +83,8 @@
   },
   "drop": {
     "hint": "Drag items onto a folder or document to move them"
+  },
+  "create": {
+    "open": "Create new"
   }
 }

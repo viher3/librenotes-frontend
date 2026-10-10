@@ -83,5 +83,8 @@
   },
   "drop": {
     "hint": "Arrastra elementos sobre una carpeta o un documento para moverlos"
+  },
+  "create": {
+    "open": "Crear nuevo"
   }
 }

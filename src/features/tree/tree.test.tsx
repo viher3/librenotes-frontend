@@ -2,6 +2,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '@/data/errors'
 import { ACCOUNT, createBackend, renderApp } from '@/test/renderApp'
+import { createFromSidebar } from '@/test/createMenu'
 
 type Backend = Awaited<ReturnType<typeof createBackend>>
 
@@ -397,7 +398,7 @@ describe('tree: creating, renaming and deleting', () => {
   it('creates a folder at the top level, validating the name', async () => {
     const mock = await signedInBackend()
     const { user } = await renderApp('/', mock)
-    await user.click(await screen.findByRole('button', { name: 'New folder' }))
+    await createFromSidebar(user, 'New folder')
 
     const dialog = await screen.findByRole('dialog', { name: 'New folder' })
     expect(within(dialog).getByLabelText('Name')).toHaveFocus()
@@ -435,7 +436,7 @@ describe('tree: creating, renaming and deleting', () => {
       new ApiError({ status: 0, code: 'network_error' }),
     )
     const { user } = await renderApp('/', mock)
-    await user.click(await screen.findByRole('button', { name: 'New folder' }))
+    await createFromSidebar(user, 'New folder')
 
     await user.type(await screen.findByLabelText('Name'), 'Ideas')
     await user.click(screen.getByRole('button', { name: 'Create' }))

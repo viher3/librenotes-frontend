@@ -19,7 +19,10 @@
   },
   "loading": "Loading…",
   "userMenu": {
-    "signedInAs": "Signed in as"
+    "signedInAs": "Signed in as",
+    "title": "Account",
+    "open": "Account options for {{name}}",
+    "close": "Close"
   },
   "validation": {
     "required": "This field is required",
