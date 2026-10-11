@@ -47,6 +47,8 @@ export interface MockOptions {
   latencyMs?: number
   /** Start with a demo account and some content. */
   seed?: boolean
+  /** Whether self-registration is open (default `true`). */
+  registrationEnabled?: boolean
 }
 
 export const DEMO_ACCOUNT = { email: 'demo@example.com', password: 'demo12345' } as const
@@ -455,8 +457,14 @@ export function createMockRepositories(options: MockOptions = {}): {
 
   // ---- repositories
   const auth: AuthRepository = {
+    async registrationEnabled() {
+      await wait()
+      return options.registrationEnabled ?? true
+    },
+
     async signUp(input) {
       await wait()
+      if (options.registrationEnabled === false) fail(403, 'user.registration_disabled')
       const errors: string[] = []
       if (!isEmail(input.email)) errors.push('[email] Invalid email')
       if (input.password.length < MIN_PASSWORD_LENGTH) {

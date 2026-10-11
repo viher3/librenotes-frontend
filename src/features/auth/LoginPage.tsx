@@ -11,6 +11,7 @@ import { isEmail } from '@/data/rules'
 import { useAuth } from './AuthProvider'
 import { errorMessage } from './errors'
 import { fieldError } from './fieldError'
+import { useRegistrationEnabled } from './useRegistrationEnabled'
 
 const schema = z.object({
   email: z.string().trim().min(1, 'validation.required').refine(isEmail, 'validation.email'),
@@ -22,6 +23,7 @@ export function LoginPage() {
   const { t } = useTranslation('auth')
   const { state, login } = useAuth()
   const location = useLocation()
+  const registrationEnabled = useRegistrationEnabled()
   const [failure, setFailure] = useState<string | null>(null)
   const {
     register,
@@ -72,12 +74,17 @@ export function LoginPage() {
         {isSubmitting ? t('login.submitting') : t('login.submit')}
       </Button>
 
-      <p className="text-center text-sm text-neutral-600 dark:text-neutral-400">
-        {t('login.noAccount')}{' '}
-        <Link to="/register" className="font-medium text-indigo-600 underline dark:text-indigo-400">
-          {t('login.createAccount')}
-        </Link>
-      </p>
+      {registrationEnabled === true && (
+        <p className="text-center text-sm text-neutral-600 dark:text-neutral-400">
+          {t('login.noAccount')}{' '}
+          <Link
+            to="/register"
+            className="font-medium text-indigo-600 underline dark:text-indigo-400"
+          >
+            {t('login.createAccount')}
+          </Link>
+        </p>
+      )}
     </form>
   )
 }

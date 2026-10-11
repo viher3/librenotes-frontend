@@ -62,6 +62,20 @@ function createAuthRepository(client: HttpClient, session: SessionStore): AuthRe
   const me = async () => toUser(await unwrap(api.GET('/me')))
 
   return {
+    async registrationEnabled() {
+      let response: Response
+      try {
+        response = await client.fetch(
+          new Request(client.url('/'), { headers: { Accept: 'application/json' } }),
+        )
+      } catch (cause) {
+        throw ApiError.network(cause)
+      }
+      if (!response.ok) throw ApiError.fromResponse(response.status, undefined)
+      const body: unknown = await response.json().catch(() => null)
+      return (body as { registration_enabled?: unknown } | null)?.registration_enabled !== false
+    },
+
     async signUp(input) {
       await unwrap(api.POST('/signup', { body: input }))
     },

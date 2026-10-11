@@ -4,16 +4,21 @@ import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { Providers, createQueryClient } from '@/app/Providers'
 import { routes } from '@/app/router'
-import { activationTokenFor, createMockRepositories } from '@/data/mock'
+import { activationTokenFor, createMockRepositories, type MockOptions } from '@/data/mock'
 import i18n from '@/lib/i18n'
 
 export const ACCOUNT = { email: 'ada@example.com', password: 'secret123', username: 'ada' }
 
 /** A mock backend with one activated account (not signed in). */
-export async function createBackend(account = ACCOUNT) {
-  const mock = createMockRepositories()
+export async function createBackend(
+  account = ACCOUNT,
+  { registrationEnabled }: Pick<MockOptions, 'registrationEnabled'> = {},
+) {
+  const settings: MockOptions = {}
+  const mock = createMockRepositories(settings)
   await mock.auth.signUp(account)
   await mock.auth.activate(activationTokenFor(account.email))
+  settings.registrationEnabled = registrationEnabled // applied once the account exists
   return mock
 }
 

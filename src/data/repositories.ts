@@ -34,6 +34,11 @@ import type {
  * (e.g. `security.bad_credentials`, `user.email_already_exists`).
  */
 export interface AuthRepository {
+  /**
+   * Whether the backend accepts self-registrations (`USER_REGISTRATION_ENABLED`). Needs no session.
+   * A backend that does not report it is assumed to accept them.
+   */
+  registrationEnabled(): Promise<boolean>
   /** Creates an inactive account; the user must activate it through the emailed token before logging in. */
   signUp(input: SignUpInput): Promise<void>
   activate(token: string): Promise<void>

@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from './AuthProvider'
+import { useRegistrationEnabled } from './useRegistrationEnabled'
 
 /** Where to send the user after signing in: an internal path remembered by `RequireAuth`, else home. */
 export function returnPath(state: unknown): string {
@@ -42,5 +43,14 @@ export function PublicOnly() {
 
   if (state.status === 'loading') return <Loading />
   if (state.status === 'authenticated') return <Navigate to={returnPath(location.state)} replace />
+  return <Outlet />
+}
+
+/** The sign-up page: when the backend has self-registration turned off, it sends everybody to sign in. */
+export function RegistrationOpen() {
+  const enabled = useRegistrationEnabled()
+
+  if (enabled === undefined) return <Loading />
+  if (!enabled) return <Navigate to="/login" replace />
   return <Outlet />
 }

@@ -28,7 +28,7 @@ export interface HttpClient {
 }
 
 /** Endpoints that are called without a session (and must never trigger a renewal). */
-const PUBLIC_PATHS = new Set(['/login', '/signup', '/users/activate', '/token-renew'])
+const PUBLIC_PATHS = new Set(['/', '/login', '/signup', '/users/activate', '/token-renew'])
 
 export function createHttpClient(options: HttpClientOptions): HttpClient {
   const { session } = options

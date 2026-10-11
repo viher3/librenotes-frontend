@@ -2,7 +2,7 @@ import { createBrowserRouter, type RouteObject } from 'react-router-dom'
 import { ActivatePage } from '@/features/auth/ActivatePage'
 import { AuthLayout } from '@/features/auth/AuthLayout'
 import { CheckEmailPage } from '@/features/auth/CheckEmailPage'
-import { PublicOnly, RequireAuth } from '@/features/auth/guards'
+import { PublicOnly, RegistrationOpen, RequireAuth } from '@/features/auth/guards'
 import { LoginPage } from '@/features/auth/LoginPage'
 import { RegisterPage } from '@/features/auth/RegisterPage'
 import { AppLayout } from './AppLayout'
@@ -17,7 +17,10 @@ export const routes: RouteObject[] = [
         element: <PublicOnly />,
         children: [
           { path: '/login', element: <LoginPage /> },
-          { path: '/register', element: <RegisterPage /> },
+          {
+            element: <RegistrationOpen />,
+            children: [{ path: '/register', element: <RegisterPage /> }],
+          },
           { path: '/register/check-email', element: <CheckEmailPage /> },
         ],
       },

@@ -141,6 +141,32 @@ describe('sign in', () => {
   })
 })
 
+describe('registration switched off', () => {
+  it('hides the create-account link on the sign-in page', async () => {
+    const mock = await createBackend(ACCOUNT, { registrationEnabled: false })
+    await renderApp('/login', mock)
+
+    expect(await screen.findByRole('heading', { name: 'Sign in' })).toBeInTheDocument()
+    await waitFor(() => expect(mock.auth.registrationEnabled()).resolves.toBe(false))
+    expect(screen.queryByRole('link', { name: 'Create an account' })).not.toBeInTheDocument()
+  })
+
+  it('sends visitors of the sign-up page to sign in', async () => {
+    const mock = await createBackend(ACCOUNT, { registrationEnabled: false })
+    const { router } = await renderApp('/register', mock)
+
+    expect(await screen.findByRole('heading', { name: 'Sign in' })).toBeInTheDocument()
+    expect(router.state.location.pathname).toBe('/login')
+  })
+
+  it('keeps the link when registration is open', async () => {
+    const mock = await createBackend()
+    await renderApp('/login', mock)
+
+    expect(await screen.findByRole('link', { name: 'Create an account' })).toBeInTheDocument()
+  })
+})
+
 describe('session', () => {
   it('resumes a stored session without asking for credentials', async () => {
     const mock = await createBackend()

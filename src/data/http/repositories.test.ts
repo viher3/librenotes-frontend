@@ -31,6 +31,21 @@ function setup(routes: Parameters<typeof createFakeServer>[0], refresh?: string)
 }
 
 describe('auth', () => {
+  it('reads whether registration is open from the public root, without credentials', async () => {
+    const { auth, server } = setup({
+      'GET /': () => json({ app: 'x', version: '1', registration_enabled: false }),
+    })
+
+    await expect(auth.registrationEnabled()).resolves.toBe(false)
+    expect(server.calls[0].headers.get('Authorization')).toBeNull()
+  })
+
+  it('assumes registration is open when the backend does not say otherwise', async () => {
+    const { auth } = setup({ 'GET /': () => json({ app: 'x', version: '1' }) })
+
+    await expect(auth.registrationEnabled()).resolves.toBe(true)
+  })
+
   it('logs in, stores the session and returns the mapped user', async () => {
     const { auth, session, server, storage } = setup({
       'POST /login': () => json({ accessToken: 'a1', refreshToken: 'r1' }),
