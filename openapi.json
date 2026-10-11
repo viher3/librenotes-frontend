@@ -812,7 +812,7 @@
       },
       "patch": {
         "tags": ["Folder"],
-        "summary": "Rename folder",
+        "summary": "Update folder (rename it and\/or change its icon)",
         "parameters": [
           {
             "name": "id",
@@ -826,7 +826,7 @@
           "required": true,
           "content": {
             "application\/json": {
-              "schema": { "$ref": "#\/components\/schemas\/RenameFolderRequest" }
+              "schema": { "$ref": "#\/components\/schemas\/UpdateFolderRequest" }
             }
           }
         },
@@ -834,6 +834,12 @@
           "200": { "description": "OK" },
           "400": {
             "description": "Invalid data",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "422": {
+            "description": "The icon is not a single emoji (`icon.invalid`)",
             "content": {
               "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
             }
@@ -2511,14 +2517,28 @@
       "CreateFolderRequest": {
         "required": ["name"],
         "properties": {
+          "icon": {
+            "description": "A single emoji chosen by the user; null means the default icon for the item type.",
+            "type": "string",
+            "maxLength": 32,
+            "nullable": true
+          },
           "name": { "type": "string", "maxLength": 255, "minLength": 1 },
           "parent_folder_id": { "type": "string", "format": "uuid", "nullable": true }
         },
         "type": "object"
       },
-      "RenameFolderRequest": {
-        "required": ["name"],
-        "properties": { "name": { "type": "string", "maxLength": 255, "minLength": 1 } },
+      "UpdateFolderRequest": {
+        "description": "The fields to change; the ones that are not sent stay as they are.",
+        "properties": {
+          "icon": {
+            "description": "A single emoji chosen by the user; null means the default icon for the item type.",
+            "type": "string",
+            "maxLength": 32,
+            "nullable": true
+          },
+          "name": { "type": "string", "maxLength": 255, "minLength": 1 }
+        },
         "type": "object"
       },
       "MoveFolderRequest": {
@@ -2542,6 +2562,12 @@
       "CreateNoteRequest": {
         "required": ["title"],
         "properties": {
+          "icon": {
+            "description": "A single emoji chosen by the user; null means the default icon for the item type.",
+            "type": "string",
+            "maxLength": 32,
+            "nullable": true
+          },
           "title": { "type": "string", "maxLength": 255, "minLength": 1 },
           "content": { "description": "Markdown", "type": "string" },
           "folder_id": { "type": "string", "format": "uuid", "nullable": true },
@@ -2558,6 +2584,12 @@
       },
       "UpdateNoteRequest": {
         "properties": {
+          "icon": {
+            "description": "A single emoji chosen by the user; null means the default icon for the item type.",
+            "type": "string",
+            "maxLength": 32,
+            "nullable": true
+          },
           "title": { "type": "string", "maxLength": 255, "minLength": 1 },
           "content": { "description": "Markdown", "type": "string" },
           "pinned": { "type": "boolean" },
@@ -2573,6 +2605,12 @@
       "FolderSummary": {
         "properties": {
           "id": { "type": "string", "format": "uuid" },
+          "icon": {
+            "description": "A single emoji chosen by the user; null means the default icon for the item type.",
+            "type": "string",
+            "maxLength": 32,
+            "nullable": true
+          },
           "name": { "type": "string" },
           "created_at": { "type": "string", "format": "date-time" }
         },
@@ -2581,6 +2619,12 @@
       "NoteSummary": {
         "properties": {
           "id": { "type": "string", "format": "uuid" },
+          "icon": {
+            "description": "A single emoji chosen by the user; null means the default icon for the item type.",
+            "type": "string",
+            "maxLength": 32,
+            "nullable": true
+          },
           "title": { "type": "string" },
           "child_count": {
             "description": "Live children (notes and links) directly under it.",
@@ -2609,6 +2653,12 @@
             "description": "The listed folder; null at the root level.",
             "properties": {
               "id": { "type": "string", "format": "uuid" },
+              "icon": {
+                "description": "A single emoji chosen by the user; null means the default icon for the item type.",
+                "type": "string",
+                "maxLength": 32,
+                "nullable": true
+              },
               "name": { "type": "string" },
               "parent_folder_id": { "type": "string", "format": "uuid", "nullable": true },
               "path": { "$ref": "#\/components\/schemas\/AncestorPath" }
@@ -2632,6 +2682,12 @@
       "NoteDetailResponse": {
         "properties": {
           "id": { "type": "string", "format": "uuid" },
+          "icon": {
+            "description": "A single emoji chosen by the user; null means the default icon for the item type.",
+            "type": "string",
+            "maxLength": 32,
+            "nullable": true
+          },
           "title": { "type": "string" },
           "content": { "description": "Markdown", "type": "string" },
           "folder_id": { "type": "string", "format": "uuid", "nullable": true },
@@ -2687,6 +2743,12 @@
             "items": {
               "properties": {
                 "id": { "type": "string", "format": "uuid" },
+                "icon": {
+                  "description": "A single emoji chosen by the user; null means the default icon for the item type.",
+                  "type": "string",
+                  "maxLength": 32,
+                  "nullable": true
+                },
                 "name": { "type": "string" },
                 "parent_folder_id": { "type": "string", "format": "uuid", "nullable": true },
                 "deleted_at": { "type": "string", "format": "date-time" }
@@ -2699,6 +2761,12 @@
             "items": {
               "properties": {
                 "id": { "type": "string", "format": "uuid" },
+                "icon": {
+                  "description": "A single emoji chosen by the user; null means the default icon for the item type.",
+                  "type": "string",
+                  "maxLength": 32,
+                  "nullable": true
+                },
                 "title": { "type": "string" },
                 "folder_id": { "type": "string", "format": "uuid", "nullable": true },
                 "deleted_at": { "type": "string", "format": "date-time" }
@@ -2711,6 +2779,12 @@
             "items": {
               "properties": {
                 "id": { "type": "string", "format": "uuid" },
+                "icon": {
+                  "description": "A single emoji chosen by the user; null means the default icon for the item type.",
+                  "type": "string",
+                  "maxLength": 32,
+                  "nullable": true
+                },
                 "title": { "type": "string" },
                 "url": { "type": "string" },
                 "folder_id": { "type": "string", "format": "uuid", "nullable": true },
@@ -2753,6 +2827,12 @@
       "NoteListItem": {
         "properties": {
           "id": { "type": "string", "format": "uuid" },
+          "icon": {
+            "description": "A single emoji chosen by the user; null means the default icon for the item type.",
+            "type": "string",
+            "maxLength": 32,
+            "nullable": true
+          },
           "title": { "type": "string" },
           "folder_id": { "type": "string", "format": "uuid", "nullable": true },
           "parent_note_id": {
@@ -2782,6 +2862,12 @@
       "CreateLinkRequest": {
         "required": ["title", "url"],
         "properties": {
+          "icon": {
+            "description": "A single emoji chosen by the user; null means the default icon for the item type.",
+            "type": "string",
+            "maxLength": 32,
+            "nullable": true
+          },
           "title": { "type": "string", "maxLength": 255, "minLength": 1 },
           "url": {
             "description": "Absolute http or https URL",
@@ -2802,6 +2888,12 @@
       },
       "UpdateLinkRequest": {
         "properties": {
+          "icon": {
+            "description": "A single emoji chosen by the user; null means the default icon for the item type.",
+            "type": "string",
+            "maxLength": 32,
+            "nullable": true
+          },
           "title": { "type": "string", "maxLength": 255, "minLength": 1 },
           "url": { "type": "string", "maxLength": 2048 },
           "note": { "type": "string", "nullable": true },
@@ -2824,6 +2916,12 @@
       "LinkSummary": {
         "properties": {
           "id": { "type": "string", "format": "uuid" },
+          "icon": {
+            "description": "A single emoji chosen by the user; null means the default icon for the item type.",
+            "type": "string",
+            "maxLength": 32,
+            "nullable": true
+          },
           "title": { "type": "string" },
           "url": { "type": "string" },
           "note": { "type": "string", "nullable": true },
@@ -2836,6 +2934,12 @@
       "LinkListItem": {
         "properties": {
           "id": { "type": "string", "format": "uuid" },
+          "icon": {
+            "description": "A single emoji chosen by the user; null means the default icon for the item type.",
+            "type": "string",
+            "maxLength": 32,
+            "nullable": true
+          },
           "title": { "type": "string" },
           "url": { "type": "string" },
           "note": { "type": "string", "nullable": true },
@@ -2855,6 +2959,12 @@
       "LinkDetailResponse": {
         "properties": {
           "id": { "type": "string", "format": "uuid" },
+          "icon": {
+            "description": "A single emoji chosen by the user; null means the default icon for the item type.",
+            "type": "string",
+            "maxLength": 32,
+            "nullable": true
+          },
           "title": { "type": "string" },
           "url": { "type": "string" },
           "note": { "type": "string", "nullable": true },
@@ -2883,6 +2993,12 @@
         "properties": {
           "type": { "type": "string", "enum": ["note", "link"] },
           "id": { "type": "string", "format": "uuid" },
+          "icon": {
+            "description": "A single emoji chosen by the user; null means the default icon for the item type.",
+            "type": "string",
+            "maxLength": 32,
+            "nullable": true
+          },
           "title": { "type": "string" },
           "snippet": {
             "description": "Plain-text excerpt around the first match (may start\/end with an ellipsis)",

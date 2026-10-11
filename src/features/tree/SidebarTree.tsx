@@ -11,6 +11,8 @@ import { useTranslation } from 'react-i18next'
 import { useMatch, useNavigate } from 'react-router-dom'
 import { Alert } from '@/components/Alert'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { IconPickerDialog } from '@/components/IconPickerDialog'
+import { iconFor } from '@/components/itemIcons'
 import { PromptDialog } from '@/components/PromptDialog'
 import type { Destination, ID, PathItem } from '@/data/types'
 import { errorMessage } from '@/features/auth/errors'
@@ -284,6 +286,20 @@ export function SidebarTree() {
         onCancel={closeDialog}
         onSubmit={async (name) => {
           await actions.renameFolder.mutateAsync({ id: dialog.id, name })
+          closeDialog()
+        }}
+      />
+    )
+  } else if (dialog?.type === 'icon') {
+    dialogView = (
+      <IconPickerDialog
+        name={dialog.name}
+        current={dialog.icon}
+        defaultIcon={iconFor(dialog.node.kind, null)}
+        describeError={describeError}
+        onCancel={closeDialog}
+        onSelect={async (icon) => {
+          await actions.setIcon.mutateAsync({ node: dialog.node, icon })
           closeDialog()
         }}
       />

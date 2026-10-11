@@ -1,5 +1,5 @@
 import { createContext, useContext, type DragEvent } from 'react'
-import type { Destination, ID } from '@/data/types'
+import type { Destination, ID, Icon } from '@/data/types'
 import type { DropTarget } from './dnd'
 import type { NodeRef } from './queries'
 
@@ -9,6 +9,7 @@ export type TreeAction =
   | { type: 'newLink'; destination: Destination }
   | { type: 'newFolder'; parentFolderId: ID | null }
   | { type: 'renameFolder'; id: ID; name: string }
+  | { type: 'icon'; node: NodeRef; name: string; icon: Icon }
   | { type: 'move'; node: NodeRef; name: string }
   | { type: 'delete'; node: NodeRef; name: string; childCount: number }
 

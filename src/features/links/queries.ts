@@ -54,7 +54,7 @@ export function useSaveLink(id: ID) {
         old ? { ...old, ...changes, updatedAt: new Date().toISOString() } : old,
       )
       // A new title shows in the tree; tags in the tag list. The address and the note only in the lists.
-      if ('title' in changes) void invalidateStructure(queryClient)
+      if ('title' in changes || 'icon' in changes) void invalidateStructure(queryClient)
       else {
         void queryClient.invalidateQueries({ queryKey: linkKeys.list() })
         if ('tags' in changes) void queryClient.invalidateQueries({ queryKey: tagKeys.all })

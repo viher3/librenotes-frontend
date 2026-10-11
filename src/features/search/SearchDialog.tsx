@@ -1,4 +1,5 @@
 import { useId, useState } from 'react'
+import { iconFor } from '@/components/itemIcons'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { Alert } from '@/components/Alert'
@@ -126,7 +127,7 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
               }`}
             >
               <div className="flex items-center gap-2">
-                <span aria-hidden="true">{result.type === 'note' ? '📄' : '🔗'}</span>
+                <span aria-hidden="true">{iconFor(result.type, result.icon)}</span>
                 <span className="min-w-0 flex-1 truncate font-medium">
                   <Marked text={result.title || t('untitled')} query={q} />
                 </span>

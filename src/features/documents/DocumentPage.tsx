@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
+import { EditableIcon } from '@/components/EditableIcon'
 import { useTranslation } from 'react-i18next'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { Alert } from '@/components/Alert'
@@ -146,6 +147,14 @@ function DocumentEditor({ note }: { note: Note }) {
     <div className="flex h-full min-h-[28rem] flex-col gap-3" {...dropProps}>
       <Breadcrumbs path={note.path} current={draft.title.trim() || t('untitled')} />
       <div className="flex flex-wrap items-center gap-3">
+        <EditableIcon
+          kind="note"
+          icon={note.icon}
+          pinned={pinned}
+          name={draft.title.trim() || t('untitled')}
+          describeError={errorMessage}
+          onChange={(icon) => save({ icon })}
+        />
         <input
           ref={titleRef}
           aria-label={t('editor.titleLabel')}

@@ -19,7 +19,8 @@
     "delete": "Eliminar",
     "newLinkInside": "Enlace nuevo dentro",
     "addLink": "Añadir enlace",
-    "openLink": "Abrir enlace en una pestaña nueva"
+    "openLink": "Abrir enlace en una pestaña nueva",
+    "changeIcon": "Cambiar icono"
   },
   "newFolder": "Carpeta nueva",
   "folderDialog": {

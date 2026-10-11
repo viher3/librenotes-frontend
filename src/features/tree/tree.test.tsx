@@ -318,6 +318,7 @@ describe('tree: keyboard', () => {
       'New folder inside',
       'New link inside',
       'Rename',
+      'Change icon',
       'Move to…',
       'Delete',
     ])
@@ -325,7 +326,7 @@ describe('tree: keyboard', () => {
     await user.keyboard('{ArrowDown}')
     expect(within(menu).getAllByRole('menuitem')[1]).toHaveFocus()
     await user.keyboard('{End}')
-    expect(within(menu).getAllByRole('menuitem')[5]).toHaveFocus()
+    expect(within(menu).getAllByRole('menuitem')[6]).toHaveFocus()
 
     await user.keyboard('{Escape}')
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
@@ -350,10 +351,16 @@ describe('tree: keyboard', () => {
     expect(await labels('Standalone')).toEqual([
       'New sub-document',
       'Add link',
+      'Change icon',
       'Move to…',
       'Delete',
     ])
-    expect(await labels('Bookmark')).toEqual(['Open link in a new tab', 'Move to…', 'Delete'])
+    expect(await labels('Bookmark')).toEqual([
+      'Open link in a new tab',
+      'Change icon',
+      'Move to…',
+      'Delete',
+    ])
   })
 })
 
@@ -895,5 +902,75 @@ describe('sub-documents panel', () => {
 
     const panel = await screen.findByRole('region', { name: 'Sub-documents' })
     expect(await within(panel).findByText('No sub-documents yet.')).toBeInTheDocument()
+  })
+})
+
+describe('tree: icons', () => {
+  it('shows the default icons and lets the user change and reset one', async () => {
+    const mock = await signedInBackend()
+    const { alpha, standalone, bookmark } = await seed(mock)
+    const { user } = await renderApp('/', mock)
+    await waitFor(() => expect(hasRow('Standalone')).toBe(true))
+
+    expect(row('Alpha')).toHaveTextContent('📁Alpha')
+    expect(row('Standalone')).toHaveTextContent('📄Standalone')
+    expect(row('Bookmark')).toHaveTextContent('🔗Bookmark')
+
+    await user.click(within(row('Alpha')).getByRole('button', { name: 'Actions for Alpha' }))
+    await user.click(await screen.findByRole('menuitem', { name: 'Change icon' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Icon for “Alpha”' })
+    await user.click(within(dialog).getByRole('button', { name: '🚀' }))
+
+    await waitFor(() => expect(row('Alpha')).toHaveTextContent('🚀Alpha'))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(
+      (await mock.notes.folderContents(null)).subfolders.find((f) => f.id === alpha.id)?.icon,
+    ).toBe('🚀')
+
+    // Back to the default one.
+    await user.click(within(row('Alpha')).getByRole('button', { name: 'Actions for Alpha' }))
+    await user.click(await screen.findByRole('menuitem', { name: 'Change icon' }))
+    await user.click(await screen.findByRole('button', { name: 'Use the default' }))
+    await waitFor(() => expect(row('Alpha')).toHaveTextContent('📁Alpha'))
+
+    // Documents and links too, with an emoji typed by hand.
+    await user.click(
+      within(row('Standalone')).getByRole('button', { name: 'Actions for Standalone' }),
+    )
+    await user.click(await screen.findByRole('menuitem', { name: 'Change icon' }))
+    await user.type(await screen.findByLabelText('Or type or paste any emoji'), '🦊')
+    await user.click(screen.getByRole('button', { name: 'Use this emoji' }))
+    await waitFor(() => expect(row('Standalone')).toHaveTextContent('🦊Standalone'))
+    expect((await mock.notes.getNote(standalone.id)).icon).toBe('🦊')
+
+    await user.click(within(row('Bookmark')).getByRole('button', { name: 'Actions for Bookmark' }))
+    await user.click(await screen.findByRole('menuitem', { name: 'Change icon' }))
+    await user.click(await screen.findByRole('button', { name: '📚' }))
+    await waitFor(() => expect(row('Bookmark')).toHaveTextContent('📚Bookmark'))
+    expect((await mock.notes.getLink(bookmark.id)).icon).toBe('📚')
+  })
+
+  it('refuses text that is not a single emoji and filters the grid by search', async () => {
+    const mock = await signedInBackend()
+    await seed(mock)
+    const { user } = await renderApp('/', mock)
+    await waitFor(() => expect(hasRow('Standalone')).toBe(true))
+
+    await user.click(
+      within(row('Standalone')).getByRole('button', { name: 'Actions for Standalone' }),
+    )
+    await user.click(await screen.findByRole('menuitem', { name: 'Change icon' }))
+    const dialog = await screen.findByRole('dialog')
+
+    await user.type(within(dialog).getByRole('searchbox'), 'cohete')
+    expect(within(dialog).getByRole('button', { name: '🚀' })).toBeInTheDocument()
+    expect(within(dialog).queryByRole('button', { name: '📚' })).not.toBeInTheDocument()
+    await user.type(within(dialog).getByRole('searchbox'), 'zzzz')
+    expect(within(dialog).getByText('No icons match your search.')).toBeInTheDocument()
+
+    await user.type(within(dialog).getByLabelText('Or type or paste any emoji'), 'abc')
+    await user.click(within(dialog).getByRole('button', { name: 'Use this emoji' }))
+    expect(await within(dialog).findByText('Enter a single emoji.')).toBeInTheDocument()
+    expect(row('Standalone')).toHaveTextContent('📄Standalone')
   })
 })

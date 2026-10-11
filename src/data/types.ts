@@ -18,10 +18,14 @@ export interface User {
   lastLoginAt: string | null
 }
 
+/** A custom emoji, or `null` for the default icon of the item type. */
+export type Icon = string | null
+
 export interface Folder {
   id: ID
   name: string
   parentFolderId: ID | null
+  icon: Icon
 }
 
 /** One step of the way from the root to an item: a folder or a note (for breadcrumbs). */
@@ -44,12 +48,14 @@ export type Destination = { type: 'root' } | { type: 'folder'; id: ID } | { type
 export interface FolderSummary {
   id: ID
   name: string
+  icon: Icon
   createdAt: string
 }
 
 export interface NoteSummary {
   id: ID
   title: string
+  icon: Icon
   /** The folder it is in; null at the root or when it sits under a note. */
   folderId: ID | null
   /** The note it sits under, if any. */
@@ -87,6 +93,7 @@ export interface Note extends NoteSummary {
 export interface Link {
   id: ID
   title: string
+  icon: Icon
   url: string
   note: string | null
   folderId: ID | null
@@ -130,6 +137,7 @@ export interface SearchResult {
   type: 'note' | 'link'
   id: ID
   title: string
+  icon: Icon
   /** Plain-text excerpt around the first match; may start/end with an ellipsis. */
   snippet: string
   folderId: ID | null
@@ -145,9 +153,16 @@ export interface TagCount {
 }
 
 export interface Trash {
-  folders: { id: ID; name: string; parentFolderId: ID | null; deletedAt: string }[]
-  notes: { id: ID; title: string; folderId: ID | null; deletedAt: string }[]
-  links: { id: ID; title: string; url: string; folderId: ID | null; deletedAt: string }[]
+  folders: { id: ID; name: string; icon: Icon; parentFolderId: ID | null; deletedAt: string }[]
+  notes: { id: ID; title: string; icon: Icon; folderId: ID | null; deletedAt: string }[]
+  links: {
+    id: ID
+    title: string
+    icon: Icon
+    url: string
+    folderId: ID | null
+    deletedAt: string
+  }[]
   /** Attachments of a trashed note are not listed: they travel with it. */
   attachments: {
     id: ID
@@ -191,9 +206,16 @@ export interface SearchParams {
   size?: number
 }
 
+export interface UpdateFolderInput {
+  name?: string
+  /** `null` restores the default icon. */
+  icon?: Icon
+}
+
 export interface CreateNoteInput {
   title: string
   content?: string
+  icon?: Icon
   /** Where to put it: a folder or a parent note (not both); neither means the root. */
   folderId?: ID | null
   parentNoteId?: ID | null
@@ -203,6 +225,8 @@ export interface CreateNoteInput {
 
 export interface UpdateNoteInput {
   title?: string
+  /** `null` restores the default icon. */
+  icon?: Icon
   content?: string
   pinned?: boolean
   /** Replaces the whole set. */
@@ -214,6 +238,7 @@ export interface CreateLinkInput {
   /** Absolute http(s) URL. */
   url: string
   note?: string | null
+  icon?: Icon
   /** Where to put it: a folder or a parent note (not both); neither means the root. */
   folderId?: ID | null
   parentNoteId?: ID | null
@@ -222,6 +247,8 @@ export interface CreateLinkInput {
 
 export interface UpdateLinkInput {
   title?: string
+  /** `null` restores the default icon. */
+  icon?: Icon
   url?: string
   /** `null` clears it. */
   note?: string | null

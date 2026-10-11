@@ -123,6 +123,7 @@ Everything lives in one **tree** in the sidebar, like a workspace of pages: fold
   - The sidebar lists every tag in use with how many items carry it, most used first, and follows changes (tagging, deleting) without reloading.
   - `/tag/:name` lists the documents and links that carry a tag (newest first, 20 at a time, _Show more_). The address is case-insensitive.
 - Files attached to a folder are listed on the folder page (not as rows of the tree).
+- **Custom icons**: folders, documents and links show an emoji. By default 📁, 📄 (📌 when pinned) and 🔗; the user can pick another one (_Change icon_ in a tree row's menu, or the icon next to the title on the folder, document and link pages). The picker offers a curated, searchable list plus any single emoji typed or pasted, and _Use the default_ clears it. It is stored in the `icon` field (nullable string, one emoji, max 32 characters; `null` = default) of folders, notes and links, validated by the backend and mirrored by `isIcon` in `data/rules.ts`. A custom icon replaces the 📌 of a pinned document.
 
 ### 4.3 Links
 

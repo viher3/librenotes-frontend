@@ -79,6 +79,7 @@ export function toNoteSummary(
   return {
     id: req(dto.id, 'id'),
     title: req(dto.title, 'title'),
+    icon: dto.icon ?? null,
     folderId: 'folder_id' in dto ? (dto.folder_id ?? null) : (placement.folderId ?? null),
     parentNoteId:
       'parent_note_id' in dto ? (dto.parent_note_id ?? null) : (placement.parentNoteId ?? null),
@@ -114,6 +115,7 @@ export function toLink(
   return {
     id: req(dto.id, 'id'),
     title: req(dto.title, 'title'),
+    icon: dto.icon ?? null,
     url: req(dto.url, 'url'),
     note: dto.note ?? null,
     folderId: 'folder_id' in dto ? (dto.folder_id ?? null) : (placement.folderId ?? null),
@@ -133,6 +135,7 @@ function toFolderSummary(dto: S['FolderSummary']): FolderSummary {
   return {
     id: req(dto.id, 'id'),
     name: req(dto.name, 'name'),
+    icon: dto.icon ?? null,
     createdAt: req(dto.created_at, 'created_at'),
   }
 }
@@ -142,6 +145,7 @@ export function toFolderContents(dto: S['FolderContentsResponse']): FolderConten
     ? {
         id: req(dto.folder.id, 'folder.id'),
         name: req(dto.folder.name, 'folder.name'),
+        icon: dto.folder.icon ?? null,
         parentFolderId: dto.folder.parent_folder_id ?? null,
         path: toPath(dto.folder.path),
       }
@@ -184,6 +188,7 @@ export function toSearchResult(dto: S['SearchResult']): SearchResult {
     type: req(dto.type, 'type'),
     id: req(dto.id, 'id'),
     title: req(dto.title, 'title'),
+    icon: dto.icon ?? null,
     snippet: dto.snippet ?? '',
     folderId: dto.folder_id ?? null,
     tags: dto.tags ?? [],
@@ -201,18 +206,21 @@ export function toTrash(dto: S['TrashResponse']): Trash {
     folders: (dto.folders ?? []).map((f) => ({
       id: req(f.id, 'id'),
       name: req(f.name, 'name'),
+      icon: f.icon ?? null,
       parentFolderId: f.parent_folder_id ?? null,
       deletedAt: req(f.deleted_at, 'deleted_at'),
     })),
     notes: (dto.notes ?? []).map((n) => ({
       id: req(n.id, 'id'),
       title: req(n.title, 'title'),
+      icon: n.icon ?? null,
       folderId: n.folder_id ?? null,
       deletedAt: req(n.deleted_at, 'deleted_at'),
     })),
     links: (dto.links ?? []).map((l) => ({
       id: req(l.id, 'id'),
       title: req(l.title, 'title'),
+      icon: l.icon ?? null,
       url: req(l.url, 'url'),
       folderId: l.folder_id ?? null,
       deletedAt: req(l.deleted_at, 'deleted_at'),

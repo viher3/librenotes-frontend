@@ -4,6 +4,8 @@ import {
   MAX_TITLE_LENGTH,
   MIN_PASSWORD_LENGTH,
   MIN_SEARCH_LENGTH,
+  MAX_ICON_LENGTH,
+  isIcon,
   USERNAME_LENGTH,
   foldForSearch,
   isEmail,
@@ -70,6 +72,7 @@ interface Owned {
 interface FolderRecord extends Owned {
   id: ID
   name: string
+  icon: string | null
   parentFolderId: ID | null
   createdAt: string
 }
@@ -77,6 +80,7 @@ interface FolderRecord extends Owned {
 interface NoteRecord extends Owned {
   id: ID
   title: string
+  icon: string | null
   content: string
   folderId: ID | null
   parentNoteId: ID | null
@@ -89,6 +93,7 @@ interface NoteRecord extends Owned {
 interface LinkRecord extends Owned {
   id: ID
   title: string
+  icon: string | null
   url: string
   note: string | null
   folderId: ID | null
@@ -230,6 +235,15 @@ export function createMockRepositories(options: MockOptions = {}): {
     if (title.length < 1 || title.length > MAX_TITLE_LENGTH)
       invalid(`[${field}] Must have between 1 and ${MAX_TITLE_LENGTH} characters`)
   }
+  const checkIcon = (icon: string | null | undefined): string | null => {
+    // Like the backend: absent, null or empty means the default icon; longer than the limit is a validation
+    // error; anything else that is not a single emoji is `icon.invalid`.
+    if (icon === undefined || icon === null || icon === '') return null
+    if (icon.length > MAX_ICON_LENGTH)
+      invalid(`[icon] Must have at most ${MAX_ICON_LENGTH} characters`)
+    if (!isIcon(icon)) fail(422, 'icon.invalid', { reason: 'an icon must be a single emoji' })
+    return icon
+  }
   const checkUrl = (url: string) => {
     if (!isHttpUrl(url)) fail(422, 'link.invalid_url')
   }
@@ -295,6 +309,7 @@ export function createMockRepositories(options: MockOptions = {}): {
   const toNoteSummary = (n: NoteRecord): NoteSummary => ({
     id: n.id,
     title: n.title,
+    icon: n.icon,
     folderId: n.folderId,
     parentNoteId: n.parentNoteId,
     childCount: childCount(n.id),
@@ -312,6 +327,7 @@ export function createMockRepositories(options: MockOptions = {}): {
   const toLink = (l: LinkRecord): Link => ({
     id: l.id,
     title: l.title,
+    icon: l.icon,
     url: l.url,
     note: l.note,
     folderId: l.folderId,
@@ -550,6 +566,7 @@ export function createMockRepositories(options: MockOptions = {}): {
           ? {
               id: folder.id,
               name: folder.name,
+              icon: folder.icon,
               parentFolderId: folder.parentFolderId,
               path: pathOfFolder(folder),
             }
@@ -557,7 +574,7 @@ export function createMockRepositories(options: MockOptions = {}): {
         subfolders: mine(folders)
           .filter((f) => f.parentFolderId === id)
           .sort((a, b) => a.name.localeCompare(b.name))
-          .map((f) => ({ id: f.id, name: f.name, createdAt: f.createdAt })),
+          .map((f) => ({ id: f.id, name: f.name, icon: f.icon, createdAt: f.createdAt })),
         notes: mine(notes)
           .filter((n) => n.folderId === id && n.parentNoteId === null)
           .sort(byRecent)
@@ -583,19 +600,29 @@ export function createMockRepositories(options: MockOptions = {}): {
       const folder: FolderRecord = {
         id: newId(),
         name,
+        icon: null,
         parentFolderId: parent,
         ownerId: owner(),
         createdAt: now(),
         deletedAt: null,
       }
       folders.set(folder.id, folder)
-      return { id: folder.id, name, parentFolderId: parent }
+      return { id: folder.id, name, parentFolderId: parent, icon: null }
     },
 
     async renameFolder(id, name) {
       await begin()
       checkTitle(name, 'name')
       folderOf(id).name = name
+    },
+
+    async updateFolder(id, input) {
+      await begin()
+      if (input.name !== undefined) checkTitle(input.name, 'name')
+      const icon = input.icon === undefined ? undefined : checkIcon(input.icon)
+      const folder = folderOf(id)
+      if (input.name !== undefined) folder.name = input.name
+      if (icon !== undefined) folder.icon = icon
     },
 
     async moveFolder(id, parentFolderId) {
@@ -630,12 +657,14 @@ export function createMockRepositories(options: MockOptions = {}): {
     async createNote(input) {
       await begin()
       checkTitle(input.title)
+      const icon = checkIcon(input.icon)
       const { folderId, parentNoteId } = placementOf(input.folderId, input.parentNoteId)
       const tags = checkTags(input.tags)
       const timestamp = now()
       const note: NoteRecord = {
         id: newId(),
         title: input.title,
+        icon,
         content: input.content ?? '',
         folderId,
         parentNoteId,
@@ -654,8 +683,10 @@ export function createMockRepositories(options: MockOptions = {}): {
       await begin()
       const note = noteOf(id, true)
       if (input.title !== undefined) checkTitle(input.title)
+      const icon = input.icon === undefined ? undefined : checkIcon(input.icon)
       const tags = input.tags === undefined ? undefined : checkTags(input.tags)
       if (input.title !== undefined) note.title = input.title
+      if (icon !== undefined) note.icon = icon
       if (input.content !== undefined) note.content = input.content
       if (input.pinned !== undefined) note.pinned = input.pinned
       if (tags !== undefined) note.tags = tags
@@ -712,12 +743,14 @@ export function createMockRepositories(options: MockOptions = {}): {
       await begin()
       checkTitle(input.title)
       checkUrl(input.url)
+      const icon = checkIcon(input.icon)
       const { folderId, parentNoteId } = placementOf(input.folderId, input.parentNoteId)
       const tags = checkTags(input.tags)
       const timestamp = now()
       const link: LinkRecord = {
         id: newId(),
         title: input.title,
+        icon,
         url: input.url.trim(),
         note: input.note ? input.note : null,
         folderId,
@@ -737,8 +770,10 @@ export function createMockRepositories(options: MockOptions = {}): {
       const link = linkOf(id)
       if (input.title !== undefined) checkTitle(input.title)
       if (input.url !== undefined) checkUrl(input.url)
+      const icon = input.icon === undefined ? undefined : checkIcon(input.icon)
       const tags = input.tags === undefined ? undefined : checkTags(input.tags)
       if (input.title !== undefined) link.title = input.title
+      if (icon !== undefined) link.icon = icon
       if (input.url !== undefined) link.url = input.url.trim()
       if (input.note !== undefined) link.note = input.note ? input.note : null
       if (tags !== undefined) link.tags = tags
@@ -813,6 +848,7 @@ export function createMockRepositories(options: MockOptions = {}): {
         type: 'note' | 'link'
         id: ID
         title: string
+        icon: string | null
         body: string
         url: string | null
         folderId: ID | null
@@ -825,6 +861,7 @@ export function createMockRepositories(options: MockOptions = {}): {
               type: 'note',
               id: n.id,
               title: n.title,
+              icon: n.icon,
               body: n.content,
               url: null,
               folderId: n.folderId,
@@ -837,6 +874,7 @@ export function createMockRepositories(options: MockOptions = {}): {
               type: 'link',
               id: l.id,
               title: l.title,
+              icon: l.icon,
               body: l.note ?? '',
               url: l.url,
               folderId: l.folderId,
@@ -867,6 +905,7 @@ export function createMockRepositories(options: MockOptions = {}): {
         type: c.type,
         id: c.id,
         title: c.title,
+        icon: c.icon,
         snippet: snippetOf(c.body, terms.find((t) => foldForSearch(c.body).includes(t)) ?? ''),
         folderId: c.folderId,
         tags: [...c.tags],
@@ -897,6 +936,7 @@ export function createMockRepositories(options: MockOptions = {}): {
         folders: trashed(folders).map((f) => ({
           id: f.id,
           name: f.name,
+          icon: f.icon,
           parentFolderId: f.parentFolderId,
           deletedAt: f.deletedAt!,
         })),
@@ -905,6 +945,7 @@ export function createMockRepositories(options: MockOptions = {}): {
           .map((n) => ({
             id: n.id,
             title: n.title,
+            icon: n.icon,
             folderId: n.folderId,
             deletedAt: n.deletedAt!,
           })),
@@ -913,6 +954,7 @@ export function createMockRepositories(options: MockOptions = {}): {
           .map((l) => ({
             id: l.id,
             title: l.title,
+            icon: l.icon,
             url: l.url,
             folderId: l.folderId,
             deletedAt: l.deletedAt!,
@@ -1037,6 +1079,7 @@ export function createMockRepositories(options: MockOptions = {}): {
       const f: FolderRecord = {
         id: newId(),
         name,
+        icon: null,
         parentFolderId,
         ownerId: id,
         createdAt: stamp(1),
@@ -1059,6 +1102,7 @@ export function createMockRepositories(options: MockOptions = {}): {
       const n: NoteRecord = {
         id: newId(),
         title,
+        icon: null,
         content,
         folderId,
         parentNoteId,
@@ -1102,6 +1146,7 @@ export function createMockRepositories(options: MockOptions = {}): {
     const link: LinkRecord = {
       id: newId(),
       title: 'Markdown guide',
+      icon: null,
       url: 'https://www.markdownguide.org',
       note: 'Cheat sheet',
       folderId: null,

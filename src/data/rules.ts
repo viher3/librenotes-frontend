@@ -7,6 +7,7 @@ export const MAX_TITLE_LENGTH = 255
 export const MAX_URL_LENGTH = 2048
 export const MIN_SEARCH_LENGTH = 2
 export const MIN_PASSWORD_LENGTH = 8
+export const MAX_ICON_LENGTH = 32
 export const USERNAME_LENGTH = { min: 3, max: 20 } as const
 
 /** Trims and lower-cases a tag name, as the backend does. */
@@ -50,3 +51,15 @@ export function isHttpUrl(value: string): boolean {
 /** Lower-cases and strips accents, so "Reunión" matches "reunion". */
 export const foldForSearch = (text: string): string =>
   text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()
+
+/**
+ * A valid custom icon: exactly one emoji (a single user-perceived character, so flags, skin tones and ZWJ
+ * sequences count as one), at most 32 UTF-16 code units. Anything else (letters, markup, several emojis) is
+ * rejected, which also keeps the value safe to render as text.
+ */
+export function isIcon(value: string): boolean {
+  if (value === '' || value.length > MAX_ICON_LENGTH) return false
+  const graphemes = [...new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(value)]
+  if (graphemes.length !== 1) return false
+  return /\p{Extended_Pictographic}|\p{Regional_Indicator}|^[0-9#*]\uFE0F?\u20E3$/u.test(value)
+}

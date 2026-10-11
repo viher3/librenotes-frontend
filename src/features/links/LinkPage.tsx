@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { EditableIcon } from '@/components/EditableIcon'
 import { useTranslation } from 'react-i18next'
 import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom'
 import { Alert } from '@/components/Alert'
@@ -119,6 +120,13 @@ function LinkEditor({ link }: { link: LinkDetail }) {
       <Breadcrumbs path={link.path} current={draft.title.trim() || link.title} />
 
       <div className="flex flex-wrap items-center gap-3">
+        <EditableIcon
+          kind="link"
+          icon={link.icon}
+          name={draft.title.trim() || link.title}
+          describeError={errorMessage}
+          onChange={(icon) => save({ icon })}
+        />
         <input
           aria-label={t('page.titleLabel')}
           value={draft.title}

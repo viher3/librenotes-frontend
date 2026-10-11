@@ -1,4 +1,6 @@
 import { useTranslation } from 'react-i18next'
+import { EditableIcon } from '@/components/EditableIcon'
+import { iconFor } from '@/components/itemIcons'
 import { Link, useParams } from 'react-router-dom'
 import { Breadcrumbs } from '@/components/Breadcrumbs'
 import { Button } from '@/components/Button'
@@ -9,7 +11,7 @@ import { formatRelativeTime } from '@/lib/format'
 import { useNewDocument } from '@/features/documents/useNewDocument'
 import { siteName } from '@/features/links/hostname'
 import { useNewLink } from '@/features/links/NewLinkProvider'
-import { useFolderContents } from '@/features/tree/queries'
+import { useFolderContents, useTreeActions } from '@/features/tree/queries'
 import { Alert } from '@/components/Alert'
 import { AttachmentsPanel } from '@/features/attachments/AttachmentsPanel'
 import { useAttachmentUploads } from '@/features/attachments/queries'
@@ -27,6 +29,7 @@ function FolderView({ id }: { id: string }) {
   const query = useFolderContents(id)
   const { createDocument, pending, error } = useNewDocument()
   const newLink = useNewLink()
+  const { setIcon } = useTreeActions()
   const uploads = useAttachmentUploads({ type: 'folder', id })
   const { dragging, dropProps } = useFileDrop(uploads.add)
 
@@ -73,7 +76,18 @@ function FolderView({ id }: { id: string }) {
     <div className="flex flex-col gap-5" {...dropProps}>
       <Breadcrumbs path={folder.path} current={folder.name} />
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-2xl font-semibold">{folder.name}</h2>
+        <div className="flex min-w-0 items-center gap-2">
+          <EditableIcon
+            kind="folder"
+            icon={folder.icon}
+            name={folder.name}
+            describeError={errorMessage}
+            onChange={(icon) =>
+              setIcon.mutateAsync({ node: { kind: 'folder', id: folder.id }, icon })
+            }
+          />
+          <h2 className="truncate text-2xl font-semibold">{folder.name}</h2>
+        </div>
         <div className="flex flex-wrap gap-2">
           <Button
             onClick={() => createDocument({ type: 'folder', id: folder.id })}
@@ -100,7 +114,12 @@ function FolderView({ id }: { id: string }) {
       {subfolders.length > 0 && (
         <CardSection title={t('folderPage.folders')}>
           {subfolders.map((sub) => (
-            <ItemCard key={sub.id} to={`/folder/${sub.id}`} icon="📁" title={sub.name} />
+            <ItemCard
+              key={sub.id}
+              to={`/folder/${sub.id}`}
+              icon={iconFor('folder', sub.icon)}
+              title={sub.name}
+            />
           ))}
         </CardSection>
       )}
@@ -110,7 +129,7 @@ function FolderView({ id }: { id: string }) {
             <ItemCard
               key={note.id}
               to={`/doc/${note.id}`}
-              icon={note.pinned ? '📌' : '📄'}
+              icon={iconFor('note', note.icon, note.pinned)}
               title={note.title}
               detail={formatRelativeTime(note.updatedAt, language)}
             />
@@ -123,7 +142,7 @@ function FolderView({ id }: { id: string }) {
             <ItemCard
               key={link.id}
               to={`/link/${link.id}`}
-              icon="🔗"
+              icon={iconFor('link', link.icon)}
               title={link.title}
               detail={siteName(link.url)}
             />

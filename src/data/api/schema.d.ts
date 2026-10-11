@@ -1510,7 +1510,7 @@ export interface paths {
     }
     options?: never
     head?: never
-    /** Rename folder */
+    /** Update folder (rename it and/or change its icon) */
     patch: {
       parameters: {
         query?: never
@@ -1523,7 +1523,7 @@ export interface paths {
       }
       requestBody: {
         content: {
-          'application/json': components['schemas']['RenameFolderRequest']
+          'application/json': components['schemas']['UpdateFolderRequest']
         }
       }
       responses: {
@@ -1554,6 +1554,15 @@ export interface paths {
         }
         /** @description Not found (or owned by another user) */
         404: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': components['schemas']['ApiError']
+          }
+        }
+        /** @description The icon is not a single emoji (`icon.invalid`) */
+        422: {
           headers: {
             [name: string]: unknown
           }
@@ -3689,12 +3698,17 @@ export interface components {
       id: string
     }
     CreateFolderRequest: {
+      /** @description A single emoji chosen by the user; null means the default icon for the item type. */
+      icon?: string | null
       name: string
       /** Format: uuid */
       parent_folder_id?: string | null
     }
-    RenameFolderRequest: {
-      name: string
+    /** @description The fields to change; the ones that are not sent stay as they are. */
+    UpdateFolderRequest: {
+      /** @description A single emoji chosen by the user; null means the default icon for the item type. */
+      icon?: string | null
+      name?: string
     }
     MoveFolderRequest: {
       /** Format: uuid */
@@ -3710,6 +3724,8 @@ export interface components {
       parent_note_id?: string | null
     }
     CreateNoteRequest: {
+      /** @description A single emoji chosen by the user; null means the default icon for the item type. */
+      icon?: string | null
       title: string
       /** @description Markdown */
       content?: string
@@ -3725,6 +3741,8 @@ export interface components {
       tags?: components['schemas']['TagNames']
     }
     UpdateNoteRequest: {
+      /** @description A single emoji chosen by the user; null means the default icon for the item type. */
+      icon?: string | null
       title?: string
       /** @description Markdown */
       content?: string
@@ -3738,6 +3756,8 @@ export interface components {
     FolderSummary: {
       /** Format: uuid */
       id?: string
+      /** @description A single emoji chosen by the user; null means the default icon for the item type. */
+      icon?: string | null
       name?: string
       /** Format: date-time */
       created_at?: string
@@ -3745,6 +3765,8 @@ export interface components {
     NoteSummary: {
       /** Format: uuid */
       id?: string
+      /** @description A single emoji chosen by the user; null means the default icon for the item type. */
+      icon?: string | null
       title?: string
       /** @description Live children (notes and links) directly under it. */
       child_count?: number
@@ -3769,6 +3791,8 @@ export interface components {
       folder?: {
         /** Format: uuid */
         id?: string
+        /** @description A single emoji chosen by the user; null means the default icon for the item type. */
+        icon?: string | null
         name?: string
         /** Format: uuid */
         parent_folder_id?: string | null
@@ -3782,6 +3806,8 @@ export interface components {
     NoteDetailResponse: {
       /** Format: uuid */
       id?: string
+      /** @description A single emoji chosen by the user; null means the default icon for the item type. */
+      icon?: string | null
       title?: string
       /** @description Markdown */
       content?: string
@@ -3827,6 +3853,8 @@ export interface components {
       folders?: {
         /** Format: uuid */
         id?: string
+        /** @description A single emoji chosen by the user; null means the default icon for the item type. */
+        icon?: string | null
         name?: string
         /** Format: uuid */
         parent_folder_id?: string | null
@@ -3836,6 +3864,8 @@ export interface components {
       notes?: {
         /** Format: uuid */
         id?: string
+        /** @description A single emoji chosen by the user; null means the default icon for the item type. */
+        icon?: string | null
         title?: string
         /** Format: uuid */
         folder_id?: string | null
@@ -3845,6 +3875,8 @@ export interface components {
       links?: {
         /** Format: uuid */
         id?: string
+        /** @description A single emoji chosen by the user; null means the default icon for the item type. */
+        icon?: string | null
         title?: string
         url?: string
         /** Format: uuid */
@@ -3875,6 +3907,8 @@ export interface components {
     NoteListItem: {
       /** Format: uuid */
       id?: string
+      /** @description A single emoji chosen by the user; null means the default icon for the item type. */
+      icon?: string | null
       title?: string
       /** Format: uuid */
       folder_id?: string | null
@@ -3897,6 +3931,8 @@ export interface components {
       data?: components['schemas']['NoteListItem'][]
     }
     CreateLinkRequest: {
+      /** @description A single emoji chosen by the user; null means the default icon for the item type. */
+      icon?: string | null
       title: string
       /** @description Absolute http or https URL */
       url: string
@@ -3911,6 +3947,8 @@ export interface components {
       tags?: components['schemas']['TagNames']
     }
     UpdateLinkRequest: {
+      /** @description A single emoji chosen by the user; null means the default icon for the item type. */
+      icon?: string | null
       title?: string
       url?: string
       note?: string | null
@@ -3928,6 +3966,8 @@ export interface components {
     LinkSummary: {
       /** Format: uuid */
       id?: string
+      /** @description A single emoji chosen by the user; null means the default icon for the item type. */
+      icon?: string | null
       title?: string
       url?: string
       note?: string | null
@@ -3940,6 +3980,8 @@ export interface components {
     LinkListItem: {
       /** Format: uuid */
       id?: string
+      /** @description A single emoji chosen by the user; null means the default icon for the item type. */
+      icon?: string | null
       title?: string
       url?: string
       note?: string | null
@@ -3959,6 +4001,8 @@ export interface components {
     LinkDetailResponse: {
       /** Format: uuid */
       id?: string
+      /** @description A single emoji chosen by the user; null means the default icon for the item type. */
+      icon?: string | null
       title?: string
       url?: string
       note?: string | null
@@ -3985,6 +4029,8 @@ export interface components {
       type?: 'note' | 'link'
       /** Format: uuid */
       id?: string
+      /** @description A single emoji chosen by the user; null means the default icon for the item type. */
+      icon?: string | null
       title?: string
       /** @description Plain-text excerpt around the first match (may start/end with an ellipsis) */
       snippet?: string

@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import { iconFor } from '@/components/itemIcons'
 import { Alert } from '@/components/Alert'
 import { Button } from '@/components/Button'
 import { CardSection, ItemCard } from '@/components/ItemCard'
@@ -53,7 +54,7 @@ export default function LinksPage() {
             <ItemCard
               key={link.id}
               to={`/link/${link.id}`}
-              icon="🔗"
+              icon={iconFor('link', link.icon)}
               title={link.title}
               detail={siteName(link.url)}
             />

@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import { iconFor } from '@/components/itemIcons'
 import { Link, useParams } from 'react-router-dom'
 import { Alert } from '@/components/Alert'
 import { Button } from '@/components/Button'
@@ -73,7 +74,7 @@ export default function TagPage() {
             <ItemCard
               key={note.id}
               to={`/doc/${note.id}`}
-              icon={note.pinned ? '📌' : '📄'}
+              icon={iconFor('note', note.icon, note.pinned)}
               title={note.title}
               detail={formatRelativeTime(note.updatedAt, language)}
             />
@@ -97,7 +98,7 @@ export default function TagPage() {
             <ItemCard
               key={link.id}
               to={`/link/${link.id}`}
-              icon="🔗"
+              icon={iconFor('link', link.icon)}
               title={link.title}
               detail={siteName(link.url)}
             />

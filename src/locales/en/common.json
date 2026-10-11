@@ -41,5 +41,27 @@
     "open": "Open menu",
     "close": "Close menu",
     "sidebar": "Sidebar"
+  },
+  "iconPicker": {
+    "title": "Icon for “{{name}}”",
+    "currentCustom": "Custom icon",
+    "currentDefault": "Default icon",
+    "useDefault": "Use the default",
+    "searchLabel": "Search icons",
+    "searchPlaceholder": "Search…",
+    "noResults": "No icons match your search.",
+    "customLabel": "Or type or paste any emoji",
+    "apply": "Use this emoji",
+    "invalid": "Enter a single emoji.",
+    "cancel": "Cancel",
+    "categories": {
+      "files": "Files",
+      "work": "Work",
+      "web": "Web and media",
+      "life": "Life",
+      "symbols": "Symbols",
+      "faces": "People"
+    },
+    "change": "Change icon"
   }
 }

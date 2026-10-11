@@ -21,6 +21,7 @@ import type {
   TagCount,
   Trash,
   TrashKind,
+  UpdateFolderInput,
   UpdateLinkInput,
   UpdateNoteInput,
   UpdateProfileInput,
@@ -56,6 +57,8 @@ export interface NotesRepository {
   folderContents(folderId?: ID | null): Promise<FolderContents>
   createFolder(name: string, parentFolderId?: ID | null): Promise<Folder>
   renameFolder(id: ID, name: string): Promise<void>
+  /** Changes the name and/or the icon (`null` restores the default one); omitted fields stay as they are. */
+  updateFolder(id: ID, input: UpdateFolderInput): Promise<void>
   moveFolder(id: ID, parentFolderId: ID | null): Promise<void>
   /** Moves the folder and everything in it to the trash. */
   deleteFolder(id: ID): Promise<void>

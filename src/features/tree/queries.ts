@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
 import { useRepositories } from '@/data/DataProvider'
 import { ApiError } from '@/data/errors'
-import type { Destination, ID } from '@/data/types'
+import type { Destination, ID, Icon } from '@/data/types'
 import { invalidateStructure, noteKeys, treeKeys } from '@/lib/queryKeys'
 
 export function useFolderContents(id: ID | null, enabled = true) {
@@ -50,6 +50,20 @@ export function useTreeActions() {
     onSuccess: refresh,
   })
 
+  const setIcon = useMutation({
+    mutationFn: ({ node, icon }: { node: NodeRef; icon: Icon }) => {
+      switch (node.kind) {
+        case 'folder':
+          return notes.updateFolder(node.id, { icon })
+        case 'note':
+          return notes.updateNote(node.id, { icon })
+        case 'link':
+          return notes.updateLink(node.id, { icon })
+      }
+    },
+    onSuccess: refresh,
+  })
+
   const move = useMutation({
     mutationFn: ({ node, destination }: { node: NodeRef; destination: Destination }) => {
       switch (node.kind) {
@@ -85,5 +99,5 @@ export function useTreeActions() {
     },
   })
 
-  return { createFolder, renameFolder, move, remove }
+  return { createFolder, renameFolder, setIcon, move, remove }
 }

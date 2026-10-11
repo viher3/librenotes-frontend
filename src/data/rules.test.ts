@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { foldForSearch, isHttpUrl, normalizeTags } from './rules'
+import { foldForSearch, isHttpUrl, isIcon, normalizeTags } from './rules'
 
 describe('normalizeTags', () => {
   it('trims, lower-cases and deduplicates keeping the first appearance', () => {
@@ -50,5 +50,19 @@ describe('isHttpUrl', () => {
 describe('foldForSearch', () => {
   it('ignores case and accents', () => {
     expect(foldForSearch('Reunión de PLANIFICACIÓN')).toBe('reunion de planificacion')
+  })
+})
+
+describe('isIcon', () => {
+  it('accepts exactly one emoji, including composed ones', () => {
+    for (const icon of ['📁', '🚀', '⭐', '❤️', '🇪🇸', '👍🏽', '👩‍💻', '1️⃣']) {
+      expect(isIcon(icon), icon).toBe(true)
+    }
+  })
+
+  it('rejects empty values, text, markup and several emojis', () => {
+    for (const icon of ['', 'a', '1', 'ab', '<b>', '🚀🚀', '🚀 ', ' 🚀', 'x'.repeat(40)]) {
+      expect(isIcon(icon), icon).toBe(false)
+    }
   })
 })

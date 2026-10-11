@@ -225,6 +225,7 @@ describe('notes repository', () => {
     expect(note).toEqual({
       id: 'n1',
       title: 'Plan',
+      icon: null,
       content: '# Hi',
       folderId: 'f1',
       parentNoteId: null,
@@ -297,6 +298,7 @@ describe('notes repository', () => {
         {
           id: 'n1',
           title: 'Plan',
+          icon: null,
           folderId: null,
           parentNoteId: 'p1',
           childCount: 3,
@@ -374,6 +376,7 @@ describe('notes repository', () => {
     expect(contents.folder).toEqual({
       id: 'f1',
       name: 'Work',
+      icon: null,
       parentFolderId: 'f0',
       path: [{ type: 'folder', id: 'f0', title: 'Top' }],
     })
@@ -390,7 +393,7 @@ describe('notes repository', () => {
       parentNoteId: null,
       note: null,
     })
-    expect(contents.subfolders[0]).toEqual({ id: 'f2', name: 'Sub', createdAt: 'c' })
+    expect(contents.subfolders[0]).toEqual({ id: 'f2', name: 'Sub', icon: null, createdAt: 'c' })
   })
 
   it('lists the root level when no folder is given', async () => {
@@ -472,6 +475,7 @@ describe('notes repository', () => {
       {
         id: 'n2',
         title: 'B',
+        icon: null,
         folderId: null,
         parentNoteId: 'n1',
         childCount: 2,
@@ -524,8 +528,11 @@ describe('notes repository', () => {
       id: 'f9',
       name: 'Ideas',
       parentFolderId: 'f1',
+      icon: null,
     })
     await notes.renameFolder('f9', 'Ideas 2')
+    await notes.updateFolder('f9', { icon: '🗂️' })
+    await notes.updateFolder('f9', { icon: null })
     await notes.moveFolder('f9', null)
     await notes.deleteFolder('f9')
 
@@ -534,6 +541,8 @@ describe('notes repository', () => {
       parent_folder_id: 'f1',
     })
     expect(server.callsTo('PATCH /folders/f9')[0].body).toEqual({ name: 'Ideas 2' })
+    expect(server.callsTo('PATCH /folders/f9')[1].body).toEqual({ icon: '🗂️' })
+    expect(server.callsTo('PATCH /folders/f9')[2].body).toEqual({ icon: null })
     expect(server.callsTo('PATCH /folders/f9/move')[0].body).toEqual({ parent_folder_id: null })
   })
 
@@ -583,6 +592,7 @@ describe('notes repository', () => {
       type: 'link',
       id: 'l1',
       title: 'Docs',
+      icon: null,
       snippet: '…docs…',
       folderId: null,
       tags: ['dev'],

@@ -47,5 +47,8 @@
     "parent_folder_in_trash": "Restore its folder first.",
     "parent_note_in_trash": "Restore its document first.",
     "invalid_location": "An item can be in a folder or under a document, not both."
+  },
+  "icon": {
+    "invalid": "The icon must be a single emoji."
   }
 }

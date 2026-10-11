@@ -19,7 +19,8 @@
     "delete": "Delete",
     "newLinkInside": "New link inside",
     "addLink": "Add link",
-    "openLink": "Open link in a new tab"
+    "openLink": "Open link in a new tab",
+    "changeIcon": "Change icon"
   },
   "newFolder": "New folder",
   "folderDialog": {

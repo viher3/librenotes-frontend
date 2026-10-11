@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { iconFor } from '@/components/itemIcons'
 import { useTranslation } from 'react-i18next'
 import { Alert } from '@/components/Alert'
 import { Button } from '@/components/Button'
@@ -162,7 +163,7 @@ function PickerBranch({ parent, level, ...rest }: PickerProps & { parent: Parent
           key={`folder:${folder.id}`}
           rowKey={`folder:${folder.id}`}
           label={folder.name}
-          icon="📁"
+          icon={iconFor('folder', folder.icon)}
           expandable
           isSelf={node.kind === 'folder' && node.id === folder.id}
           destination={{ type: 'folder', id: folder.id }}
@@ -176,7 +177,7 @@ function PickerBranch({ parent, level, ...rest }: PickerProps & { parent: Parent
           key={`note:${note.id}`}
           rowKey={`note:${note.id}`}
           label={note.title}
-          icon="📄"
+          icon={iconFor('note', note.icon, note.pinned)}
           expandable={note.childCount > 0}
           isSelf={node.kind === 'note' && node.id === note.id}
           destination={{ type: 'note', id: note.id }}

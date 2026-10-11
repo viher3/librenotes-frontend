@@ -47,5 +47,8 @@
     "parent_folder_in_trash": "Restaura antes su carpeta.",
     "parent_note_in_trash": "Restaura antes su documento.",
     "invalid_location": "Un elemento puede estar en una carpeta o debajo de un documento, no en ambos."
+  },
+  "icon": {
+    "invalid": "El icono debe ser un único emoji."
   }
 }

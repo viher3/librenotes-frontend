@@ -41,5 +41,27 @@
     "open": "Abrir menú",
     "close": "Cerrar menú",
     "sidebar": "Barra lateral"
+  },
+  "iconPicker": {
+    "title": "Icono de «{{name}}»",
+    "currentCustom": "Icono personalizado",
+    "currentDefault": "Icono por defecto",
+    "useDefault": "Usar el de por defecto",
+    "searchLabel": "Buscar iconos",
+    "searchPlaceholder": "Buscar…",
+    "noResults": "Ningún icono coincide con la búsqueda.",
+    "customLabel": "O escribe o pega cualquier emoji",
+    "apply": "Usar este emoji",
+    "invalid": "Introduce un único emoji.",
+    "cancel": "Cancelar",
+    "categories": {
+      "files": "Archivos",
+      "work": "Trabajo",
+      "web": "Web y multimedia",
+      "life": "Vida",
+      "symbols": "Símbolos",
+      "faces": "Personas"
+    },
+    "change": "Cambiar icono"
   }
 }

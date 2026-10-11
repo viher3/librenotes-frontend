@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import { iconFor } from '@/components/itemIcons'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/Button'
 import type { ID } from '@/data/types'
@@ -38,7 +39,7 @@ export function SubDocuments({
           to={`/doc/${note.id}`}
           className="rounded-full border border-neutral-300 px-3 py-0.5 hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-neutral-800"
         >
-          <span aria-hidden="true">📄 </span>
+          <span aria-hidden="true">{iconFor('note', note.icon, note.pinned)} </span>
           {note.title}
         </Link>
       ))}
@@ -48,7 +49,7 @@ export function SubDocuments({
           to={`/link/${link.id}`}
           className="rounded-full border border-neutral-300 px-3 py-0.5 hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-neutral-800"
         >
-          <span aria-hidden="true">🔗 </span>
+          <span aria-hidden="true">{iconFor('link', link.icon)} </span>
           {link.title}
         </Link>
       ))}

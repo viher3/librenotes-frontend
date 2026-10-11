@@ -313,6 +313,7 @@ export function describeRepositoryContract(name: string, create: () => Promise<C
         expect(contents.folder).toEqual({
           id: parent.id,
           name: 'Parent',
+          icon: null,
           parentFolderId: null,
           path: [],
         })
@@ -348,6 +349,59 @@ export function describeRepositoryContract(name: string, create: () => Promise<C
           status: 422,
           code: 'folder.not_found',
         })
+      })
+    })
+
+    describe('icons', () => {
+      it('defaults to no icon and lets folders, notes and links set and clear one', async () => {
+        const { notes, signInNewUser } = await create()
+        await signInNewUser()
+        const folder = await notes.createFolder('Work')
+        const note = await notes.createNote({ title: 'Plan', icon: '🚀' })
+        const link = await notes.createLink({ title: 'Docs', url: 'https://example.com' })
+        expect(folder.icon).toBeNull()
+        expect(note.icon).toBe('🚀')
+        expect(link.icon).toBeNull()
+
+        await notes.updateFolder(folder.id, { icon: '🗂️' })
+        await notes.updateNote(note.id, { icon: '🇪🇸' })
+        await notes.updateLink(link.id, { icon: '📚' })
+
+        const root = await notes.folderContents(null)
+        expect(root.subfolders[0]).toMatchObject({ id: folder.id, name: 'Work', icon: '🗂️' })
+        expect(root.notes[0]).toMatchObject({ id: note.id, icon: '🇪🇸' })
+        expect(root.links[0]).toMatchObject({ id: link.id, icon: '📚' })
+        expect((await notes.folderContents(folder.id)).folder?.icon).toBe('🗂️')
+        expect((await notes.getNote(note.id)).icon).toBe('🇪🇸')
+        expect((await notes.getLink(link.id)).icon).toBe('📚')
+
+        // Changing one field leaves the other alone; `null` restores the default.
+        await notes.updateFolder(folder.id, { name: 'Work 2' })
+        expect((await notes.folderContents(folder.id)).folder).toMatchObject({
+          name: 'Work 2',
+          icon: '🗂️',
+        })
+        await notes.updateFolder(folder.id, { icon: null })
+        await notes.updateNote(note.id, { icon: null })
+        expect((await notes.folderContents(folder.id)).folder?.icon).toBeNull()
+        expect((await notes.getNote(note.id)).icon).toBeNull()
+      })
+
+      it('rejects anything that is not a single emoji', async () => {
+        const { notes, signInNewUser } = await create()
+        await signInNewUser()
+        const note = await notes.createNote({ title: 'Plan' })
+        for (const icon of ['a', '🚀🚀', '<b>', '1']) {
+          await rejects(notes.updateNote(note.id, { icon }), {
+            status: 422,
+            code: 'icon.invalid',
+          })
+        }
+        await rejects(notes.updateNote(note.id, { icon: '🚀'.repeat(40) }), {
+          status: 400,
+          code: 'validation_error',
+        })
+        expect((await notes.getNote(note.id)).icon).toBeNull()
       })
     })
 

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { iconFor } from '@/components/itemIcons'
 import { useTranslation } from 'react-i18next'
 import { Alert } from '@/components/Alert'
 import { Button } from '@/components/Button'
@@ -54,7 +55,7 @@ export default function TrashPage() {
         kind: 'folder',
         id: f.id,
         name: f.name,
-        icon: '📁',
+        icon: iconFor('folder', f.icon),
         deletedAt: f.deletedAt,
       })),
     },
@@ -64,7 +65,7 @@ export default function TrashPage() {
         kind: 'note',
         id: n.id,
         name: n.title,
-        icon: '📄',
+        icon: iconFor('note', n.icon),
         deletedAt: n.deletedAt,
       })),
     },
@@ -74,7 +75,7 @@ export default function TrashPage() {
         kind: 'link',
         id: l.id,
         name: l.title,
-        icon: '🔗',
+        icon: iconFor('link', l.icon),
         deletedAt: l.deletedAt,
       })),
     },

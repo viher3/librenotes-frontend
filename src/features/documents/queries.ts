@@ -49,7 +49,8 @@ export function useSaveNote(id: ID) {
         old ? { ...old, ...changes, updatedAt: new Date().toISOString() } : old,
       )
       // A new title or pin shows in the tree and in the breadcrumbs of other documents; plain typing does not.
-      if ('title' in changes || 'pinned' in changes) void invalidateStructure(queryClient)
+      if ('title' in changes || 'pinned' in changes || 'icon' in changes)
+        void invalidateStructure(queryClient)
       else if ('tags' in changes) {
         void queryClient.invalidateQueries({ queryKey: tagKeys.all })
         void queryClient.invalidateQueries({ queryKey: noteKeys.lists() })

@@ -166,10 +166,13 @@ function createNotesRepository(
       const { id } = await unwrap(
         api.POST('/folders', { body: { name, parent_folder_id: parentFolderId } }),
       )
-      return { id: req(id, 'id'), name, parentFolderId }
+      return { id: req(id, 'id'), name, parentFolderId, icon: null }
     },
     async renameFolder(id, name) {
       await unwrap(api.PATCH('/folders/{id}', { ...path(id), body: { name } }))
+    },
+    async updateFolder(id, input) {
+      await unwrap(api.PATCH('/folders/{id}', { ...path(id), body: input }))
     },
     async moveFolder(id, parentFolderId) {
       await unwrap(
@@ -198,6 +201,7 @@ function createNotesRepository(
           body: {
             title: input.title,
             content: input.content,
+            icon: input.icon,
             folder_id: input.folderId,
             parent_note_id: input.parentNoteId,
             pinned: input.pinned,
@@ -237,6 +241,7 @@ function createNotesRepository(
             title: input.title,
             url: input.url,
             note: input.note,
+            icon: input.icon,
             folder_id: input.folderId,
             parent_note_id: input.parentNoteId,
             tags: input.tags,

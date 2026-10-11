@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/Button'
 import { CHEVRON } from '@/components/glyphs'
+import { iconFor } from '@/components/itemIcons'
 import type { FolderSummary, Link as LinkItem, NoteSummary } from '@/data/types'
 import { DRAG_TYPE, type DropTarget } from './dnd'
 import { NodeMenu, type MenuItem } from './NodeMenu'
@@ -116,6 +117,11 @@ function FolderRow({ folder, level }: { folder: FolderSummary; level: number }) 
       onSelect: () => onAction({ type: 'renameFolder', id: folder.id, name: folder.name }),
     },
     {
+      id: 'icon',
+      label: t('actions.changeIcon'),
+      onSelect: () => onAction({ type: 'icon', node, name: folder.name, icon: folder.icon }),
+    },
+    {
       id: 'move',
       label: t('actions.move'),
       onSelect: () => onAction({ type: 'move', node, name: folder.name }),
@@ -132,7 +138,7 @@ function FolderRow({ folder, level }: { folder: FolderSummary; level: number }) 
       node={node}
       level={level}
       label={folder.name}
-      icon="📁"
+      icon={iconFor('folder', folder.icon)}
       to={`/folder/${folder.id}`}
       expandable
       items={items}
@@ -159,6 +165,11 @@ function NoteRow({ note, level }: { note: NoteSummary; level: number }) {
       onSelect: () => onAction({ type: 'newLink', destination: { type: 'note', id: note.id } }),
     },
     {
+      id: 'icon',
+      label: t('actions.changeIcon'),
+      onSelect: () => onAction({ type: 'icon', node, name: note.title, icon: note.icon }),
+    },
+    {
       id: 'move',
       label: t('actions.move'),
       onSelect: () => onAction({ type: 'move', node, name: note.title }),
@@ -176,7 +187,7 @@ function NoteRow({ note, level }: { note: NoteSummary; level: number }) {
       node={node}
       level={level}
       label={note.title}
-      icon="📄"
+      icon={iconFor('note', note.icon, note.pinned)}
       to={`/doc/${note.id}`}
       expandable={note.childCount > 0}
       items={items}
@@ -197,6 +208,11 @@ function LinkRow({ link, level }: { link: LinkItem; level: number }) {
       onSelect: () => window.open(link.url, '_blank', 'noopener,noreferrer'),
     },
     {
+      id: 'icon',
+      label: t('actions.changeIcon'),
+      onSelect: () => onAction({ type: 'icon', node, name: link.title, icon: link.icon }),
+    },
+    {
       id: 'move',
       label: t('actions.move'),
       onSelect: () => onAction({ type: 'move', node, name: link.title }),
@@ -213,7 +229,7 @@ function LinkRow({ link, level }: { link: LinkItem; level: number }) {
       node={node}
       level={level}
       label={link.title}
-      icon="🔗"
+      icon={iconFor('link', link.icon)}
       to={`/link/${link.id}`}
       items={items}
     />

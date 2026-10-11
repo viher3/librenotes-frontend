@@ -16,6 +16,7 @@ function DocumentCard({ note }: { note: NoteSummary }) {
         className="flex flex-col gap-1 rounded-lg border border-neutral-200 p-3 hover:bg-neutral-50 focus-visible:outline-2 focus-visible:outline-indigo-500 dark:border-neutral-800 dark:hover:bg-neutral-900"
       >
         <span className="flex items-center gap-2 font-medium">
+          {note.icon && <span aria-hidden="true">{note.icon}</span>}
           {note.pinned && (
             <span role="img" aria-label={t('home.pinnedLabel')} title={t('home.pinnedLabel')}>
               📌
