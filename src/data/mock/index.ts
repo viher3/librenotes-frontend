@@ -13,6 +13,7 @@ import {
   normalizeTag,
   normalizeTags,
 } from '../rules'
+import { isEncryptedContent } from '@/lib/crypto/marker'
 import { SessionStore } from '../session'
 import {
   LOCALES,
@@ -314,6 +315,7 @@ export function createMockRepositories(options: MockOptions = {}): {
     parentNoteId: n.parentNoteId,
     childCount: childCount(n.id),
     pinned: n.pinned,
+    encrypted: isEncryptedContent(n.content),
     tags: [...n.tags],
     createdAt: n.createdAt,
     updatedAt: n.updatedAt,
@@ -850,6 +852,7 @@ export function createMockRepositories(options: MockOptions = {}): {
         title: string
         icon: string | null
         body: string
+        encrypted: boolean
         url: string | null
         folderId: ID | null
         tags: string[]
@@ -862,7 +865,9 @@ export function createMockRepositories(options: MockOptions = {}): {
               id: n.id,
               title: n.title,
               icon: n.icon,
-              body: n.content,
+              // Ciphertext is neither matched nor excerpted, like the backend does.
+              body: isEncryptedContent(n.content) ? '' : n.content,
+              encrypted: isEncryptedContent(n.content),
               url: null,
               folderId: n.folderId,
               tags: n.tags,
@@ -876,6 +881,7 @@ export function createMockRepositories(options: MockOptions = {}): {
               title: l.title,
               icon: l.icon,
               body: l.note ?? '',
+              encrypted: false,
               url: l.url,
               folderId: l.folderId,
               tags: l.tags,
@@ -907,6 +913,7 @@ export function createMockRepositories(options: MockOptions = {}): {
         title: c.title,
         icon: c.icon,
         snippet: snippetOf(c.body, terms.find((t) => foldForSearch(c.body).includes(t)) ?? ''),
+        encrypted: c.encrypted,
         folderId: c.folderId,
         tags: [...c.tags],
         updatedAt: c.updatedAt,

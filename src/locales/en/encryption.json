@@ -1,0 +1,57 @@
+{
+  "encrypt": "Encrypt",
+  "options": "Encryption",
+  "lock": "Lock",
+  "badge": "Encrypted",
+  "decrypting": "Decrypting…",
+  "locked": {
+    "title": "This document is encrypted",
+    "body": "Enter its password to read and edit it. The password never leaves your browser and cannot be recovered.",
+    "password": "Password",
+    "unlock": "Unlock",
+    "unlocking": "Unlocking…"
+  },
+  "enable": {
+    "title": "Encrypt this document",
+    "body": "The content is encrypted in your browser with this password. The server only stores unreadable data.",
+    "limits": "The title, tags and attached files are not encrypted, and the content of an encrypted document is not searchable.",
+    "understand": "I understand that if I lose this password the content cannot be recovered.",
+    "submit": "Encrypt",
+    "working": "Encrypting…"
+  },
+  "change": {
+    "title": "Change password",
+    "body": "The document is encrypted again with the new password. The old one stops working.",
+    "submit": "Change password",
+    "working": "Changing…"
+  },
+  "password": {
+    "label": "Password",
+    "confirm": "Repeat the password",
+    "hint": "At least {{min}} characters. Use a phrase only you know.",
+    "cancel": "Cancel"
+  },
+  "manage": {
+    "title": "Encryption",
+    "body": "This document is encrypted. Its content is readable only with its password, which this app never stores.",
+    "change": "Change password",
+    "remove": "Remove encryption",
+    "close": "Close"
+  },
+  "remove": {
+    "title": "Remove encryption?",
+    "body": "The content will be stored as plain text again and will be searchable.",
+    "confirm": "Remove encryption",
+    "cancel": "Cancel"
+  },
+  "errors": {
+    "wrongPassword": "Wrong password, or the document was altered.",
+    "unsupported": "This document was encrypted with a newer version of the app and cannot be opened here.",
+    "malformed": "The encrypted content is damaged and cannot be read.",
+    "tooShort": "Use at least {{min}} characters.",
+    "mismatch": "The passwords do not match.",
+    "required": "Enter the password.",
+    "understand": "Confirm that you understand.",
+    "failed": "Something went wrong. Try again."
+  }
+}

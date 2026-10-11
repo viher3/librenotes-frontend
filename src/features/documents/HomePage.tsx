@@ -22,6 +22,11 @@ function DocumentCard({ note }: { note: NoteSummary }) {
               📌
             </span>
           )}
+          {note.encrypted && (
+            <span role="img" aria-label={t('home.encryptedLabel')} title={t('home.encryptedLabel')}>
+              🔒
+            </span>
+          )}
           <span className="truncate">{note.title}</span>
         </span>
         <span className="text-xs text-neutral-600 dark:text-neutral-400">

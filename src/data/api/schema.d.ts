@@ -3771,6 +3771,8 @@ export interface components {
       /** @description Live children (notes and links) directly under it. */
       child_count?: number
       pinned?: boolean
+      /** @description The content is ciphertext produced by the client (it starts with `lnenc:`); the server cannot read it. */
+      is_encrypted?: boolean
       tags?: components['schemas']['TagNames']
       /** Format: date-time */
       created_at?: string
@@ -3822,6 +3824,8 @@ export interface components {
       /** @description Live children (notes and links) directly under it. */
       child_count?: number
       pinned?: boolean
+      /** @description The content is ciphertext produced by the client (it starts with `lnenc:`); the server cannot read it. */
+      is_encrypted?: boolean
       tags?: components['schemas']['TagNames']
       /** Format: date-time */
       created_at?: string
@@ -3920,6 +3924,8 @@ export interface components {
       /** @description Live children (notes and links) directly under it. */
       child_count?: number
       pinned?: boolean
+      /** @description The content is ciphertext produced by the client (it starts with `lnenc:`); the server cannot read it. */
+      is_encrypted?: boolean
       tags?: components['schemas']['TagNames']
       /** Format: date-time */
       created_at?: string
@@ -4032,8 +4038,10 @@ export interface components {
       /** @description A single emoji chosen by the user; null means the default icon for the item type. */
       icon?: string | null
       title?: string
-      /** @description Plain-text excerpt around the first match (may start/end with an ellipsis) */
+      /** @description Plain-text excerpt around the first match (may start/end with an ellipsis). Empty for encrypted notes. */
       snippet?: string
+      /** @description The note content is encrypted by the client. Only its title and tags are searched. */
+      is_encrypted?: boolean
       /** Format: uuid */
       folder_id?: string | null
       tags?: components['schemas']['TagNames']

@@ -1,6 +1,7 @@
 import '@testing-library/jest-dom/vitest'
 
-import { afterEach } from 'vitest'
+import { webcrypto } from 'node:crypto'
+import { afterEach, vi } from 'vitest'
 
 // Browser storage is shared by the whole file: start every test from a clean slate.
 afterEach(() => {
@@ -17,3 +18,6 @@ if (typeof document.elementFromPoint !== 'function') {
   document.elementFromPoint = () => null
   document.elementsFromPoint = () => []
 }
+
+// jsdom has no WebCrypto; Node's is the same API the browser provides.
+if (!globalThis.crypto?.subtle) vi.stubGlobal('crypto', webcrypto)

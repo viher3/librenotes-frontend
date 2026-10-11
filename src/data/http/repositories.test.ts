@@ -231,6 +231,7 @@ describe('notes repository', () => {
       parentNoteId: null,
       childCount: 2,
       pinned: true,
+      encrypted: false,
       tags: ['work'],
       createdAt: '2026-10-01T10:00:00+00:00',
       updatedAt: '2026-10-02T10:00:00+00:00',
@@ -303,6 +304,7 @@ describe('notes repository', () => {
           parentNoteId: 'p1',
           childCount: 3,
           pinned: false,
+          encrypted: false,
           tags: [],
           createdAt: 'c',
           updatedAt: 'u',
@@ -480,6 +482,7 @@ describe('notes repository', () => {
         parentNoteId: 'n1',
         childCount: 2,
         pinned: false,
+        encrypted: false,
         tags: [],
         createdAt: 'c',
         updatedAt: 'u',
@@ -559,6 +562,40 @@ describe('notes repository', () => {
     expect(server.callsTo('PATCH /links/l1')[0].body).toEqual({ note: null })
   })
 
+  it('maps the encrypted flag of notes and search results', async () => {
+    const { notes } = setup({
+      'GET /notes/n1': () =>
+        json({
+          id: 'n1',
+          title: 'Journal',
+          content: 'lnenc:v1:abc',
+          is_encrypted: true,
+          created_at: 'c',
+          updated_at: 'u',
+        }),
+      'GET /search': () =>
+        json({
+          meta: { page: 1, size: 20, total: 1, last_page: 1 },
+          data: [
+            {
+              type: 'note',
+              id: 'n1',
+              title: 'Journal',
+              snippet: '',
+              is_encrypted: true,
+              updated_at: 'u',
+            },
+          ],
+        }),
+    })
+
+    expect((await notes.getNote('n1')).encrypted).toBe(true)
+    expect((await notes.search({ q: 'jo' })).items[0]).toMatchObject({
+      encrypted: true,
+      snippet: '',
+    })
+  })
+
   it('searches, joining the types, and lists tags', async () => {
     const { notes, server } = setup({
       'GET /search': () =>
@@ -594,6 +631,7 @@ describe('notes repository', () => {
       title: 'Docs',
       icon: null,
       snippet: '…docs…',
+      encrypted: false,
       folderId: null,
       tags: ['dev'],
       updatedAt: 'u',

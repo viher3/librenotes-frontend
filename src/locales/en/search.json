@@ -16,5 +16,6 @@
   "error": "We couldn't search right now.",
   "retry": "Try again",
   "close": "Close",
+  "encrypted": "Encrypted document: only its title is searched.",
   "untitled": "Untitled"
 }

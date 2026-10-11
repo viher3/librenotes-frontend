@@ -16,5 +16,6 @@
   "error": "No hemos podido buscar ahora.",
   "retry": "Reintentar",
   "close": "Cerrar",
+  "encrypted": "Documento cifrado: solo se busca en su título.",
   "untitled": "Sin título"
 }

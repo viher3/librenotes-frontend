@@ -187,7 +187,7 @@ function NoteRow({ note, level }: { note: NoteSummary; level: number }) {
       node={node}
       level={level}
       label={note.title}
-      icon={iconFor('note', note.icon, note.pinned)}
+      icon={iconFor('note', note.icon, note.pinned, note.encrypted)}
       to={`/doc/${note.id}`}
       expandable={note.childCount > 0}
       items={items}

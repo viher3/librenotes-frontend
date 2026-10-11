@@ -1,0 +1,57 @@
+{
+  "encrypt": "Cifrar",
+  "options": "Cifrado",
+  "lock": "Bloquear",
+  "badge": "Cifrado",
+  "decrypting": "Descifrando…",
+  "locked": {
+    "title": "Este documento está cifrado",
+    "body": "Introduce su contraseña para leerlo y editarlo. La contraseña nunca sale de tu navegador y no se puede recuperar.",
+    "password": "Contraseña",
+    "unlock": "Desbloquear",
+    "unlocking": "Desbloqueando…"
+  },
+  "enable": {
+    "title": "Cifrar este documento",
+    "body": "El contenido se cifra en tu navegador con esta contraseña. El servidor solo guarda datos ilegibles.",
+    "limits": "El título, las etiquetas y los archivos adjuntos no se cifran, y el contenido de un documento cifrado no se puede buscar.",
+    "understand": "Entiendo que si pierdo esta contraseña no se podrá recuperar el contenido.",
+    "submit": "Cifrar",
+    "working": "Cifrando…"
+  },
+  "change": {
+    "title": "Cambiar contraseña",
+    "body": "El documento se vuelve a cifrar con la nueva contraseña. La anterior deja de funcionar.",
+    "submit": "Cambiar contraseña",
+    "working": "Cambiando…"
+  },
+  "password": {
+    "label": "Contraseña",
+    "confirm": "Repite la contraseña",
+    "hint": "Al menos {{min}} caracteres. Usa una frase que solo tú conozcas.",
+    "cancel": "Cancelar"
+  },
+  "manage": {
+    "title": "Cifrado",
+    "body": "Este documento está cifrado. Su contenido solo se puede leer con su contraseña, que esta aplicación nunca guarda.",
+    "change": "Cambiar contraseña",
+    "remove": "Quitar el cifrado",
+    "close": "Cerrar"
+  },
+  "remove": {
+    "title": "¿Quitar el cifrado?",
+    "body": "El contenido volverá a guardarse como texto plano y se podrá buscar.",
+    "confirm": "Quitar el cifrado",
+    "cancel": "Cancelar"
+  },
+  "errors": {
+    "wrongPassword": "Contraseña incorrecta, o el documento fue alterado.",
+    "unsupported": "Este documento se cifró con una versión más nueva de la aplicación y no se puede abrir aquí.",
+    "malformed": "El contenido cifrado está dañado y no se puede leer.",
+    "tooShort": "Usa al menos {{min}} caracteres.",
+    "mismatch": "Las contraseñas no coinciden.",
+    "required": "Introduce la contraseña.",
+    "understand": "Confirma que lo entiendes.",
+    "failed": "Algo ha ido mal. Inténtalo de nuevo."
+  }
+}

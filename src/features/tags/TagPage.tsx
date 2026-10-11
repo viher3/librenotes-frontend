@@ -74,7 +74,7 @@ export default function TagPage() {
             <ItemCard
               key={note.id}
               to={`/doc/${note.id}`}
-              icon={iconFor('note', note.icon, note.pinned)}
+              icon={iconFor('note', note.icon, note.pinned, note.encrypted)}
               title={note.title}
               detail={formatRelativeTime(note.updatedAt, language)}
             />

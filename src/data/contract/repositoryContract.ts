@@ -536,6 +536,21 @@ export function describeRepositoryContract(name: string, create: () => Promise<C
         expect(snippet).not.toContain('\n')
       })
 
+      it('never matches nor excerpts the content of an encrypted note, only its title', async () => {
+        const { notes, signInNewUser } = await create()
+        await signInNewUser()
+        const secret = await notes.createNote({
+          title: 'Journal',
+          content: `lnenc:v1:${btoa('zebra')}`,
+        })
+        await notes.createNote({ title: 'Plain', content: 'zebra' })
+
+        expect(ids((await notes.search({ q: 'zebra' })).items)).not.toContain(secret.id)
+        const found = (await notes.search({ q: 'Journal' })).items[0]
+        expect(found).toMatchObject({ id: secret.id, snippet: '', encrypted: true })
+        expect((await notes.getNote(secret.id)).encrypted).toBe(true)
+      })
+
       it('filters by type and tag, excludes trashed items and validates the query', async () => {
         const { notes, signInNewUser } = await create()
         await signInNewUser()

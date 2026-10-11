@@ -11,6 +11,7 @@
     "loadError": "No hemos podido cargar tus documentos.",
     "retry": "Reintentar",
     "updated": "Actualizado {{when}}",
+    "encryptedLabel": "Cifrado",
     "pinnedLabel": "Fijado"
   },
   "editor": {

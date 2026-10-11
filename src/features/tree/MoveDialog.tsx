@@ -177,7 +177,7 @@ function PickerBranch({ parent, level, ...rest }: PickerProps & { parent: Parent
           key={`note:${note.id}`}
           rowKey={`note:${note.id}`}
           label={note.title}
-          icon={iconFor('note', note.icon, note.pinned)}
+          icon={iconFor('note', note.icon, note.pinned, note.encrypted)}
           expandable={note.childCount > 0}
           isSelf={node.kind === 'note' && node.id === note.id}
           destination={{ type: 'note', id: note.id }}

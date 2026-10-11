@@ -127,7 +127,9 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
               }`}
             >
               <div className="flex items-center gap-2">
-                <span aria-hidden="true">{iconFor(result.type, result.icon)}</span>
+                <span aria-hidden="true">
+                  {iconFor(result.type, result.icon, false, result.encrypted)}
+                </span>
                 <span className="min-w-0 flex-1 truncate font-medium">
                   <Marked text={result.title || t('untitled')} query={q} />
                 </span>
@@ -135,6 +137,11 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
                   {result.type === 'note' ? t('document') : t('link')}
                 </span>
               </div>
+              {result.encrypted && (
+                <p className="mt-0.5 text-xs text-neutral-600 dark:text-neutral-400">
+                  {t('encrypted')}
+                </p>
+              )}
               {result.snippet && (
                 <p className="mt-0.5 line-clamp-2 text-xs break-words text-neutral-600 dark:text-neutral-400">
                   <Marked text={result.snippet} query={q} />

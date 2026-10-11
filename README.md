@@ -52,6 +52,14 @@ created. It needs `docker` to read the activation token from the backend's MySQL
 backend's 5 logins per 15 minutes. Override the defaults with `E2E_API_URL`, `E2E_MYSQL_CONTAINER`,
 `E2E_MYSQL_DATABASE` and `E2E_PHP_CONTAINER`. Do not point it at a database you care about.
 
+## Encryption (`src/lib/crypto`, `src/features/encryption`)
+
+A document can be encrypted with a password only its owner knows: AES-256-GCM, key from Argon2id (run in a
+throwaway Web Worker). The browser encrypts when saving and decrypts when opening; the backend only stores the
+`lnenc:v1:…` text. Keys live in memory (`EncryptionProvider`), are dropped on sign-out and after 10 minutes of
+inactivity, and are never written to any storage. Title, tags and attachments are not encrypted, and an encrypted
+document is found by title only. Full design in [etc/specs/encryption.md](./etc/specs/encryption.md).
+
 ## Tree (`src/features/tree`)
 
 The sidebar is a tree of folders, documents (which can hold other documents) and links, following the ARIA tree

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { EditableIcon } from '@/components/EditableIcon'
 import { useTranslation } from 'react-i18next'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
@@ -6,12 +6,18 @@ import { Alert } from '@/components/Alert'
 import { Button } from '@/components/Button'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { isApiError } from '@/data/errors'
-import type { Note } from '@/data/types'
+import type { Note, UpdateNoteInput } from '@/data/types'
 import { errorMessage } from '@/features/auth/errors'
 import { Breadcrumbs } from '@/components/Breadcrumbs'
 import { AttachmentsPanel } from '@/features/attachments/AttachmentsPanel'
 import { imageMarkdown } from '@/features/attachments/files'
 import { useAttachmentUploads } from '@/features/attachments/queries'
+import { useNoteKey } from '@/features/encryption/EncryptionProvider'
+import { LockedDocument } from '@/features/encryption/LockedDocument'
+import { OptionsDialog } from '@/features/encryption/OptionsDialog'
+import { PasswordDialog } from '@/features/encryption/PasswordDialog'
+import { cryptoErrorMessage } from '@/features/encryption/rules'
+import { createNoteKey, decryptContent, encryptContent, type NoteKey } from '@/lib/crypto/envelope'
 import { useFileDrop } from '@/features/attachments/useFileDrop'
 import type { EditorHandle } from './visual/VisualEditor'
 import { useNewLink } from '@/features/links/NewLinkProvider'
@@ -72,14 +78,121 @@ export default function DocumentPage() {
   }
 
   // `key` makes opening another document start from a clean draft.
-  return <DocumentEditor key={query.data.id} note={query.data} />
+  return <DocumentGate key={query.data.id} note={query.data} />
 }
 
-function DocumentEditor({ note }: { note: Note }) {
+/** An unlocked document's plaintext, valid for the stored text and the key it was read with. */
+interface Decrypted {
+  source: string
+  key: NoteKey
+  content: string
+}
+
+/**
+ * Decides what to show for a document: the editor, or (when it is encrypted and the password has not been given
+ * in this tab) the unlock screen. The editor always works on plaintext; encrypting happens when it saves.
+ */
+function DocumentGate({ note }: { note: Note }) {
+  const { t } = useTranslation('encryption')
+  const { key, unlock, lock } = useNoteKey(note.id)
+  const [plain, setPlain] = useState<Decrypted | null>(null)
+  const [notice, setNotice] = useState<string | undefined>()
+
+  // Locked again (timer, sign-out, button): do not keep the plaintext around.
+  if (!key && plain) setPlain(null)
+
+  const current = plain && plain.key === key && plain.source === note.content ? plain : null
+
+  // The key is known but the plaintext is not yet (e.g. coming back to a document that stayed unlocked).
+  useEffect(() => {
+    if (!note.encrypted || !key || current) return
+    let cancelled = false
+    decryptContent(key, note.content, note.id).then(
+      (content) => {
+        if (!cancelled) setPlain({ source: note.content, key, content })
+      },
+      (error: unknown) => {
+        if (cancelled) return
+        setNotice(cryptoErrorMessage(t, error))
+        lock()
+      },
+    )
+    return () => {
+      cancelled = true
+    }
+  }, [note.encrypted, note.content, note.id, key, current, lock, t])
+
+  if (note.encrypted && !key) {
+    return (
+      <LockedDocument
+        note={note}
+        notice={notice}
+        onUnlocked={(unlockedKey, content) => {
+          setNotice(undefined)
+          setPlain({ source: note.content, key: unlockedKey, content })
+          unlock(unlockedKey)
+        }}
+      />
+    )
+  }
+
+  if (note.encrypted && !current) {
+    return (
+      <p role="status" className="text-sm text-neutral-600 dark:text-neutral-400">
+        {t('decrypting')}
+      </p>
+    )
+  }
+
+  return (
+    <DocumentEditor
+      note={note.encrypted && current ? { ...note, content: current.content } : note}
+      noteKey={note.encrypted ? (key ?? null) : null}
+      onKeyChange={(change) => {
+        if (change) {
+          setPlain({ source: change.stored, key: change.key, content: change.content })
+          unlock(change.key)
+        } else lock()
+      }}
+      onLock={lock}
+    />
+  )
+}
+
+interface DocumentEditorProps {
+  /** Its content is plaintext, whether or not the document is encrypted. */
+  note: Note
+  /** The key while the document is encrypted: what the content is encrypted with when it is saved. */
+  noteKey: NoteKey | null
+  /** Encryption was turned on, changed (new key) or off (`null`). `stored` is what the server now holds. */
+  onKeyChange: (change: { key: NoteKey; content: string; stored: string } | null) => void
+  onLock: () => void
+}
+
+type EncryptionDialog = 'enable' | 'options' | 'change' | 'remove'
+
+function DocumentEditor({ note, noteKey, onKeyChange, onLock }: DocumentEditorProps) {
   const { t, i18n } = useTranslation('documents')
+  const { t: te } = useTranslation('encryption')
   const navigate = useNavigate()
   const isNew = (useLocation().state as { isNew?: boolean } | null)?.isNew === true
-  const save = useSaveNote(note.id)
+  const saveRaw = useSaveNote(note.id)
+  // What the next save encrypts with. A ref, not the prop: it must change at the very moment encryption does,
+  // so that no autosave in between sends the content in the wrong form.
+  const cipher = useRef<NoteKey | null>(noteKey)
+  const save = useCallback(
+    async (changes: UpdateNoteInput) => {
+      const key = cipher.current
+      if (key && changes.content !== undefined) {
+        changes = { ...changes, content: await encryptContent(key, changes.content, note.id) }
+      }
+      await saveRaw(changes)
+    },
+    [note.id, saveRaw],
+  )
+  const [encryptionDialog, setEncryptionDialog] = useState<EncryptionDialog | null>(null)
+  const [removing, setRemoving] = useState(false)
+  const [removeError, setRemoveError] = useState<string | null>(null)
   const deleteNote = useDeleteNote()
   const [mode, setMode] = useEditorMode(note.id)
   const [pinned, setPinned] = useState(note.pinned)
@@ -128,6 +241,45 @@ function DocumentEditor({ note }: { note: Note }) {
     }
   }
 
+  /** Replaces what the server holds with `content` as plain text (`key` null) or encrypted with `key`. */
+  const store = async (key: NoteKey | null) => {
+    if (!(await flush())) throw new Error('unsaved changes')
+    const previous = cipher.current
+    cipher.current = key
+    const content = draft.content
+    try {
+      const stored = key ? await encryptContent(key, content, note.id) : content
+      await saveRaw({ content: stored })
+      onKeyChange(key ? { key, content, stored } : null)
+    } catch (error) {
+      cipher.current = previous
+      throw error
+    }
+  }
+
+  const encrypt = async (password: string) => {
+    await store(await createNoteKey(password))
+    setEncryptionDialog(null)
+  }
+
+  const removeEncryption = async () => {
+    setRemoving(true)
+    setRemoveError(null)
+    try {
+      await store(null)
+      setEncryptionDialog(null)
+    } catch (error) {
+      setRemoveError(cryptoErrorMessage(te, error))
+    } finally {
+      setRemoving(false)
+    }
+  }
+
+  const lock = async () => {
+    await flush()
+    onLock()
+  }
+
   const confirmDelete = () =>
     deleteNote.mutate(note.id, {
       onSuccess: () => {
@@ -173,6 +325,20 @@ function DocumentEditor({ note }: { note: Note }) {
           problem={titleMissing ? t('status.titleRequired') : undefined}
         />
         <ModeSwitch mode={mode} onChange={setMode} />
+        {noteKey ? (
+          <>
+            <Button variant="secondary" onClick={() => void lock()}>
+              {te('lock')}
+            </Button>
+            <Button variant="secondary" onClick={() => setEncryptionDialog('options')}>
+              {te('options')}
+            </Button>
+          </>
+        ) : (
+          <Button variant="secondary" onClick={() => setEncryptionDialog('enable')}>
+            {te('encrypt')}
+          </Button>
+        )}
         <Button variant="secondary" onClick={() => void togglePin()} aria-pressed={pinned}>
           {pinned ? t('editor.unpin') : t('editor.pin')}
         </Button>
@@ -248,6 +414,42 @@ function DocumentEditor({ note }: { note: Note }) {
           )}
         </Suspense>
       </div>
+
+      {(encryptionDialog === 'enable' || encryptionDialog === 'change') && (
+        <PasswordDialog
+          kind={encryptionDialog}
+          onSubmit={encrypt}
+          onClose={() => setEncryptionDialog(null)}
+        />
+      )}
+      {encryptionDialog === 'options' && (
+        <OptionsDialog
+          onChangePassword={() => setEncryptionDialog('change')}
+          onRemove={() => {
+            setRemoveError(null)
+            setEncryptionDialog('remove')
+          }}
+          onClose={() => setEncryptionDialog(null)}
+        />
+      )}
+      {encryptionDialog === 'remove' && (
+        <ConfirmDialog
+          title={te('remove.title')}
+          confirmLabel={te('remove.confirm')}
+          cancelLabel={te('remove.cancel')}
+          destructive
+          busy={removing}
+          onConfirm={() => void removeEncryption()}
+          onCancel={() => setEncryptionDialog(null)}
+        >
+          <p>{te('remove.body')}</p>
+          {removeError && (
+            <div className="mt-3">
+              <Alert tone="error">{removeError}</Alert>
+            </div>
+          )}
+        </ConfirmDialog>
+      )}
 
       {confirmingDelete && (
         <ConfirmDialog

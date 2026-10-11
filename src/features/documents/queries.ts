@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
 import { useRepositories } from '@/data/DataProvider'
 import type { CreateNoteInput, ID, ListNotesParams, Note, UpdateNoteInput } from '@/data/types'
+import { isEncryptedContent } from '@/lib/crypto/marker'
 import { invalidateStructure, noteKeys, tagKeys } from '@/lib/queryKeys'
 
 export { noteKeys }
@@ -45,11 +46,27 @@ export function useSaveNote(id: ID) {
   return useCallback(
     async (changes: UpdateNoteInput) => {
       await notes.updateNote(id, changes)
+      const before = queryClient.getQueryData<Note>(noteKeys.detail(id))
+      const encrypted =
+        changes.content === undefined ? undefined : isEncryptedContent(changes.content)
       queryClient.setQueryData<Note>(noteKeys.detail(id), (old) =>
-        old ? { ...old, ...changes, updatedAt: new Date().toISOString() } : old,
+        old
+          ? {
+              ...old,
+              ...changes,
+              encrypted: encrypted ?? old.encrypted,
+              updatedAt: new Date().toISOString(),
+            }
+          : old,
       )
       // A new title or pin shows in the tree and in the breadcrumbs of other documents; plain typing does not.
-      if ('title' in changes || 'pinned' in changes || 'icon' in changes)
+      // Neither does encrypting or decrypting, which changes the icon the document has in those places.
+      if (
+        'title' in changes ||
+        'pinned' in changes ||
+        'icon' in changes ||
+        (encrypted !== undefined && before !== undefined && encrypted !== before.encrypted)
+      )
         void invalidateStructure(queryClient)
       else if ('tags' in changes) {
         void queryClient.invalidateQueries({ queryKey: tagKeys.all })

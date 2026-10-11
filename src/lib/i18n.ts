@@ -5,6 +5,7 @@ import enAttachments from '@/locales/en/attachments.json'
 import enAuth from '@/locales/en/auth.json'
 import enCommon from '@/locales/en/common.json'
 import enDocuments from '@/locales/en/documents.json'
+import enEncryption from '@/locales/en/encryption.json'
 import enErrors from '@/locales/en/errors.json'
 import enLinks from '@/locales/en/links.json'
 import enSearch from '@/locales/en/search.json'
@@ -15,6 +16,7 @@ import esAttachments from '@/locales/es/attachments.json'
 import esAuth from '@/locales/es/auth.json'
 import esCommon from '@/locales/es/common.json'
 import esDocuments from '@/locales/es/documents.json'
+import esEncryption from '@/locales/es/encryption.json'
 import esErrors from '@/locales/es/errors.json'
 import esLinks from '@/locales/es/links.json'
 import esSearch from '@/locales/es/search.json'
@@ -31,6 +33,7 @@ export const resources = {
     attachments: esAttachments,
     auth: esAuth,
     documents: esDocuments,
+    encryption: esEncryption,
     errors: esErrors,
     links: esLinks,
     search: esSearch,
@@ -43,6 +46,7 @@ export const resources = {
     attachments: enAttachments,
     auth: enAuth,
     documents: enDocuments,
+    encryption: enEncryption,
     errors: enErrors,
     links: enLinks,
     search: enSearch,

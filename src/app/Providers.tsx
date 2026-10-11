@@ -5,6 +5,7 @@ import { DataProvider } from '@/data/DataProvider'
 import { isApiError } from '@/data/errors'
 import type { Repositories } from '@/data/create'
 import { AuthProvider } from '@/features/auth/AuthProvider'
+import { EncryptionProvider } from '@/features/encryption/EncryptionProvider'
 import '@/lib/i18n'
 
 /** One retry for transient failures; a 4xx means the request itself is wrong, so repeating it is pointless. */
@@ -28,7 +29,9 @@ export function Providers({
   return (
     <DataProvider repositories={repositories}>
       <QueryClientProvider client={queryClient}>
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <EncryptionProvider>{children}</EncryptionProvider>
+        </AuthProvider>
       </QueryClientProvider>
     </DataProvider>
   )

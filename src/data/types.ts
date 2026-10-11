@@ -63,6 +63,8 @@ export interface NoteSummary {
   /** How many notes and links are directly under it (what makes it expandable in the tree). */
   childCount: number
   pinned: boolean
+  /** The content is ciphertext produced by this app (the server cannot read it). */
+  encrypted: boolean
   tags: string[]
   createdAt: string
   updatedAt: string
@@ -138,8 +140,10 @@ export interface SearchResult {
   id: ID
   title: string
   icon: Icon
-  /** Plain-text excerpt around the first match; may start/end with an ellipsis. */
+  /** Plain-text excerpt around the first match; may start/end with an ellipsis. Empty when encrypted. */
   snippet: string
+  /** An encrypted note is matched by title and tags only. */
+  encrypted: boolean
   folderId: ID | null
   tags: string[]
   updatedAt: string

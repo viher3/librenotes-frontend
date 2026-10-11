@@ -2631,6 +2631,10 @@
             "type": "integer"
           },
           "pinned": { "type": "boolean" },
+          "is_encrypted": {
+            "description": "The content is ciphertext produced by the client (it starts with `lnenc:`); the server cannot read it.",
+            "type": "boolean"
+          },
           "tags": { "$ref": "#\/components\/schemas\/TagNames" },
           "created_at": { "type": "string", "format": "date-time" },
           "updated_at": { "type": "string", "format": "date-time" }
@@ -2703,6 +2707,10 @@
             "type": "integer"
           },
           "pinned": { "type": "boolean" },
+          "is_encrypted": {
+            "description": "The content is ciphertext produced by the client (it starts with `lnenc:`); the server cannot read it.",
+            "type": "boolean"
+          },
           "tags": { "$ref": "#\/components\/schemas\/TagNames" },
           "created_at": { "type": "string", "format": "date-time" },
           "updated_at": { "type": "string", "format": "date-time" },
@@ -2846,6 +2854,10 @@
             "type": "integer"
           },
           "pinned": { "type": "boolean" },
+          "is_encrypted": {
+            "description": "The content is ciphertext produced by the client (it starts with `lnenc:`); the server cannot read it.",
+            "type": "boolean"
+          },
           "tags": { "$ref": "#\/components\/schemas\/TagNames" },
           "created_at": { "type": "string", "format": "date-time" },
           "updated_at": { "type": "string", "format": "date-time" }
@@ -3001,8 +3013,12 @@
           },
           "title": { "type": "string" },
           "snippet": {
-            "description": "Plain-text excerpt around the first match (may start\/end with an ellipsis)",
+            "description": "Plain-text excerpt around the first match (may start\/end with an ellipsis). Empty for encrypted notes.",
             "type": "string"
+          },
+          "is_encrypted": {
+            "description": "The note content is encrypted by the client. Only its title and tags are searched.",
+            "type": "boolean"
           },
           "folder_id": { "type": "string", "format": "uuid", "nullable": true },
           "tags": { "$ref": "#\/components\/schemas\/TagNames" },

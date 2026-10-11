@@ -39,7 +39,7 @@ export function SubDocuments({
           to={`/doc/${note.id}`}
           className="rounded-full border border-neutral-300 px-3 py-0.5 hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-neutral-800"
         >
-          <span aria-hidden="true">{iconFor('note', note.icon, note.pinned)} </span>
+          <span aria-hidden="true">{iconFor('note', note.icon, note.pinned, note.encrypted)} </span>
           {note.title}
         </Link>
       ))}
