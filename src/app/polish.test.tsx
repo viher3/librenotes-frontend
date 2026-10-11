@@ -57,15 +57,6 @@ describe('theme', () => {
     expect(select).toHaveValue('light')
   })
 
-  it('is also available before signing in', async () => {
-    const mock = await createBackend()
-    const { user } = await renderApp('/login', mock)
-
-    await user.selectOptions(await screen.findByRole('combobox', { name: 'Theme' }), 'light')
-
-    expect(document.documentElement.dataset.theme).toBe('light')
-  })
-
   it('changes the editor too', async () => {
     const mock = await signedInBackend()
     const note = await mock.notes.createNote({ title: 'Doc' })

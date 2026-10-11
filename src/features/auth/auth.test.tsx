@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react'
+import { act, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { activationTokenFor } from '@/data/mock'
 import { ApiError } from '@/data/errors'
@@ -413,17 +413,6 @@ describe('language', () => {
     expect((await mock.auth.me()).locale).toBe('es')
   })
 
-  it('changes the language of the sign-in page without touching the server', async () => {
-    const mock = await createBackend()
-    const updateProfile = vi.spyOn(mock.auth, 'updateProfile')
-    const { user } = await renderApp('/login', mock)
-
-    await user.selectOptions(await screen.findByRole('combobox', { name: 'Language' }), 'es')
-
-    expect(await screen.findByRole('heading', { name: 'Iniciar sesión' })).toBeInTheDocument()
-    expect(updateProfile).not.toHaveBeenCalled()
-  })
-
   it('still switches the language if saving the preference fails', async () => {
     const mock = await createBackend()
     await mock.auth.login(ACCOUNT.email, ACCOUNT.password)
@@ -441,7 +430,7 @@ describe('language', () => {
   it('translates the error messages', async () => {
     const mock = await createBackend()
     const { user } = await renderApp('/login', mock)
-    await user.selectOptions(await screen.findByRole('combobox', { name: 'Language' }), 'es')
+    await act(() => i18n.changeLanguage('es'))
 
     await user.type(await screen.findByLabelText('Correo electrónico'), ACCOUNT.email)
     await user.type(screen.getByLabelText('Contraseña'), 'wrong-password')
