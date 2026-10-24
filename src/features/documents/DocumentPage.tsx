@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { EditableIcon } from '@/components/EditableIcon'
 import { useTranslation } from 'react-i18next'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
@@ -199,7 +199,7 @@ function DocumentEditor({ note, noteKey, onKeyChange, onLock }: DocumentEditorPr
   const [pinError, setPinError] = useState(false)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [lossy, setLossy] = useState(false)
-  const titleRef = useRef<HTMLInputElement>(null)
+  const titleRef = useRef<HTMLTextAreaElement>(null)
   const { createDocument, pending: creating, error: createError } = useNewDocument()
   const newLink = useNewLink()
   const editor = useRef<EditorHandle>(null)
@@ -225,6 +225,14 @@ function DocumentEditor({ note, noteKey, onKeyChange, onLock }: DocumentEditorPr
       document.title = i18n.t('appName')
     }
   }, [draft.title, i18n, t])
+
+  // Grow the title field with its content so a long title wraps instead of being cut off.
+  useLayoutEffect(() => {
+    const el = titleRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${el.scrollHeight}px`
+  }, [draft.title])
 
   const unsaved = status !== 'saved' || titleMissing
   useSaveGuards({ flush, unsaved })
@@ -298,7 +306,7 @@ function DocumentEditor({ note, noteKey, onKeyChange, onLock }: DocumentEditorPr
   return (
     <div className="flex h-full min-h-[28rem] flex-col gap-3" {...dropProps}>
       <Breadcrumbs path={note.path} current={draft.title.trim() || t('untitled')} />
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex items-center gap-3">
         <EditableIcon
           kind="note"
           icon={note.icon}
@@ -307,19 +315,26 @@ function DocumentEditor({ note, noteKey, onKeyChange, onLock }: DocumentEditorPr
           describeError={errorMessage}
           onChange={(icon) => save({ icon })}
         />
-        <input
+        <textarea
           ref={titleRef}
+          rows={1}
           aria-label={t('editor.titleLabel')}
           value={draft.title}
           maxLength={MAX_TITLE_LENGTH}
           autoFocus={isNew}
-          onChange={(event) => setField('title', event.target.value)}
+          onChange={(event) => setField('title', event.target.value.replace(/\n/g, ' '))}
+          onKeyDown={(event) => {
+            // The title is a single logical line that wraps visually: Enter must not add a break.
+            if (event.key === 'Enter') event.preventDefault()
+          }}
           onBlur={() => {
             // An empty title cannot be saved: put the last saved one back instead of leaving it blank.
             if (draft.title.trim() === '') setField('title', note.title)
           }}
-          className="min-w-0 flex-1 rounded-md border border-transparent bg-transparent px-2 py-1 text-2xl font-semibold hover:border-neutral-300 focus-visible:border-indigo-500 focus-visible:outline-none dark:hover:border-neutral-700"
+          className="min-w-0 flex-1 resize-none overflow-hidden break-words rounded-md border border-transparent bg-transparent px-2 py-1 text-2xl font-semibold hover:border-neutral-300 focus-visible:border-indigo-500 focus-visible:outline-none dark:hover:border-neutral-700"
         />
+      </div>
+      <div className="flex flex-wrap items-center gap-3">
         <SaveIndicator
           status={status}
           problem={titleMissing ? t('status.titleRequired') : undefined}

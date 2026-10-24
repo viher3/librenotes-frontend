@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { Button } from '@/components/Button'
@@ -17,6 +17,23 @@ const linkClass = ({ isActive }: { isActive: boolean }) =>
       ? 'bg-neutral-200 dark:bg-neutral-800'
       : 'hover:bg-neutral-100 dark:hover:bg-neutral-900'
   }`
+
+const SIDEBAR_WIDTH_KEY = 'sidebarWidth'
+const SIDEBAR_DEFAULT = 288
+const SIDEBAR_MIN = 200
+const SIDEBAR_MAX = 600
+const SIDEBAR_STEP = 16
+
+const clampWidth = (width: number) => Math.min(SIDEBAR_MAX, Math.max(SIDEBAR_MIN, width))
+
+function loadSidebarWidth() {
+  try {
+    const stored = Number(localStorage.getItem(SIDEBAR_WIDTH_KEY))
+    return stored ? clampWidth(stored) : SIDEBAR_DEFAULT
+  } catch {
+    return SIDEBAR_DEFAULT
+  }
+}
 
 /** The signed-in area: sidebar and page. The link dialog is available from anywhere inside it. */
 export function AppLayout() {
@@ -39,6 +56,8 @@ function Shell() {
   const desktop = useMediaQuery('(min-width: 768px)')
   const [menuOpen, setMenuOpen] = useState(false)
   const mainRef = useRef<HTMLElement>(null)
+  const [sidebarWidth, setSidebarWidth] = useState(loadSidebarWidth)
+  const [resizing, setResizing] = useState(false)
   const { pathname } = useLocation()
 
   // Going somewhere closes the drawer (adjusted while rendering, not in an effect).
@@ -60,8 +79,48 @@ function Shell() {
   // A closed drawer is off screen: keep it out of the tab order and the accessibility tree too.
   const sidebarHidden = !desktop && !menuOpen
 
+  const saveWidth = (width: number) => {
+    try {
+      localStorage.setItem(SIDEBAR_WIDTH_KEY, String(width))
+    } catch {
+      // Storage unavailable: the width just isn't remembered.
+    }
+  }
+
+  const startResize = (event: ReactPointerEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    const startX = event.clientX
+    const startWidth = sidebarWidth
+    const sign = document.documentElement.dir === 'rtl' ? -1 : 1
+    let latest = startWidth
+    setResizing(true)
+    const onMove = (move: PointerEvent) => {
+      latest = clampWidth(startWidth + sign * (move.clientX - startX))
+      setSidebarWidth(latest)
+    }
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      setResizing(false)
+      saveWidth(latest)
+    }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+  }
+
+  const resizeWithKeys = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    const rtl = document.documentElement.dir === 'rtl'
+    const grow = rtl ? 'ArrowLeft' : 'ArrowRight'
+    const shrink = rtl ? 'ArrowRight' : 'ArrowLeft'
+    if (event.key !== grow && event.key !== shrink) return
+    event.preventDefault()
+    const next = clampWidth(sidebarWidth + (event.key === grow ? SIDEBAR_STEP : -SIDEBAR_STEP))
+    setSidebarWidth(next)
+    saveWidth(next)
+  }
+
   return (
-    <div className="flex h-screen flex-col md:flex-row">
+    <div className={`flex h-screen flex-col md:flex-row ${resizing ? 'cursor-col-resize select-none' : ''}`}>
       <a
         href="#main"
         onClick={(event) => {
@@ -108,6 +167,7 @@ function Shell() {
         aria-label={t('menu.sidebar')}
         inert={sidebarHidden}
         data-open={drawerOpen}
+        style={desktop ? { width: sidebarWidth } : undefined}
         className={`fixed inset-y-0 start-0 z-40 flex w-72 max-w-[85vw] shrink-0 flex-col gap-3 overflow-y-auto border-e border-neutral-200 bg-white p-4 transition-transform md:static md:z-auto md:max-w-none md:translate-x-0 dark:border-neutral-800 dark:bg-neutral-950 ${
           menuOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
@@ -140,6 +200,26 @@ function Shell() {
         <SidebarTree />
         <TagList />
       </aside>
+      {desktop && (
+        <div
+          role="separator"
+          aria-orientation="vertical"
+          aria-label={t('menu.resize')}
+          aria-valuenow={sidebarWidth}
+          aria-valuemin={SIDEBAR_MIN}
+          aria-valuemax={SIDEBAR_MAX}
+          tabIndex={0}
+          onPointerDown={startResize}
+          onKeyDown={resizeWithKeys}
+          onDoubleClick={() => {
+            setSidebarWidth(SIDEBAR_DEFAULT)
+            saveWidth(SIDEBAR_DEFAULT)
+          }}
+          className={`relative z-10 -mx-1 w-2 shrink-0 cursor-col-resize touch-none transition-colors hover:bg-indigo-500/40 focus-visible:bg-indigo-500/60 focus-visible:outline-none ${
+            resizing ? 'bg-indigo-500/60' : ''
+          }`}
+        />
+      )}
       <main
         id="main"
         ref={mainRef}

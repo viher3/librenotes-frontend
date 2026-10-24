@@ -43,7 +43,8 @@
   "menu": {
     "open": "Open menu",
     "close": "Close menu",
-    "sidebar": "Sidebar"
+    "sidebar": "Sidebar",
+    "resize": "Resize sidebar"
   },
   "iconPicker": {
     "title": "Icon for “{{name}}”",

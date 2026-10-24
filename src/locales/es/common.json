@@ -43,7 +43,8 @@
   "menu": {
     "open": "Abrir menú",
     "close": "Cerrar menú",
-    "sidebar": "Barra lateral"
+    "sidebar": "Barra lateral",
+    "resize": "Cambiar el ancho de la barra lateral"
   },
   "iconPicker": {
     "title": "Icono de «{{name}}»",
