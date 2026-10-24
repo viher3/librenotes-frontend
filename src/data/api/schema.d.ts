@@ -408,75 +408,6 @@ export interface paths {
     }
     trace?: never
   }
-  '/users/{id}/change-password': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    /** Update user password */
-    patch: {
-      parameters: {
-        query?: never
-        header?: never
-        path: {
-          /** @description User ID */
-          id: string
-        }
-        cookie?: never
-      }
-      requestBody: {
-        content: {
-          'application/json': components['schemas']['ChangeUserPasswordRequest']
-        }
-      }
-      responses: {
-        /** @description Password updated correctly */
-        200: {
-          headers: {
-            [name: string]: unknown
-          }
-          content?: never
-        }
-        /** @description Invalid data */
-        400: {
-          headers: {
-            [name: string]: unknown
-          }
-          content?: never
-        }
-        /** @description Unauthorized */
-        401: {
-          headers: {
-            [name: string]: unknown
-          }
-          content?: never
-        }
-        /** @description User not found */
-        404: {
-          headers: {
-            [name: string]: unknown
-          }
-          content?: never
-        }
-        /** @description Internal server error */
-        500: {
-          headers: {
-            [name: string]: unknown
-          }
-          content?: never
-        }
-      }
-    }
-    trace?: never
-  }
   '/login': {
     parameters: {
       query?: never
@@ -3441,6 +3372,99 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/me/password': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    /**
+     * Change the current user's password
+     * @description Replaces the password of the authenticated user. The current password is always verified and the new one must be different (8-44 characters). On success every token issued before the change stops working, so the client must log in again, and a notice email is sent. Three wrong current passwords lock the endpoint for that user (429 with Retry-After).
+     */
+    patch: {
+      parameters: {
+        query?: never
+        header?: never
+        path?: never
+        cookie?: never
+      }
+      requestBody: {
+        content: {
+          'application/json': components['schemas']['ChangeCurrentUserPasswordRequest']
+        }
+      }
+      responses: {
+        /** @description Password changed */
+        204: {
+          headers: {
+            [name: string]: unknown
+          }
+          content?: never
+        }
+        /** @description Invalid data (missing field, wrong type or new password outside 8-44 characters) */
+        400: {
+          headers: {
+            [name: string]: unknown
+          }
+          content?: never
+        }
+        /** @description Missing or invalid token */
+        401: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': components['schemas']['ApiError']
+          }
+        }
+        /** @description The user no longer exists */
+        404: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': components['schemas']['ApiError']
+          }
+        }
+        /** @description `user.invalid_password` (wrong current password), `user.password_unchanged` (new equals current) or `user.invalid_new_password` */
+        422: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': components['schemas']['ApiError']
+          }
+        }
+        /** @description Too many failed attempts (`user.change_password_rate_limited`) */
+        429: {
+          headers: {
+            /** @description Seconds until a new attempt is accepted */
+            'Retry-After'?: number
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': components['schemas']['ApiError']
+          }
+        }
+        /** @description Internal server error */
+        500: {
+          headers: {
+            [name: string]: unknown
+          }
+          content?: never
+        }
+      }
+    }
+    trace?: never
+  }
 }
 export type webhooks = Record<string, never>
 export interface components {
@@ -3511,10 +3535,6 @@ export interface components {
       total?: number
       page?: number
       last?: number
-    }
-    ChangeUserPasswordRequest: {
-      currentPassword: string
-      newPassword: string
     }
     CurrentUserResponse: {
       /** Format: uuid */
@@ -4153,6 +4173,12 @@ export interface components {
       /** Format: int32 */
       code: number
       message: string
+    }
+    ChangeCurrentUserPasswordRequest: {
+      /** Format: password */
+      current_password: string
+      /** Format: password */
+      new_password: string
     }
   }
   responses: never

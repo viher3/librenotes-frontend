@@ -8,5 +8,9 @@ import { isApiError } from '@/data/errors'
 export function errorMessage(error: unknown): string {
   const code = isApiError(error) ? error.code : 'unknown'
   const key = `errors:${code}`
-  return i18n.exists(key) ? i18n.t(key as never) : i18n.t('errors:unknown' as never)
+  // The backend's `params` (e.g. the min and max of a password) fill the message's placeholders.
+  const params = isApiError(error) ? error.params : {}
+  return i18n.exists(key)
+    ? String(i18n.t(key as never, params as never))
+    : i18n.t('errors:unknown' as never)
 }

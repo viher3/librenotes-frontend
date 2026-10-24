@@ -28,9 +28,9 @@ export function RequireAuth() {
 
   if (state.status === 'loading') return <Loading />
   if (state.status === 'anonymous') {
-    // Remember where the user was heading, except when they chose to leave.
-    const from =
-      state.reason === 'signedOut' ? undefined : location.pathname + location.search + location.hash
+    // Remember where the user was heading, except when they chose to leave or changed their password.
+    const leaving = state.reason === 'signedOut' || state.reason === 'passwordChanged'
+    const from = leaving ? undefined : location.pathname + location.search + location.hash
     return <Navigate to="/login" replace state={{ from }} />
   }
   return <Outlet />

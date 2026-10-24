@@ -1,14 +1,23 @@
-import { useId, type ComponentProps } from 'react'
+import { useId, type ComponentProps, type ReactNode } from 'react'
 
 interface TextFieldProps extends ComponentProps<'input'> {
   label: string
   /** Already translated. */
   error?: string
   hint?: string
+  /** Control shown inside the field, at its end (e.g. a show/hide button). */
+  trailing?: ReactNode
 }
 
 /** A labelled input wired for assistive technology: the error and hint are announced with the field. */
-export function TextField({ label, error, hint, className = '', ...input }: TextFieldProps) {
+export function TextField({
+  label,
+  error,
+  hint,
+  trailing,
+  className = '',
+  ...input
+}: TextFieldProps) {
   const id = useId()
   const hintId = `${id}-hint`
   const errorId = `${id}-error`
@@ -19,15 +28,20 @@ export function TextField({ label, error, hint, className = '', ...input }: Text
       <label htmlFor={id} className="text-sm font-medium">
         {label}
       </label>
-      <input
-        id={id}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={describedBy || undefined}
-        className={`rounded-md border bg-transparent px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-indigo-500 ${
-          error ? 'border-red-500' : 'border-neutral-300 dark:border-neutral-700'
-        } ${className}`}
-        {...input}
-      />
+      <div className="relative flex">
+        <input
+          id={id}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={describedBy || undefined}
+          className={`w-full rounded-md border bg-transparent px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-indigo-500 ${
+            error ? 'border-red-500' : 'border-neutral-300 dark:border-neutral-700'
+          } ${trailing ? 'pe-10' : ''} ${className}`}
+          {...input}
+        />
+        {trailing && (
+          <div className="absolute inset-y-0 end-0 flex items-center pe-1">{trailing}</div>
+        )}
+      </div>
       {hint && (
         <p id={hintId} className="text-xs text-neutral-600 dark:text-neutral-400">
           {hint}

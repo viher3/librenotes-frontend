@@ -127,6 +127,16 @@ function createAuthRepository(client: HttpClient, session: SessionStore): AuthRe
       await unwrap(api.PATCH('/me', { body: input }))
       return me()
     },
+
+    async changePassword({ currentPassword, newPassword }) {
+      await unwrap(
+        api.PATCH('/me/password', {
+          body: { current_password: currentPassword, new_password: newPassword },
+        }),
+      )
+      // Every token was revoked server-side: do not try to renew or log out with them.
+      session.clear()
+    },
   }
 }
 

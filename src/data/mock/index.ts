@@ -5,6 +5,7 @@ import {
   MIN_PASSWORD_LENGTH,
   MIN_SEARCH_LENGTH,
   MAX_ICON_LENGTH,
+  MAX_PASSWORD_LENGTH,
   isIcon,
   USERNAME_LENGTH,
   foldForSearch,
@@ -65,6 +66,8 @@ interface UserRecord {
   active: boolean
   createdAt: string
   lastLoginAt: string | null
+  /** Bumped when the password changes; tokens issued with an older version stop working. */
+  tokenVersion: number
 }
 
 interface Owned {
@@ -121,6 +124,9 @@ const MAX_PAGE_SIZE = 100
 const DEFAULT_PAGE_SIZE = 20
 const SNIPPET_LENGTH = 160
 const SNIPPET_LEAD = 50
+/** Wrong current-password attempts allowed per window before changing the password is locked (as the backend). */
+const PASSWORD_ATTEMPTS = 3
+const PASSWORD_ATTEMPTS_WINDOW_MS = 15 * 60 * 1000
 
 export function createMockRepositories(options: MockOptions = {}): {
   auth: AuthRepository
@@ -155,12 +161,25 @@ export function createMockRepositories(options: MockOptions = {}): {
   }
 
   // ---- session helpers
+  const accessTokenOf = (u: UserRecord) => `mock-access-${u.id}~${u.tokenVersion}`
+  const refreshTokenOf = (u: UserRecord) => `mock-refresh-${u.id}~${u.tokenVersion}`
+  /** The user a token belongs to, unless the password changed after it was issued. */
+  const userOfToken = (
+    kind: 'access' | 'refresh',
+    token: string | null,
+  ): UserRecord | undefined => {
+    const match = new RegExp(`^mock-${kind}-(.+?)(?:~(\\d+))?$`).exec(token ?? '')
+    const user = match ? users.get(match[1]) : undefined
+    // Tokens without a version (stored by an older mock) count as version 1, like the backend does.
+    return user && Number(match?.[2] ?? 1) === user.tokenVersion ? user : undefined
+  }
   const currentUser = (): UserRecord => {
-    const id = /^mock-access-(.+)$/.exec(session.accessToken ?? '')?.[1]
-    const user = id ? users.get(id) : undefined
+    const user = userOfToken('access', session.accessToken)
     if (!user) return fail(401, 'security.unauthenticated')
     return user
   }
+  // Failed "current password" attempts per user, as timestamps (ms).
+  const passwordFailures = new Map<ID, number[]>()
   const owner = () => currentUser().id
   const toUser = (u: UserRecord): User => ({
     id: u.id,
@@ -470,6 +489,9 @@ export function createMockRepositories(options: MockOptions = {}): {
       if (input.password.length < MIN_PASSWORD_LENGTH) {
         errors.push(`[password] Must be at least ${MIN_PASSWORD_LENGTH} characters long`)
       }
+      if (input.password.length > MAX_PASSWORD_LENGTH) {
+        errors.push(`[password] Must be at most ${MAX_PASSWORD_LENGTH} characters long`)
+      }
       if (
         input.username !== undefined &&
         (input.username.length < USERNAME_LENGTH.min || input.username.length > USERNAME_LENGTH.max)
@@ -492,6 +514,7 @@ export function createMockRepositories(options: MockOptions = {}): {
         active: false,
         createdAt: now(),
         lastLoginAt: null,
+        tokenVersion: 1,
       })
     },
 
@@ -508,10 +531,7 @@ export function createMockRepositories(options: MockOptions = {}): {
       if (!user || user.password !== password) return fail(401, 'security.bad_credentials')
       if (!user.active) return fail(403, 'security.inactive_user')
       user.lastLoginAt = now()
-      session.setTokens({
-        accessToken: `mock-access-${user.id}`,
-        refreshToken: `mock-refresh-${user.id}`,
-      })
+      session.setTokens({ accessToken: accessTokenOf(user), refreshToken: refreshTokenOf(user) })
       return toUser(user)
     },
 
@@ -522,16 +542,12 @@ export function createMockRepositories(options: MockOptions = {}): {
 
     async restoreSession() {
       await wait()
-      const id = /^mock-refresh-(.+)$/.exec(session.refreshToken ?? '')?.[1]
-      const user = id ? users.get(id) : undefined
+      const user = userOfToken('refresh', session.refreshToken)
       if (!user) {
         session.clear()
         return null
       }
-      session.setTokens({
-        accessToken: `mock-access-${user.id}`,
-        refreshToken: `mock-refresh-${user.id}`,
-      })
+      session.setTokens({ accessToken: accessTokenOf(user), refreshToken: refreshTokenOf(user) })
       return toUser(user)
     },
 
@@ -560,6 +576,48 @@ export function createMockRepositories(options: MockOptions = {}): {
         user.locale = input.locale
       }
       return toUser(user)
+    },
+
+    async changePassword({ currentPassword, newPassword }) {
+      await wait()
+      const user = currentUser()
+
+      // Schema validation comes first on the backend, before the attempts are even counted.
+      const errors: string[] = []
+      if (currentPassword.length < 1 || currentPassword.length > MAX_PASSWORD_LENGTH) {
+        errors.push(
+          `[current_password] Must be between 1 and ${MAX_PASSWORD_LENGTH} characters long`,
+        )
+      }
+      if (newPassword.length < MIN_PASSWORD_LENGTH || newPassword.length > MAX_PASSWORD_LENGTH) {
+        errors.push(
+          `[new_password] Must be between ${MIN_PASSWORD_LENGTH} and ${MAX_PASSWORD_LENGTH} characters long`,
+        )
+      }
+      if (errors.length) invalid(...errors)
+
+      const since = Date.now() - PASSWORD_ATTEMPTS_WINDOW_MS
+      const failures = (passwordFailures.get(user.id) ?? []).filter((at) => at > since)
+      passwordFailures.set(user.id, failures)
+      if (failures.length >= PASSWORD_ATTEMPTS) {
+        fail(429, 'user.change_password_rate_limited', {
+          retry_after: Math.max(
+            1,
+            Math.ceil((failures[0] + PASSWORD_ATTEMPTS_WINDOW_MS - Date.now()) / 1000),
+          ),
+        })
+      }
+
+      if (user.password !== currentPassword) {
+        passwordFailures.set(user.id, [...failures, Date.now()])
+        return fail(422, 'user.invalid_password')
+      }
+      passwordFailures.delete(user.id)
+      if (newPassword === currentPassword) return fail(422, 'user.password_unchanged')
+
+      user.password = newPassword
+      user.tokenVersion += 1 // every token issued so far stops working
+      session.clear()
     },
   }
 
@@ -1088,6 +1146,7 @@ export function createMockRepositories(options: MockOptions = {}): {
       active: true,
       createdAt: '2026-01-01T09:00:00+00:00',
       lastLoginAt: null,
+      tokenVersion: 1,
     })
     const stamp = (n: number) => `2026-10-0${n}T10:00:00+00:00`
     const folder = (name: string, parentFolderId: ID | null = null): FolderRecord => {
@@ -1177,6 +1236,7 @@ export function createMockRepositories(options: MockOptions = {}): {
 
   const populate = () => {
     users = new Map()
+    passwordFailures.clear()
     folders = new Map()
     notes = new Map()
     links = new Map()

@@ -197,42 +197,11 @@
         "security": [{ "Bearer": [] }]
       }
     },
-    "\/users\/{id}\/change-password": {
-      "patch": {
-        "tags": ["User"],
-        "summary": "Update user password",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "User ID",
-            "required": true,
-            "schema": { "type": "string", "format": "uuid" }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application\/json": {
-              "schema": { "$ref": "#\/components\/schemas\/ChangeUserPasswordRequest" }
-            }
-          }
-        },
-        "responses": {
-          "200": { "description": "Password updated correctly" },
-          "400": { "description": "Invalid data" },
-          "401": { "description": "Unauthorized" },
-          "404": { "description": "User not found" },
-          "500": { "description": "Internal server error" }
-        },
-        "security": [{ "Bearer": [] }]
-      }
-    },
     "\/login": {
       "post": {
         "tags": ["Authentication"],
         "summary": "User authentication",
-        "description": "Exchanges email and password for a short-lived access token (JWT, 15 minutes, sent later as `Authorization: Bearer \u003CaccessToken\u003E`) and a refresh token used to obtain new pairs through `PUT \/token-renew`. Accounts that registered through `POST \/signup` must be activated first.\n",
+        "description": "Exchanges email and password for a short-lived access token (JWT, 15 minutes, sent later as `Authorization: Bearer <accessToken>`) and a refresh token used to obtain new pairs through `PUT \/token-renew`. Accounts that registered through `POST \/signup` must be activated first.\n",
         "requestBody": {
           "required": true,
           "content": {
@@ -348,7 +317,7 @@
           {
             "name": "filters",
             "in": "query",
-            "description": "JSON array of {field, operator, value}, e.g. [{\u0022field\u0022:\u0022key\u0022,\u0022operator\u0022:\u0022like\u0022,\u0022value\u0022:\u0022mail.\u0022}]",
+            "description": "JSON array of {field, operator, value}, e.g. [{\"field\":\"key\",\"operator\":\"like\",\"value\":\"mail.\"}]",
             "schema": { "$ref": "#\/components\/schemas\/FiltersParameter" }
           },
           {
@@ -494,7 +463,7 @@
           {
             "name": "filters",
             "in": "query",
-            "description": "JSON array of {field, operator, value}, e.g. [{\u0022field\u0022:\u0022status\u0022,\u0022operator\u0022:\u0022equals\u0022,\u0022value\u0022:\u0022failed\u0022}]",
+            "description": "JSON array of {field, operator, value}, e.g. [{\"field\":\"status\",\"operator\":\"equals\",\"value\":\"failed\"}]",
             "schema": { "$ref": "#\/components\/schemas\/FiltersParameter" }
           },
           {
@@ -553,7 +522,7 @@
       "post": {
         "tags": ["Notification"],
         "summary": "Retry a failed notification",
-        "description": "Moves a notification back to \u0022pending\u0022 and re-dispatches delivery, re-rendering against the template\u0027s current content. Only valid from \u0022failed\u0022 \u2014 retrying a \u0022pending\u0022 or \u0022sent\u0022 notification returns 409.\n",
+        "description": "Moves a notification back to \"pending\" and re-dispatches delivery, re-rendering against the template\u0027s current content. Only valid from \"failed\" \u2014 retrying a \"pending\" or \"sent\" notification returns 409.\n",
         "parameters": [
           {
             "name": "id",
@@ -942,7 +911,7 @@
             }
           },
           "400": {
-            "description": "Missing \u0022file\u0022 part",
+            "description": "Missing \"file\" part",
             "content": {
               "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
             }
@@ -1611,7 +1580,7 @@
             }
           },
           "400": {
-            "description": "Missing \u0022file\u0022 part or failed upload",
+            "description": "Missing \"file\" part or failed upload",
             "content": {
               "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
             }
@@ -1642,7 +1611,7 @@
       "get": {
         "tags": ["Attachment"],
         "summary": "Download an attachment",
-        "description": "Streams the stored file. Served with `Content-Disposition: attachment` and `X-Content-Type-Options: nosniff`; `inline=1` is honoured only for png, jpeg, gif and webp images. Attachments in the trash are not downloadable. Send the access token in the `Authorization` header (fetch it as a Blob; it cannot be used as a plain `\u003Cimg src\u003E`).\n",
+        "description": "Streams the stored file. Served with `Content-Disposition: attachment` and `X-Content-Type-Options: nosniff`; `inline=1` is honoured only for png, jpeg, gif and webp images. Attachments in the trash are not downloadable. Send the access token in the `Authorization` header (fetch it as a Blob; it cannot be used as a plain `<img src>`).\n",
         "parameters": [
           {
             "name": "id",
@@ -2183,6 +2152,59 @@
         },
         "security": [{ "Bearer": [] }]
       }
+    },
+    "\/me\/password": {
+      "patch": {
+        "tags": ["User"],
+        "summary": "Change the current user\u0027s password",
+        "description": "Replaces the password of the authenticated user. The current password is always verified and the new one must be different (8-44 characters). On success every token issued before the change stops working, so the client must log in again, and a notice email is sent. Three wrong current passwords lock the endpoint for that user (429 with Retry-After).\n",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application\/json": {
+              "schema": { "$ref": "#\/components\/schemas\/ChangeCurrentUserPasswordRequest" }
+            }
+          }
+        },
+        "responses": {
+          "204": { "description": "Password changed" },
+          "400": {
+            "description": "Invalid data (missing field, wrong type or new password outside 8-44 characters)"
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "404": {
+            "description": "The user no longer exists",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "422": {
+            "description": "`user.invalid_password` (wrong current password), `user.password_unchanged` (new equals current) or `user.invalid_new_password`\n",
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "429": {
+            "description": "Too many failed attempts (`user.change_password_rate_limited`)",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a new attempt is accepted",
+                "schema": { "type": "integer" }
+              }
+            },
+            "content": {
+              "application\/json": { "schema": { "$ref": "#\/components\/schemas\/ApiError" } }
+            }
+          },
+          "500": { "description": "Internal server error" }
+        },
+        "security": [{ "Bearer": [] }]
+      }
     }
   },
   "components": {
@@ -2192,7 +2214,7 @@
         "properties": {
           "id": { "type": "string", "format": "uuid" },
           "email": { "type": "string" },
-          "password": { "type": "string" },
+          "password": { "type": "string", "maxLength": 44, "minLength": 8 },
           "username": { "type": "string" }
         },
         "type": "object"
@@ -2202,7 +2224,7 @@
         "properties": {
           "id": { "type": "string", "format": "uuid" },
           "email": { "type": "string" },
-          "password": { "type": "string", "minLength": 8 },
+          "password": { "type": "string", "maxLength": 44, "minLength": 8 },
           "username": { "type": "string" }
         },
         "type": "object"
@@ -2261,14 +2283,6 @@
           "total": { "type": "integer" },
           "page": { "type": "integer" },
           "last": { "type": "integer" }
-        },
-        "type": "object"
-      },
-      "ChangeUserPasswordRequest": {
-        "required": ["currentPassword", "newPassword"],
-        "properties": {
-          "currentPassword": { "type": "string", "maxLength": 20, "minLength": 8 },
-          "newPassword": { "type": "string", "maxLength": 20, "minLength": 8 }
         },
         "type": "object"
       },
@@ -2461,7 +2475,7 @@
           },
           "channel": { "type": "string", "enum": ["email"] },
           "locale": {
-            "description": "e.g. en, es, en_US. Falls back to \u0022en\u0022 at delivery time when no exact-locale template exists.",
+            "description": "e.g. en, es, en_US. Falls back to \"en\" at delivery time when no exact-locale template exists.",
             "type": "string"
           },
           "subject": {
@@ -3153,7 +3167,7 @@
       },
       "FiltersParameter": {
         "type": "string",
-        "example": "[{\u0022field\u0022:\u0022name\u0022,\u0022operator\u0022:\u0022like\u0022,\u0022value\u0022:\u0022Digi\u0022}]"
+        "example": "[{\"field\":\"name\",\"operator\":\"like\",\"value\":\"Digi\"}]"
       },
       "PageParameter": { "type": "integer", "example": 1 },
       "ItemsPerPageParameter": { "type": "integer", "example": 12 },
@@ -3166,6 +3180,25 @@
           "message": { "type": "string" }
         },
         "type": "object"
+      },
+      "ChangeCurrentUserPasswordRequest": {
+        "required": ["current_password", "new_password"],
+        "properties": {
+          "current_password": {
+            "type": "string",
+            "format": "password",
+            "maxLength": 44,
+            "minLength": 1
+          },
+          "new_password": {
+            "type": "string",
+            "format": "password",
+            "maxLength": 44,
+            "minLength": 8
+          }
+        },
+        "type": "object",
+        "additionalProperties": false
       }
     },
     "securitySchemes": { "Bearer": { "type": "apiKey", "name": "Authorization", "in": "header" } }

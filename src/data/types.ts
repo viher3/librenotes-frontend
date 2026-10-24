@@ -265,6 +265,11 @@ export interface SignUpInput {
   username?: string
 }
 
+export interface ChangePasswordInput {
+  currentPassword: string
+  newPassword: string
+}
+
 export interface UpdateProfileInput {
   username?: string
   locale?: Locale

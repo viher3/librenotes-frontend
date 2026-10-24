@@ -43,13 +43,14 @@ Everything the UI needs from the server goes through two interfaces, `AuthReposi
 | `contract/`                     | Behaviour every implementation must share; run against the mock                                         |
 | `create.ts`, `DataProvider.tsx` | Choose the adapter from `VITE_DATA_ADAPTER` and expose it with `useRepositories()`                      |
 | `rules.ts`                      | Backend rules (tag normalization, URL check...) reusable by forms                                       |
+| `AuthRepository.changePassword` | `PATCH /me/password`; the backend revokes every token, so the local session is cleared too              |
 
 ### End-to-end smoke test
 
 `npm run test:e2e` exercises the HTTP adapter against a live backend. It registers one throwaway account,
-runs through every endpoint (including renewing an expired token and uploading a file), then deletes everything it
-created. It needs `docker` to read the activation token from the backend's MySQL container, and uses 2 of the
-backend's 5 logins per 15 minutes. Override the defaults with `E2E_API_URL`, `E2E_MYSQL_CONTAINER`,
+runs through every endpoint (including renewing an expired token, uploading a file and changing the password), then
+deletes everything it created. It needs `docker` to read the activation token from the backend's MySQL container, a
+backend with `USER_REGISTRATION_ENABLED=true`, and uses 4 of the backend's 5 logins per 15 minutes. Override the defaults with `E2E_API_URL`, `E2E_MYSQL_CONTAINER`,
 `E2E_MYSQL_DATABASE` and `E2E_PHP_CONTAINER`. Do not point it at a database you care about.
 
 ## Encryption (`src/lib/crypto`, `src/features/encryption`)
@@ -98,3 +99,14 @@ in CodeMirror. `visual/markdown.test.ts` is the round-trip corpus (Markdown → 
 ## Structure
 
 See §7 of the spec. UI texts live in `src/locales/<es|en>/*.json`.
+
+## Account password
+
+The account menu has a **Change password** dialog (`src/features/auth/ChangePasswordDialog.tsx`). The new password
+must have 8-44 characters (`MIN_PASSWORD_LENGTH` / `MAX_PASSWORD_LENGTH` in `src/data/rules.ts`, the backend's
+limits). After a change the backend revokes every token, so the app signs the user out and `/login` says so.
+Three wrong current passwords lock the form for the time the backend reports (`retry_after`).
+
+`PasswordField` (show/hide button) and `PasswordStrength` (advisory meter, `src/lib/passwordStrength.ts`: local
+heuristic, no dependency, nothing leaves the browser) are shared with the registration form. The account password
+is unrelated to the per-document encryption password.

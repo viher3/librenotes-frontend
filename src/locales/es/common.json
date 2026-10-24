@@ -22,14 +22,17 @@
     "signedInAs": "Sesión iniciada como",
     "title": "Cuenta",
     "open": "Opciones de cuenta de {{name}}",
-    "close": "Cerrar"
+    "close": "Cerrar",
+    "changePassword": "Cambiar contraseña"
   },
   "validation": {
     "required": "Este campo es obligatorio",
     "email": "Introduce un correo electrónico válido",
     "passwordMin": "Usa al menos {{count}} caracteres",
     "passwordMismatch": "Las contraseñas no coinciden",
-    "usernameLength": "Usa entre {{min}} y {{max}} caracteres"
+    "usernameLength": "Usa entre {{min}} y {{max}} caracteres",
+    "passwordMax": "Usa como máximo {{count}} caracteres",
+    "passwordUnchanged": "La nueva contraseña debe ser distinta de la actual"
   },
   "theme": {
     "label": "Tema",
@@ -63,5 +66,23 @@
       "faces": "Personas"
     },
     "change": "Cambiar icono"
+  },
+  "password": {
+    "show": "Mostrar contraseña",
+    "hide": "Ocultar contraseña",
+    "strength": {
+      "label": "Seguridad de la contraseña",
+      "weak": "Débil",
+      "fair": "Aceptable",
+      "good": "Buena",
+      "strong": "Fuerte",
+      "tips": {
+        "tooShort": "Prueba con una frase más larga de varias palabras.",
+        "addVariety": "Mezcla mayúsculas, minúsculas, números o símbolos.",
+        "avoidRepeats": "Evita caracteres repetidos y secuencias como 12345 o abcde.",
+        "avoidCommon": "Parece una contraseña muy común.",
+        "avoidPersonal": "No uses tu nombre ni tu email en la contraseña."
+      }
+    }
   }
 }

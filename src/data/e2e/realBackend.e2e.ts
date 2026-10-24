@@ -16,6 +16,7 @@ const PHP = process.env.E2E_PHP_CONTAINER ?? 'symfony-ddd-core-api-php'
 
 const email = `e2e-${Date.now()}@example.test`
 const password = 'e2e-password-123'
+const newPassword = 'e2e-new-password-456'
 const file = (name: string, content: string, type = 'text/plain') =>
   new File([content], name, { type })
 const ids = (items: { id: string }[]) => items.map((i) => i.id)
@@ -372,6 +373,36 @@ describe('real backend', () => {
     const user = await reloaded.auth.restoreSession()
 
     expect(user?.id).toBe(userId)
+  })
+
+  it('changes the password: revokes every token and only the new password works afterwards', async () => {
+    const oldAccessToken = session.accessToken!
+    const oldRefreshToken = session.refreshToken!
+
+    await expect(
+      auth.changePassword({ currentPassword: 'wrong-password', newPassword }),
+    ).rejects.toMatchObject({ status: 422, code: 'user.invalid_password' })
+    expect(session.hasSession).toBe(true) // a refused change leaves the session alone
+
+    await auth.changePassword({ currentPassword: password, newPassword })
+
+    expect(session.hasSession).toBe(false)
+    const withOldToken = await fetch(`${API}/me`, {
+      headers: { Authorization: `Bearer ${oldAccessToken}` },
+    })
+    expect(withOldToken.status).toBe(401)
+    const probe = new SessionStore(null)
+    probe.setTokens({ accessToken: 'x', refreshToken: oldRefreshToken })
+    expect(
+      await createHttpRepositories({ baseUrl: API, session: probe }).auth.restoreSession(),
+    ).toBeNull()
+    await expect(auth.login(email, password)).rejects.toMatchObject({
+      status: 401,
+      code: 'security.bad_credentials',
+    })
+
+    // Leaves a live session for the next test.
+    expect((await auth.login(email, newPassword)).id).toBe(userId)
   })
 
   it('logs out, revoking the refresh token', async () => {

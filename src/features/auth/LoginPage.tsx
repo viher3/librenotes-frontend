@@ -33,6 +33,7 @@ export function LoginPage() {
 
   const activated = (location.state as { activated?: boolean } | null)?.activated === true
   const expired = state.status === 'anonymous' && state.reason === 'expired'
+  const passwordChanged = state.status === 'anonymous' && state.reason === 'passwordChanged'
 
   // On success the session changes and `PublicOnly` redirects away, so there is nothing else to do here.
   const onSubmit = handleSubmit(async ({ email, password }) => {
@@ -53,6 +54,7 @@ export function LoginPage() {
 
       {expired && <Alert tone="info">{t('login.sessionExpired')}</Alert>}
       {activated && <Alert tone="success">{t('login.activated')}</Alert>}
+      {passwordChanged && <Alert tone="success">{t('login.passwordChanged')}</Alert>}
       {failure && <Alert tone="error">{failure}</Alert>}
 
       <TextField

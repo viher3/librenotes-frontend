@@ -7,6 +7,8 @@ export const MAX_TITLE_LENGTH = 255
 export const MAX_URL_LENGTH = 2048
 export const MIN_SEARCH_LENGTH = 2
 export const MIN_PASSWORD_LENGTH = 8
+/** Longest password the backend accepts (`Password` value object). */
+export const MAX_PASSWORD_LENGTH = 44
 export const MAX_ICON_LENGTH = 32
 export const USERNAME_LENGTH = { min: 3, max: 20 } as const
 

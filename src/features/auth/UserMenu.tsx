@@ -5,6 +5,7 @@ import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 import { Modal } from '@/components/Modal'
 import { ThemeSwitcher } from '@/components/ThemeSwitcher'
 import { useAuth, useUser } from './AuthProvider'
+import { ChangePasswordDialog } from './ChangePasswordDialog'
 
 /** The user's name with an icon; activating it opens the account options (theme, language, sign out). */
 export function UserMenu() {
@@ -12,6 +13,7 @@ export function UserMenu() {
   const user = useUser()
   const { logout } = useAuth()
   const [open, setOpen] = useState(false)
+  const [changingPassword, setChangingPassword] = useState(false)
 
   return (
     <>
@@ -50,6 +52,15 @@ export function UserMenu() {
             </div>
             <ThemeSwitcher />
             <LanguageSwitcher />
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setOpen(false)
+                setChangingPassword(true)
+              }}
+            >
+              {t('userMenu.changePassword')}
+            </Button>
             <div className="flex justify-between gap-2 border-t border-neutral-200 pt-4 dark:border-neutral-800">
               <Button variant="secondary" onClick={() => void logout()}>
                 {t('nav.signOut')}
@@ -61,6 +72,7 @@ export function UserMenu() {
           </div>
         </Modal>
       )}
+      {changingPassword && <ChangePasswordDialog onClose={() => setChangingPassword(false)} />}
     </>
   )
 }

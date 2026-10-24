@@ -1,15 +1,17 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router-dom'
 import { z } from 'zod'
 import { Alert } from '@/components/Alert'
 import { Button } from '@/components/Button'
+import { PasswordField } from '@/components/PasswordField'
+import { PasswordStrength } from '@/components/PasswordStrength'
 import { TextField } from '@/components/TextField'
 import { useRepositories } from '@/data/DataProvider'
 import { isApiError } from '@/data/errors'
-import { MIN_PASSWORD_LENGTH, USERNAME_LENGTH, isEmail } from '@/data/rules'
+import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH, USERNAME_LENGTH, isEmail } from '@/data/rules'
 import { errorMessage } from './errors'
 import { fieldError } from './fieldError'
 
@@ -23,7 +25,10 @@ const schema = z
         (v) => v === '' || (v.length >= USERNAME_LENGTH.min && v.length <= USERNAME_LENGTH.max),
         'validation.usernameLength',
       ),
-    password: z.string().min(MIN_PASSWORD_LENGTH, 'validation.passwordMin'),
+    password: z
+      .string()
+      .min(MIN_PASSWORD_LENGTH, 'validation.passwordMin')
+      .max(MAX_PASSWORD_LENGTH, 'validation.passwordMax'),
     confirmPassword: z.string(),
   })
   .refine((v) => v.password === v.confirmPassword, {
@@ -41,8 +46,14 @@ export function RegisterPage() {
     register,
     handleSubmit,
     setError,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<Values>({ resolver: zodResolver(schema), defaultValues: { username: '' } })
+
+  const [typedEmail, typedUsername, typedPassword] = useWatch({
+    control,
+    name: ['email', 'username', 'password'],
+  })
 
   const onSubmit = handleSubmit(async ({ email, username, password }) => {
     setFailure(null)
@@ -81,17 +92,26 @@ export function RegisterPage() {
         error={fieldError(errors.username?.message, USERNAME_LENGTH)}
         {...register('username')}
       />
-      <TextField
-        label={t('register.password')}
-        hint={t('register.passwordHint', { count: MIN_PASSWORD_LENGTH })}
-        type="password"
-        autoComplete="new-password"
-        error={fieldError(errors.password?.message, { count: MIN_PASSWORD_LENGTH })}
-        {...register('password')}
-      />
-      <TextField
+      <div className="flex flex-col gap-2">
+        <PasswordField
+          label={t('register.password')}
+          hint={t('register.passwordHint', { min: MIN_PASSWORD_LENGTH, max: MAX_PASSWORD_LENGTH })}
+          autoComplete="new-password"
+          error={fieldError(errors.password?.message, {
+            count:
+              errors.password?.message === 'validation.passwordMax'
+                ? MAX_PASSWORD_LENGTH
+                : MIN_PASSWORD_LENGTH,
+          })}
+          {...register('password')}
+        />
+        <PasswordStrength
+          password={typedPassword ?? ''}
+          context={{ email: typedEmail, username: typedUsername }}
+        />
+      </div>
+      <PasswordField
         label={t('register.confirmPassword')}
-        type="password"
         autoComplete="new-password"
         error={fieldError(errors.confirmPassword?.message)}
         {...register('confirmPassword')}

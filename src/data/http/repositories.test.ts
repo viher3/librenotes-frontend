@@ -176,6 +176,87 @@ describe('auth', () => {
     expect(user.locale).toBe('en')
   })
 
+  describe('changePassword', () => {
+    const input = { currentPassword: 'old-password', newPassword: 'new-password-1' }
+
+    it('sends snake_case, resolves on 204 and clears the whole session without calling the server again', async () => {
+      const { auth, session, server } = setup(
+        { 'PATCH /me/password': () => new Response(null, { status: 204 }) },
+        'r1',
+      )
+      session.setTokens({ accessToken: 'a1', refreshToken: 'r1' })
+
+      await expect(auth.changePassword(input)).resolves.toBeUndefined()
+
+      const [call] = server.callsTo('PATCH /me/password')
+      expect(call.body).toEqual({
+        current_password: 'old-password',
+        new_password: 'new-password-1',
+      })
+      expect(call.headers.get('Authorization')).toBe('Bearer a1')
+      expect(session.hasSession).toBe(false)
+      expect(server.calls).toHaveLength(1) // no /token-renew, no logout
+    })
+
+    it.each([
+      [422, 'user.invalid_password'],
+      [422, 'user.password_unchanged'],
+      [422, 'user.invalid_new_password'],
+    ])('turns %s %s into an ApiError and keeps the session', async (status, code) => {
+      const { auth, session } = setup({ 'PATCH /me/password': () => apiError(status, code) }, 'r1')
+      session.setTokens({ accessToken: 'a1', refreshToken: 'r1' })
+
+      await expect(auth.changePassword(input)).rejects.toMatchObject({ status, code })
+      expect(session.hasSession).toBe(true)
+      expect(session.accessToken).toBe('a1')
+    })
+
+    it('exposes retry_after when the endpoint is locked', async () => {
+      const { auth, session } = setup(
+        {
+          'PATCH /me/password': () =>
+            new Response(
+              JSON.stringify({
+                code: 'user.change_password_rate_limited',
+                message: 'Too many failed attempts',
+                params: { retry_after: 840 },
+                status: 429,
+              }),
+              {
+                status: 429,
+                headers: { 'Content-Type': 'application/json', 'Retry-After': '840' },
+              },
+            ),
+        },
+        'r1',
+      )
+      session.setTokens({ accessToken: 'a1', refreshToken: 'r1' })
+
+      await expect(auth.changePassword(input)).rejects.toMatchObject({
+        status: 429,
+        code: 'user.change_password_rate_limited',
+        params: { retry_after: 840 },
+      })
+    })
+
+    it('reports schema failures as validation errors', async () => {
+      const { auth, session } = setup(
+        {
+          'PATCH /me/password': () =>
+            json({ errors: ['[new_password] Must be at least 8 characters long'] }, 400),
+        },
+        'r1',
+      )
+      session.setTokens({ accessToken: 'a1', refreshToken: 'r1' })
+
+      await expect(auth.changePassword(input)).rejects.toMatchObject({
+        status: 400,
+        code: 'validation_error',
+        errors: ['[new_password] Must be at least 8 characters long'],
+      })
+    })
+  })
+
   it('falls back to English for a locale it does not know', async () => {
     const { auth } = setup({ 'GET /me': () => json({ ...ME, locale: 'fr' }) })
 

@@ -22,14 +22,17 @@
     "signedInAs": "Signed in as",
     "title": "Account",
     "open": "Account options for {{name}}",
-    "close": "Close"
+    "close": "Close",
+    "changePassword": "Change password"
   },
   "validation": {
     "required": "This field is required",
     "email": "Enter a valid email address",
     "passwordMin": "Use at least {{count}} characters",
     "passwordMismatch": "The passwords do not match",
-    "usernameLength": "Use between {{min}} and {{max}} characters"
+    "usernameLength": "Use between {{min}} and {{max}} characters",
+    "passwordMax": "Use at most {{count}} characters",
+    "passwordUnchanged": "The new password must be different from the current one"
   },
   "theme": {
     "label": "Theme",
@@ -63,5 +66,23 @@
       "faces": "People"
     },
     "change": "Change icon"
+  },
+  "password": {
+    "show": "Show password",
+    "hide": "Hide password",
+    "strength": {
+      "label": "Password strength",
+      "weak": "Weak",
+      "fair": "Fair",
+      "good": "Good",
+      "strong": "Strong",
+      "tips": {
+        "tooShort": "Try a longer phrase of several words.",
+        "addVariety": "Mix upper and lower case, digits or symbols.",
+        "avoidRepeats": "Avoid repeated characters and sequences like 12345 or abcde.",
+        "avoidCommon": "This looks like a very common password.",
+        "avoidPersonal": "Do not use your name or email in the password."
+      }
+    }
   }
 }

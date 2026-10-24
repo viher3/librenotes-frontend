@@ -11,21 +11,27 @@ import {
   type ReactNode,
 } from 'react'
 import { useRepositories } from '@/data/DataProvider'
-import type { User } from '@/data/types'
+import type { ChangePasswordInput, User } from '@/data/types'
 
 export type AuthState =
   | { status: 'loading' }
   /**
    * `none`: nobody was signed in (first visit or the stored session was no longer valid);
-   * `expired`: an open session ended on its own; `signedOut`: the user asked to leave.
+   * `expired`: an open session ended on its own; `signedOut`: the user asked to leave;
+   * `passwordChanged`: the user changed their password, which ends every session.
    */
-  | { status: 'anonymous'; reason: 'none' | 'expired' | 'signedOut' }
+  | { status: 'anonymous'; reason: 'none' | 'expired' | 'signedOut' | 'passwordChanged' }
   | { status: 'authenticated'; user: User }
 
 interface AuthContextValue {
   state: AuthState
   login: (email: string, password: string) => Promise<User>
   logout: () => Promise<void>
+  /**
+   * Changes the password. On success every session is over (this one included): the state becomes anonymous
+   * and the user has to sign in again. On failure nothing changes and the error is rethrown.
+   */
+  changePassword: (input: ChangePasswordInput) => Promise<void>
   /** Replaces the cached user after changing the profile. */
   setUser: (user: User) => void
 }
@@ -105,9 +111,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [auth, queryClient])
 
+  const changePassword = useCallback(
+    async (input: ChangePasswordInput) => {
+      // The session ending here is expected: keep the subscription from reporting it as an expiry.
+      signingOut.current = true
+      try {
+        await auth.changePassword(input)
+        queryClient.clear()
+        setState({ status: 'anonymous', reason: 'passwordChanged' })
+      } finally {
+        signingOut.current = false
+      }
+    },
+    [auth, queryClient],
+  )
+
   const setUser = useCallback((user: User) => setState({ status: 'authenticated', user }), [])
 
-  const value = useMemo(() => ({ state, login, logout, setUser }), [state, login, logout, setUser])
+  const value = useMemo(
+    () => ({ state, login, logout, changePassword, setUser }),
+    [state, login, logout, changePassword, setUser],
+  )
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 

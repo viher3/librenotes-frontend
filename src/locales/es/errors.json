@@ -16,7 +16,11 @@
     "email_already_exists": "Ya existe una cuenta con este correo.",
     "invalid_activation_token": "Este enlace de activación no es válido o ya se usó.",
     "activation_token_expired": "Este enlace de activación ha caducado.",
-    "locale_unsupported": "Este idioma no está disponible."
+    "locale_unsupported": "Este idioma no está disponible.",
+    "invalid_password": "La contraseña actual no es correcta.",
+    "password_unchanged": "La nueva contraseña debe ser distinta de la actual.",
+    "invalid_new_password": "La nueva contraseña debe tener entre {{min}} y {{max}} caracteres.",
+    "change_password_rate_limited": "Demasiados intentos fallidos. Inténtalo más tarde."
   },
   "note": {
     "not_found": "Este documento ya no existe.",

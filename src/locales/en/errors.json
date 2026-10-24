@@ -16,7 +16,11 @@
     "email_already_exists": "There is already an account with this email.",
     "invalid_activation_token": "This activation link is not valid or was already used.",
     "activation_token_expired": "This activation link has expired.",
-    "locale_unsupported": "This language is not supported."
+    "locale_unsupported": "This language is not supported.",
+    "invalid_password": "The current password is not correct.",
+    "password_unchanged": "The new password must be different from the current one.",
+    "invalid_new_password": "The new password must be between {{min}} and {{max}} characters long.",
+    "change_password_rate_limited": "Too many failed attempts. Try again later."
   },
   "note": {
     "not_found": "This document no longer exists.",

@@ -1,5 +1,6 @@
 import type {
   Attachment,
+  ChangePasswordInput,
   AttachmentDetail,
   Destination,
   CreateLinkInput,
@@ -53,6 +54,13 @@ export interface AuthRepository {
   restoreSession(): Promise<User | null>
   me(): Promise<User>
   updateProfile(input: UpdateProfileInput): Promise<User>
+  /**
+   * Changes the signed-in user's password. On success the backend has revoked every token (access and
+   * refresh), so the local session is cleared too and the user must sign in again.
+   * Rejects with `user.invalid_password` (wrong current password), `user.password_unchanged`,
+   * `user.invalid_new_password` or `user.change_password_rate_limited` (`params.retry_after`, seconds).
+   */
+  changePassword(input: ChangePasswordInput): Promise<void>
 }
 
 /** Folders, notes, links, attachments, search, tags and trash. Everything is scoped to the signed-in user. */

@@ -84,6 +84,104 @@ export function describeRepositoryContract(name: string, create: () => Promise<C
       })
     })
 
+    describe('change password', () => {
+      const NEW_PASSWORD = 'a-brand-new-password'
+
+      it('changes the password, ends the session and only accepts the new one', async () => {
+        const { auth, signInNewUser } = await create()
+        const account = await signInNewUser()
+
+        await auth.changePassword({ currentPassword: account.password, newPassword: NEW_PASSWORD })
+
+        // Every token is revoked, including the ones the repository held.
+        await rejects(auth.me(), { status: 401, code: 'security.unauthenticated' })
+        await expect(auth.restoreSession()).resolves.toBeNull()
+        await rejects(auth.login(account.email, account.password), {
+          status: 401,
+          code: 'security.bad_credentials',
+        })
+        await expect(auth.login(account.email, NEW_PASSWORD)).resolves.toMatchObject({
+          email: account.email,
+        })
+        await expect(auth.me()).resolves.toMatchObject({ email: account.email })
+      })
+
+      it('rejects a wrong current password and leaves the account untouched', async () => {
+        const { auth, signInNewUser } = await create()
+        const account = await signInNewUser()
+
+        await rejects(
+          auth.changePassword({ currentPassword: 'not-the-password', newPassword: NEW_PASSWORD }),
+          { status: 422, code: 'user.invalid_password' },
+        )
+
+        await expect(auth.me()).resolves.toMatchObject({ email: account.email })
+        await auth.logout()
+        await expect(auth.login(account.email, account.password)).resolves.toBeTruthy()
+      })
+
+      it('rejects the same password', async () => {
+        const { auth, signInNewUser } = await create()
+        const account = await signInNewUser()
+
+        await rejects(
+          auth.changePassword({
+            currentPassword: account.password,
+            newPassword: account.password,
+          }),
+          { status: 422, code: 'user.password_unchanged' },
+        )
+        await expect(auth.me()).resolves.toBeTruthy()
+      })
+
+      it.each([
+        ['too short', 'short'],
+        ['too long', 'a'.repeat(45)],
+      ])('rejects a new password that is %s', async (_label, newPassword) => {
+        const { auth, signInNewUser } = await create()
+        const account = await signInNewUser()
+
+        await rejects(auth.changePassword({ currentPassword: account.password, newPassword }), {
+          status: 400,
+          code: 'validation_error',
+        })
+        await expect(auth.me()).resolves.toBeTruthy()
+      })
+
+      it('locks after three wrong current passwords, even for the right one', async () => {
+        const { auth, signInNewUser } = await create()
+        const account = await signInNewUser()
+
+        for (let attempt = 0; attempt < 3; attempt++) {
+          await rejects(
+            auth.changePassword({ currentPassword: `wrong-${attempt}`, newPassword: NEW_PASSWORD }),
+            { status: 422, code: 'user.invalid_password' },
+          )
+        }
+
+        const locked = auth.changePassword({
+          currentPassword: account.password,
+          newPassword: NEW_PASSWORD,
+        })
+        await rejects(locked, { status: 429, code: 'user.change_password_rate_limited' })
+        await expect(locked).rejects.toMatchObject({
+          params: { retry_after: expect.any(Number) as number },
+        })
+        await expect(auth.me()).resolves.toBeTruthy() // nothing changed
+      })
+
+      it('requires a session', async () => {
+        const { auth, signInNewUser } = await create()
+        const account = await signInNewUser()
+        await auth.logout()
+
+        await rejects(
+          auth.changePassword({ currentPassword: account.password, newPassword: NEW_PASSWORD }),
+          { status: 401, code: 'security.unauthenticated' },
+        )
+      })
+    })
+
     describe('notes', () => {
       it('creates, reads, updates and moves a note', async () => {
         const { notes, signInNewUser } = await create()

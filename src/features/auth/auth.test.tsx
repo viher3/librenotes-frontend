@@ -289,6 +289,58 @@ describe('sign up', () => {
     expect(signUp).not.toHaveBeenCalled()
   })
 
+  it('refuses a password longer than the backend accepts', async () => {
+    const mock = await createBackend()
+    const signUp = vi.spyOn(mock.auth, 'signUp')
+    const { user } = await renderApp('/register', mock)
+    const long = 'a'.repeat(45)
+
+    await user.type(await screen.findByLabelText('Email'), 'grace@example.com')
+    await user.type(screen.getByLabelText('Password'), long)
+    await user.type(screen.getByLabelText('Repeat the password'), long)
+    await user.click(screen.getByRole('button', { name: 'Create account' }))
+
+    expect(await screen.findByText('Use at most 44 characters')).toBeInTheDocument()
+    expect(screen.getByText('Between 8 and 44 characters.')).toBeInTheDocument()
+    expect(signUp).not.toHaveBeenCalled()
+  })
+
+  it('lets the user reveal the passwords and shows how strong the chosen one is', async () => {
+    const mock = await createBackend()
+    const { user } = await renderApp('/register', mock)
+
+    expect(screen.queryByRole('meter')).not.toBeInTheDocument()
+    await user.type(await screen.findByLabelText('Email'), 'grace@example.com')
+    await user.type(screen.getByLabelText('Password'), 'Kx9_mQ4wTz7#vB2rLn5@')
+
+    expect(await screen.findByRole('meter', { name: 'Password strength' })).toHaveAttribute(
+      'aria-valuetext',
+      'Strong',
+    )
+    const toggles = screen.getAllByRole('button', { name: 'Show password' })
+    expect(toggles).toHaveLength(2)
+    await user.click(toggles[0])
+    expect(screen.getByLabelText('Password')).toHaveAttribute('type', 'text')
+    expect(screen.getByLabelText('Repeat the password')).toHaveAttribute('type', 'password')
+  })
+
+  it('warns about a password that contains the email name, without blocking sign-up', async () => {
+    const mock = await createBackend()
+    const signUp = vi.spyOn(mock.auth, 'signUp')
+    const { user } = await renderApp('/register', mock)
+
+    await user.type(await screen.findByLabelText('Email'), 'grace@example.com')
+    await user.type(screen.getByLabelText('Password'), 'grace-hopper-1906')
+    await user.type(screen.getByLabelText('Repeat the password'), 'grace-hopper-1906')
+
+    expect(
+      await screen.findByText('Do not use your name or email in the password.'),
+    ).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Create account' }))
+    await screen.findByRole('heading', { name: 'Check your email' })
+    expect(signUp).toHaveBeenCalled()
+  })
+
   it('reports an email that is already registered on the field', async () => {
     const mock = await createBackend()
     const { user } = await renderApp('/register', mock)
