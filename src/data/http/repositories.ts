@@ -23,7 +23,7 @@ import {
   toNoteChildren,
   toNoteSummary,
   toPage,
-  toSearchResult,
+  toSearchResults,
   toTagCount,
   toTrash,
   toUser,
@@ -321,14 +321,13 @@ function createNotesRepository(
             query: {
               q: params.q,
               type: params.types?.join(','),
-              tag: params.tag,
               page: params.page,
               size: params.size,
             },
           },
         }),
       )
-      return toPage(dto, toSearchResult)
+      return toSearchResults(dto, params.q)
     },
     async listTags() {
       const dto = await unwrap(api.GET('/tags'))

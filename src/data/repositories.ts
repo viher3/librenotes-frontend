@@ -17,7 +17,7 @@ import type {
   NoteSummary,
   Page,
   SearchParams,
-  SearchResult,
+  SearchResults,
   SignUpInput,
   TagCount,
   Trash,
@@ -103,7 +103,7 @@ export interface NotesRepository {
   deleteAttachment(id: ID): Promise<void>
 
   // Search and tags
-  search(params: SearchParams): Promise<Page<SearchResult>>
+  search(params: SearchParams): Promise<SearchResults>
   listTags(): Promise<TagCount[]>
 
   // Trash

@@ -658,7 +658,7 @@ describe('notes repository', () => {
     expect(server.callsTo('PATCH /links/l1')[0].body).toEqual({ note: null })
   })
 
-  it('maps the encrypted flag of notes and search results', async () => {
+  it('maps the encrypted flag of notes', async () => {
     const { notes } = setup({
       'GET /notes/n1': () =>
         json({
@@ -669,71 +669,111 @@ describe('notes repository', () => {
           created_at: 'c',
           updated_at: 'u',
         }),
-      'GET /search': () =>
-        json({
-          meta: { page: 1, size: 20, total: 1, last_page: 1 },
-          data: [
-            {
-              type: 'note',
-              id: 'n1',
-              title: 'Journal',
-              snippet: '',
-              is_encrypted: true,
-              updated_at: 'u',
-            },
-          ],
-        }),
     })
 
     expect((await notes.getNote('n1')).encrypted).toBe(true)
-    expect((await notes.search({ q: 'jo' })).items[0]).toMatchObject({
-      encrypted: true,
-      snippet: '',
-    })
   })
 
-  it('searches, joining the types, and lists tags', async () => {
+  it('searches, joining the types, maps the groups and lists tags', async () => {
     const { notes, server } = setup({
       'GET /search': () =>
         json({
-          meta: { page: 1, size: 20, total: 1, last_page: 1 },
-          data: [
-            {
-              type: 'link',
-              id: 'l1',
-              title: 'Docs',
-              snippet: '…docs…',
-              folder_id: null,
-              tags: ['dev'],
-              updated_at: 'u',
-              url: 'https://a.co',
+          meta: { query: 'docs' },
+          data: {
+            notes: {
+              total: 3,
+              items: [{ id: 'n1', title: 'Docs', icon: null, folder_id: null, updated_at: 'u' }],
             },
-          ],
+            folders: {
+              total: 1,
+              items: [{ id: 'f1', name: 'Docs', icon: '📁', parent_folder_id: 'f0' }],
+            },
+            links: {
+              total: 2,
+              items: [
+                {
+                  id: 'l1',
+                  title: 'Docs site',
+                  icon: null,
+                  url: 'https://docs.example',
+                  folder_id: null,
+                  parent_note_id: 'n1',
+                  updated_at: 'u',
+                },
+              ],
+            },
+            attachments: {
+              total: 1,
+              items: [
+                {
+                  id: 'a1',
+                  file_name: 'docs.pdf',
+                  mime_type: 'application/pdf',
+                  folder_id: null,
+                  note_id: 'n1',
+                },
+              ],
+            },
+          },
         }),
       'GET /tags': () => json({ data: [{ name: 'work', count: 3 }] }),
     })
 
-    const results = await notes.search({ q: 'docs', types: ['note', 'link'], tag: 'dev' })
+    const results = await notes.search({ q: 'docs', types: ['note', 'link'], size: 5 })
     const tags = await notes.listTags()
 
     expect(Object.fromEntries(server.callsTo('GET /search')[0].query)).toEqual({
       q: 'docs',
       type: 'note,link',
-      tag: 'dev',
+      size: '5',
     })
-    expect(results.items[0]).toEqual({
-      type: 'link',
-      id: 'l1',
-      title: 'Docs',
-      icon: null,
-      snippet: '…docs…',
-      encrypted: false,
-      folderId: null,
-      tags: ['dev'],
-      updatedAt: 'u',
-      url: 'https://a.co',
+    expect(results).toEqual({
+      query: 'docs',
+      notes: {
+        total: 3,
+        items: [{ id: 'n1', title: 'Docs', icon: null, folderId: null, updatedAt: 'u' }],
+      },
+      folders: {
+        total: 1,
+        items: [{ id: 'f1', name: 'Docs', icon: '📁', parentFolderId: 'f0' }],
+      },
+      links: {
+        total: 2,
+        items: [
+          {
+            id: 'l1',
+            title: 'Docs site',
+            icon: null,
+            url: 'https://docs.example',
+            folderId: null,
+            parentNoteId: 'n1',
+            updatedAt: 'u',
+          },
+        ],
+      },
+      attachments: {
+        total: 1,
+        items: [
+          {
+            id: 'a1',
+            fileName: 'docs.pdf',
+            mimeType: 'application/pdf',
+            folderId: null,
+            noteId: 'n1',
+          },
+        ],
+      },
     })
     expect(tags).toEqual([{ name: 'work', count: 3 }])
+  })
+
+  it('treats a search with missing groups as empty', async () => {
+    const { notes } = setup({ 'GET /search': () => json({ meta: { query: 'zz' }, data: {} }) })
+
+    const results = await notes.search({ q: 'zz' })
+
+    expect(results.notes).toEqual({ total: 0, items: [] })
+    expect(results.attachments).toEqual({ total: 0, items: [] })
   })
 
   it('maps the trash and routes restore / permanent deletion by kind', async () => {

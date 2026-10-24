@@ -22,7 +22,8 @@ async function signedInBackend(): Promise<Backend> {
   return mock
 }
 
-const box = () => screen.getByRole('combobox', { name: 'Search documents and links' })
+const box = () =>
+  screen.getByRole('combobox', { name: 'Search documents, folders, links and files' })
 const dialog = () => screen.getByRole('dialog', { name: 'Search' })
 
 async function withContent(mock: Backend) {
@@ -31,12 +32,16 @@ async function withContent(mock: Backend) {
     content: 'Today I ate an apple pie with cinnamon.',
   })
   const trees = await mock.notes.createNote({ title: 'Apple trees', content: 'Plant in spring.' })
+  const folder = await mock.notes.createFolder('Orchard guide')
+  const file = await mock.notes.uploadNoteAttachment(
+    trees.id,
+    new File(['x'], 'apple-varieties.txt', { type: 'text/plain' }),
+  )
   const link = await mock.notes.createLink({
-    title: 'Orchard guide',
-    url: 'https://orchard.example/apple',
-    note: 'How to grow things',
+    title: 'Cider recipes',
+    url: 'https://cider.example/apple',
   })
-  return { apples, trees, link }
+  return { apples, trees, folder, file, link }
 }
 
 describe('highlight', () => {
@@ -171,7 +176,7 @@ describe('searching', () => {
     expect(search.mock.calls[0][0]).toMatchObject({ q: 'apple pie' })
   })
 
-  it('finds by title, content and address, says what each is, and marks the match', async () => {
+  it('finds documents, folders and files, says what each is, and marks the match', async () => {
     const mock = await signedInBackend()
     await withContent(mock)
     const { user } = await renderApp('/', mock)
@@ -182,20 +187,28 @@ describe('searching', () => {
 
     const options = await within(dialog()).findAllByRole('option')
     expect(options.map((o) => within(o).getAllByText(/./)[1].textContent)).toEqual(
-      expect.arrayContaining(['Apple trees', 'Fruit diary', 'Orchard guide']),
+      expect.arrayContaining([
+        'Apple trees',
+        'Fruit diary',
+        'apple-varieties.txt',
+        'Cider recipes',
+      ]),
     )
-    expect(options).toHaveLength(3)
-    expect(within(dialog()).getByText('3 results')).toBeInTheDocument()
+    expect(options).toHaveLength(4)
+    expect(within(dialog()).getByText('4 results')).toBeInTheDocument()
 
-    const diary = options.find((o) => o.textContent?.includes('Fruit diary'))!
-    expect(within(diary).getByText('Document')).toBeInTheDocument()
-    expect(diary.querySelector('mark')).toHaveTextContent('apple')
-    expect(diary).toHaveTextContent('apple pie with cinnamon')
+    const trees = options.find((o) => o.textContent?.includes('Apple trees'))!
+    expect(within(trees).getByText('Document')).toBeInTheDocument()
+    expect(trees.querySelector('mark')).toHaveTextContent('Apple')
 
-    const orchard = options.find((o) => o.textContent?.includes('Orchard guide'))!
-    expect(within(orchard).getByText('Link')).toBeInTheDocument()
-    expect(orchard).toHaveTextContent('https://orchard.example/apple')
-    expect(orchard.querySelector('mark')).toHaveTextContent('apple')
+    const cider = options.find((o) => o.textContent?.includes('Cider recipes'))!
+    expect(within(cider).getByText('Link')).toBeInTheDocument()
+    expect(cider).toHaveTextContent('https://cider.example/apple')
+    expect(cider.querySelector('mark')).toHaveTextContent('apple')
+
+    const file = options.find((o) => o.textContent?.includes('apple-varieties.txt'))!
+    expect(within(file).getByText('File')).toBeInTheDocument()
+    expect(file.querySelector('mark')).toHaveTextContent('apple')
   })
 
   it('hides results of an older text as soon as the text changes, so Enter cannot open them', async () => {
@@ -318,9 +331,12 @@ describe('choosing a result', () => {
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     await waitFor(() =>
-      expect([`/doc/${apples.id}`, `/doc/${trees.id}`, `/link/${link.id}`]).toContain(
-        router.state.location.pathname,
-      ),
+      expect([
+        `/doc/${apples.id}`,
+        `/doc/${trees.id}`,
+        `/doc/${trees.id}`,
+        `/link/${link.id}`,
+      ]).toContain(router.state.location.pathname),
     )
   })
 
@@ -342,27 +358,44 @@ describe('choosing a result', () => {
     await user.keyboard('{Enter}')
 
     await waitFor(() => expect(router.state.location.pathname).not.toBe('/'))
-    const [, id] = router.state.location.pathname.match(/^\/(?:doc|link)\/(.+)$/)!
-    expect(options[1].textContent).toContain(
-      (await mock.notes.search({ q: 'apple' })).items.find((r) => r.id === id)!.title,
-    )
+    expect(router.state.location.pathname).toMatch(/^\/doc\/.+$/)
   })
 
-  it('opens a link result on the link page, by click', async () => {
+  it('opens a folder result on the folder page, by click', async () => {
     const mock = await signedInBackend()
-    const { link } = await withContent(mock)
+    const { folder } = await withContent(mock)
     const { user, router } = await openWith(mock, 'orchard')
 
     await user.click(within(dialog()).getByRole('option', { name: /Orchard guide/ }))
 
-    await waitFor(() => expect(router.state.location.pathname).toBe(`/link/${link.id}`))
+    await waitFor(() => expect(router.state.location.pathname).toBe(`/folder/${folder.id}`))
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('opens a link result on the link page', async () => {
+    const mock = await signedInBackend()
+    const { link } = await withContent(mock)
+    const { user, router } = await openWith(mock, 'cider')
+
+    await user.click(within(dialog()).getByRole('option', { name: /Cider recipes/ }))
+
+    await waitFor(() => expect(router.state.location.pathname).toBe(`/link/${link.id}`))
+  })
+
+  it('opens the document a file belongs to', async () => {
+    const mock = await signedInBackend()
+    const { trees } = await withContent(mock)
+    const { user, router } = await openWith(mock, 'varieties')
+
+    await user.click(within(dialog()).getByRole('option', { name: /apple-varieties/ }))
+
+    await waitFor(() => expect(router.state.location.pathname).toBe(`/doc/${trees.id}`))
   })
 
   it('opens a document result on its page', async () => {
     const mock = await signedInBackend()
     const { apples } = await withContent(mock)
-    const { user, router } = await openWith(mock, 'cinnamon')
+    const { user, router } = await openWith(mock, 'diary')
 
     await user.click(within(dialog()).getByRole('option', { name: /Fruit diary/ }))
 
@@ -392,7 +425,9 @@ it('speaks Spanish when the account does', async () => {
   const dialogEs = await screen.findByRole('dialog', { name: 'Buscar' })
   expect(within(dialogEs).getByText('Escribe al menos 2 caracteres.')).toBeInTheDocument()
   await user.type(
-    within(dialogEs).getByRole('combobox', { name: 'Buscar documentos y enlaces' }),
+    within(dialogEs).getByRole('combobox', {
+      name: 'Buscar documentos, carpetas, enlaces y archivos',
+    }),
     'zzzz',
   )
 

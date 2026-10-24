@@ -128,6 +128,13 @@ export interface paths {
           }
           content?: never
         }
+        /** @description User registration is disabled (USER_REGISTRATION_ENABLED=false) */
+        403: {
+          headers: {
+            [name: string]: unknown
+          }
+          content?: never
+        }
         /** @description Email already exists */
         409: {
           headers: {
@@ -396,6 +403,99 @@ export interface paths {
             [name: string]: unknown
           }
           content?: never
+        }
+        /** @description Internal server error */
+        500: {
+          headers: {
+            [name: string]: unknown
+          }
+          content?: never
+        }
+      }
+    }
+    trace?: never
+  }
+  '/me/password': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    /**
+     * Change the current user's password
+     * @description Replaces the password of the authenticated user. The current password is always verified and the new one must be different (8-44 characters). On success every token issued before the change stops working, so the client must log in again, and a notice email is sent. Three wrong current passwords lock the endpoint for that user (429 with Retry-After).
+     */
+    patch: {
+      parameters: {
+        query?: never
+        header?: never
+        path?: never
+        cookie?: never
+      }
+      requestBody: {
+        content: {
+          'application/json': components['schemas']['ChangeCurrentUserPasswordRequest']
+        }
+      }
+      responses: {
+        /** @description Password changed */
+        204: {
+          headers: {
+            [name: string]: unknown
+          }
+          content?: never
+        }
+        /** @description Invalid data (missing field, wrong type or new password outside 8-44 characters) */
+        400: {
+          headers: {
+            [name: string]: unknown
+          }
+          content?: never
+        }
+        /** @description Missing or invalid token */
+        401: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': components['schemas']['ApiError']
+          }
+        }
+        /** @description The user no longer exists */
+        404: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': components['schemas']['ApiError']
+          }
+        }
+        /** @description `user.invalid_password` (wrong current password), `user.password_unchanged` (new equals current) or `user.invalid_new_password` */
+        422: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': components['schemas']['ApiError']
+          }
+        }
+        /** @description Too many failed attempts (`user.change_password_rate_limited`) */
+        429: {
+          headers: {
+            /** @description Seconds until a new attempt is accepted */
+            'Retry-After'?: number
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': components['schemas']['ApiError']
+          }
         }
         /** @description Internal server error */
         500: {
@@ -3195,22 +3295,18 @@ export interface paths {
       cookie?: never
     }
     /**
-     * Search notes and links
-     * @description Case- and accent-insensitive substring search over note titles and content and link titles, notes and URLs. Every whitespace-separated term must match (max 8 terms). Items in the trash are excluded. Results whose title matches every term come first, then the most recently updated. `snippet` is a plain-text excerpt around the first match (clients should highlight the terms themselves).
+     * Search notes, folders, attachments and links
+     * @description Full-text search across the Notes module. Notes are matched by title and content (MySQL FULLTEXT, ranked by relevance); folders and attachments are matched by name and links by title or URL (substring match). Results are grouped by type. When `type` narrows the search to a single type, that group is paginated with `page`/`size`; otherwise each group returns up to `size` results without cross-type pagination.
      */
     get: {
       parameters: {
         query: {
-          /** @description Search text (at least 2 characters) */
+          /** @description Search term, minimum 2 characters. */
           q: string
-          /** @description Comma-separated item types to search */
+          /** @description Comma-separated subset of note,folder,attachment,link. Defaults to all four. */
           type?: string
-          /** @description Only items carrying this tag (case-insensitive) */
-          tag?: string
-          /** @description Page number (1-based) */
-          page?: number
-          /** @description Page size (max 100) */
-          size?: number
+          page?: components['schemas']['PageParameter']
+          size?: components['schemas']['ItemsPerPageParameter']
         }
         header?: never
         path?: never
@@ -3224,35 +3320,22 @@ export interface paths {
             [name: string]: unknown
           }
           content: {
-            'application/json': components['schemas']['SearchResponse']
+            'application/json': components['schemas']['NotesSearchResponse']
           }
         }
-        /** @description Missing `q` or invalid parameter */
+        /** @description Invalid or missing search term */
         400: {
           headers: {
             [name: string]: unknown
           }
-          content: {
-            'application/json': components['schemas']['ApiError']
-          }
+          content?: never
         }
-        /** @description Missing or invalid token */
+        /** @description Unauthenticated */
         401: {
           headers: {
             [name: string]: unknown
           }
-          content: {
-            'application/json': components['schemas']['ApiError']
-          }
-        }
-        /** @description Query too short (`search.query_too_short`) */
-        422: {
-          headers: {
-            [name: string]: unknown
-          }
-          content: {
-            'application/json': components['schemas']['ApiError']
-          }
+          content?: never
         }
       }
     }
@@ -3372,99 +3455,6 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/me/password': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    /**
-     * Change the current user's password
-     * @description Replaces the password of the authenticated user. The current password is always verified and the new one must be different (8-44 characters). On success every token issued before the change stops working, so the client must log in again, and a notice email is sent. Three wrong current passwords lock the endpoint for that user (429 with Retry-After).
-     */
-    patch: {
-      parameters: {
-        query?: never
-        header?: never
-        path?: never
-        cookie?: never
-      }
-      requestBody: {
-        content: {
-          'application/json': components['schemas']['ChangeCurrentUserPasswordRequest']
-        }
-      }
-      responses: {
-        /** @description Password changed */
-        204: {
-          headers: {
-            [name: string]: unknown
-          }
-          content?: never
-        }
-        /** @description Invalid data (missing field, wrong type or new password outside 8-44 characters) */
-        400: {
-          headers: {
-            [name: string]: unknown
-          }
-          content?: never
-        }
-        /** @description Missing or invalid token */
-        401: {
-          headers: {
-            [name: string]: unknown
-          }
-          content: {
-            'application/json': components['schemas']['ApiError']
-          }
-        }
-        /** @description The user no longer exists */
-        404: {
-          headers: {
-            [name: string]: unknown
-          }
-          content: {
-            'application/json': components['schemas']['ApiError']
-          }
-        }
-        /** @description `user.invalid_password` (wrong current password), `user.password_unchanged` (new equals current) or `user.invalid_new_password` */
-        422: {
-          headers: {
-            [name: string]: unknown
-          }
-          content: {
-            'application/json': components['schemas']['ApiError']
-          }
-        }
-        /** @description Too many failed attempts (`user.change_password_rate_limited`) */
-        429: {
-          headers: {
-            /** @description Seconds until a new attempt is accepted */
-            'Retry-After'?: number
-            [name: string]: unknown
-          }
-          content: {
-            'application/json': components['schemas']['ApiError']
-          }
-        }
-        /** @description Internal server error */
-        500: {
-          headers: {
-            [name: string]: unknown
-          }
-          content?: never
-        }
-      }
-    }
-    trace?: never
-  }
 }
 export type webhooks = Record<string, never>
 export interface components {
@@ -3535,6 +3525,12 @@ export interface components {
       total?: number
       page?: number
       last?: number
+    }
+    ChangeCurrentUserPasswordRequest: {
+      /** Format: password */
+      current_password: string
+      /** Format: password */
+      new_password: string
     }
     CurrentUserResponse: {
       /** Format: uuid */
@@ -4050,29 +4046,69 @@ export interface components {
       meta?: components['schemas']['PageMeta']
       data?: components['schemas']['LinkListItem'][]
     }
-    SearchResult: {
-      /** @enum {string} */
-      type?: 'note' | 'link'
+    NotesSearchNoteItem: {
       /** Format: uuid */
       id?: string
-      /** @description A single emoji chosen by the user; null means the default icon for the item type. */
-      icon?: string | null
       title?: string
-      /** @description Plain-text excerpt around the first match (may start/end with an ellipsis). Empty for encrypted notes. */
-      snippet?: string
-      /** @description The note content is encrypted by the client. Only its title and tags are searched. */
-      is_encrypted?: boolean
+      icon?: string | null
       /** Format: uuid */
       folder_id?: string | null
-      tags?: components['schemas']['TagNames']
       /** Format: date-time */
       updated_at?: string
-      /** @description Only for links */
-      url?: string | null
     }
-    SearchResponse: {
-      meta?: components['schemas']['PageMeta']
-      data?: components['schemas']['SearchResult'][]
+    NotesSearchFolderItem: {
+      /** Format: uuid */
+      id?: string
+      name?: string
+      icon?: string | null
+      /** Format: uuid */
+      parent_folder_id?: string | null
+    }
+    NotesSearchAttachmentItem: {
+      /** Format: uuid */
+      id?: string
+      file_name?: string
+      mime_type?: string
+      /** Format: uuid */
+      folder_id?: string | null
+      /** Format: uuid */
+      note_id?: string | null
+    }
+    NotesSearchLinkItem: {
+      /** Format: uuid */
+      id?: string
+      title?: string
+      icon?: string | null
+      url?: string
+      /** Format: uuid */
+      folder_id?: string | null
+      /** Format: uuid */
+      parent_note_id?: string | null
+      /** Format: date-time */
+      updated_at?: string
+    }
+    NotesSearchResponse: {
+      meta?: {
+        query?: string
+      }
+      data?: {
+        notes?: {
+          total?: number
+          items?: components['schemas']['NotesSearchNoteItem'][]
+        }
+        folders?: {
+          total?: number
+          items?: components['schemas']['NotesSearchFolderItem'][]
+        }
+        attachments?: {
+          total?: number
+          items?: components['schemas']['NotesSearchAttachmentItem'][]
+        }
+        links?: {
+          total?: number
+          items?: components['schemas']['NotesSearchLinkItem'][]
+        }
+      }
     }
     TagCount: {
       name?: string
@@ -4173,12 +4209,6 @@ export interface components {
       /** Format: int32 */
       code: number
       message: string
-    }
-    ChangeCurrentUserPasswordRequest: {
-      /** Format: password */
-      current_password: string
-      /** Format: password */
-      new_password: string
     }
   }
   responses: never

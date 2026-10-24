@@ -1,17 +1,31 @@
-import { useId, useState } from 'react'
+import { useId, useMemo, useState } from 'react'
 import { iconFor } from '@/components/itemIcons'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { Alert } from '@/components/Alert'
 import { Button } from '@/components/Button'
 import { Modal } from '@/components/Modal'
-import type { SearchResult } from '@/data/types'
+import type { ID } from '@/data/types'
 import { errorMessage } from '@/features/auth/errors'
 import { highlight } from './highlight'
 import { SEARCH_DEFAULTS, useDebounced, useSearchResults } from './queries'
 
-const pathOf = (result: SearchResult) =>
-  result.type === 'note' ? `/doc/${result.id}` : `/link/${result.id}`
+const ATTACHMENT_ICON = '📎'
+
+/** One row of the list, whatever it is. */
+interface Entry {
+  key: string
+  kind: 'note' | 'folder' | 'attachment' | 'link'
+  title: string
+  icon: string
+  /** Where it opens: a file opens the document or folder it belongs to. */
+  path: string
+  /** Shown under the title (the address of a link). */
+  detail?: string
+}
+
+const folderPath = (id: ID) => `/folder/${id}`
+const notePath = (id: ID) => `/doc/${id}`
 
 function Marked({ text, query }: { text: string; query: string }) {
   return (
@@ -45,13 +59,52 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
 
   const long = typed.length >= SEARCH_DEFAULTS.minLength
   const waiting = long && (typed !== q || query.isPending)
-  const items = !waiting && query.data ? query.data.items : []
-  const total = query.data?.total ?? 0
+  const items: Entry[] = useMemo(() => {
+    if (waiting || !query.data) return []
+    const { notes, folders, attachments, links } = query.data
+    return [
+      ...notes.items.map((n): Entry => ({
+        key: `note:${n.id}`,
+        kind: 'note',
+        title: n.title,
+        icon: iconFor('note', n.icon),
+        path: notePath(n.id),
+      })),
+      ...folders.items.map((f): Entry => ({
+        key: `folder:${f.id}`,
+        kind: 'folder',
+        title: f.name,
+        icon: iconFor('folder', f.icon),
+        path: folderPath(f.id),
+      })),
+      ...links.items.map((l): Entry => ({
+        key: `link:${l.id}`,
+        kind: 'link',
+        title: l.title,
+        icon: iconFor('link', l.icon),
+        path: `/link/${l.id}`,
+        detail: l.url,
+      })),
+      ...attachments.items.map((a): Entry => ({
+        key: `attachment:${a.id}`,
+        kind: 'attachment',
+        title: a.fileName,
+        icon: ATTACHMENT_ICON,
+        path: a.noteId ? notePath(a.noteId) : a.folderId ? folderPath(a.folderId) : '/',
+      })),
+    ]
+  }, [waiting, query.data])
+  const total = query.data
+    ? query.data.notes.total +
+      query.data.folders.total +
+      query.data.links.total +
+      query.data.attachments.total
+    : 0
   const current = Math.min(active, Math.max(items.length - 1, 0))
 
-  const open = (result: SearchResult) => {
+  const open = (entry: Entry) => {
     onClose()
-    navigate(pathOf(result))
+    navigate(entry.path)
   }
 
   const onKeyDown = (event: React.KeyboardEvent) => {
@@ -114,42 +167,30 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
         )}
 
         <ul id={listId} role="listbox" aria-label={t('results')} className="flex flex-col gap-1">
-          {items.map((result, index) => (
+          {items.map((entry, index) => (
             <li
-              key={`${result.type}:${result.id}`}
+              key={entry.key}
               id={optionId(index)}
               role="option"
               aria-selected={index === current}
               onMouseMove={() => setActive(index)}
-              onClick={() => open(result)}
+              onClick={() => open(entry)}
               className={`cursor-pointer rounded-md px-3 py-2 text-sm ${
                 index === current ? 'bg-neutral-200 dark:bg-neutral-800' : ''
               }`}
             >
               <div className="flex items-center gap-2">
-                <span aria-hidden="true">
-                  {iconFor(result.type, result.icon, false, result.encrypted)}
-                </span>
+                <span aria-hidden="true">{entry.icon}</span>
                 <span className="min-w-0 flex-1 truncate font-medium">
-                  <Marked text={result.title || t('untitled')} query={q} />
+                  <Marked text={entry.title || t('untitled')} query={q} />
                 </span>
                 <span className="text-xs text-neutral-600 dark:text-neutral-400">
-                  {result.type === 'note' ? t('document') : t('link')}
+                  {t(entry.kind)}
                 </span>
               </div>
-              {result.encrypted && (
-                <p className="mt-0.5 text-xs text-neutral-600 dark:text-neutral-400">
-                  {t('encrypted')}
-                </p>
-              )}
-              {result.snippet && (
-                <p className="mt-0.5 line-clamp-2 text-xs break-words text-neutral-600 dark:text-neutral-400">
-                  <Marked text={result.snippet} query={q} />
-                </p>
-              )}
-              {result.url && (
+              {entry.detail && (
                 <p className="mt-0.5 truncate text-xs text-neutral-600 dark:text-neutral-400">
-                  <Marked text={result.url} query={q} />
+                  <Marked text={entry.detail} query={q} />
                 </p>
               )}
             </li>

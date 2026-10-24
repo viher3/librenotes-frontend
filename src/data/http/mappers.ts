@@ -15,7 +15,8 @@ import {
   type NoteSummary,
   type Page,
   type PathItem,
-  type SearchResult,
+  type SearchGroup,
+  type SearchResults,
   type TagCount,
   type Trash,
   type User,
@@ -184,18 +185,47 @@ export function toPage<D, T>(
   }
 }
 
-export function toSearchResult(dto: S['SearchResult']): SearchResult {
+const toGroup = <D, T>(
+  group: { total?: number; items?: D[] } | undefined,
+  map: (item: D) => T,
+): SearchGroup<T> => ({
+  total: group?.total ?? 0,
+  items: (group?.items ?? []).map(map),
+})
+
+export function toSearchResults(dto: S['NotesSearchResponse'], query: string): SearchResults {
+  const data = dto.data
   return {
-    type: req(dto.type, 'type'),
-    id: req(dto.id, 'id'),
-    title: req(dto.title, 'title'),
-    icon: dto.icon ?? null,
-    snippet: dto.snippet ?? '',
-    encrypted: dto.is_encrypted ?? false,
-    folderId: dto.folder_id ?? null,
-    tags: dto.tags ?? [],
-    updatedAt: req(dto.updated_at, 'updated_at'),
-    url: dto.url ?? null,
+    query: dto.meta?.query ?? query,
+    notes: toGroup(data?.notes, (n) => ({
+      id: req(n.id, 'id'),
+      title: req(n.title, 'title'),
+      icon: n.icon ?? null,
+      folderId: n.folder_id ?? null,
+      updatedAt: req(n.updated_at, 'updated_at'),
+    })),
+    folders: toGroup(data?.folders, (f) => ({
+      id: req(f.id, 'id'),
+      name: req(f.name, 'name'),
+      icon: f.icon ?? null,
+      parentFolderId: f.parent_folder_id ?? null,
+    })),
+    attachments: toGroup(data?.attachments, (a) => ({
+      id: req(a.id, 'id'),
+      fileName: req(a.file_name, 'file_name'),
+      mimeType: a.mime_type ?? '',
+      folderId: a.folder_id ?? null,
+      noteId: a.note_id ?? null,
+    })),
+    links: toGroup(data?.links, (l) => ({
+      id: req(l.id, 'id'),
+      title: req(l.title, 'title'),
+      icon: l.icon ?? null,
+      url: req(l.url, 'url'),
+      folderId: l.folder_id ?? null,
+      parentNoteId: l.parent_note_id ?? null,
+      updatedAt: req(l.updated_at, 'updated_at'),
+    })),
   }
 }
 

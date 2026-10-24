@@ -241,7 +241,7 @@ describe('opening an encrypted document', () => {
 })
 
 describe('encrypted documents elsewhere in the app', () => {
-  it('are found by title only, without exposing a snippet', async () => {
+  it('are found by title only', async () => {
     const mock = await signedInBackend()
     await mock.notes.createNote({ title: 'Journal', content: 'lnenc:v1:' + btoa('zebra') })
     await mock.notes.createNote({ title: 'Open', content: 'zebra' })
@@ -250,7 +250,7 @@ describe('encrypted documents elsewhere in the app', () => {
     const byContent = await mock.notes.search({ q: 'zebra' })
     const byTitle = await mock.notes.search({ q: 'Journal' })
 
-    expect(byContent.items.map((i) => i.title)).toEqual(['Open'])
-    expect(byTitle.items[0]).toMatchObject({ title: 'Journal', snippet: '', encrypted: true })
+    expect(byContent.notes.items.map((i) => i.title)).toEqual(['Open'])
+    expect(byTitle.notes.items.map((i) => i.title)).toEqual(['Journal'])
   })
 })

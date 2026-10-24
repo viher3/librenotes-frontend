@@ -54,7 +54,7 @@ describe('mock specifics', () => {
 
     await expect(mock.notes.listNotes()).rejects.toMatchObject({ status: 401 })
     await mock.auth.login(DEMO_ACCOUNT.email, DEMO_ACCOUNT.password)
-    expect((await mock.notes.search({ q: 'temporary' })).total).toBe(0)
+    expect((await mock.notes.search({ q: 'temporary' })).notes.total).toBe(0)
   })
 
   it('resumes a session across a reload when the refresh token is stored', async () => {

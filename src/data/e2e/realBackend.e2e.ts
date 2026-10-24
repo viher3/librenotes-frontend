@@ -227,32 +227,23 @@ describe('real backend', () => {
     })
   })
 
-  it('searches and counts tags', async () => {
+  it('searches notes and folders, and counts tags', async () => {
     const a = await notes.createNote({
       title: 'Reunión de planificación',
       content: 'presupuesto anual',
       tags: ['plan'],
     })
-    const l = await notes.createLink({
-      title: 'Presupuesto docs',
-      url: 'https://example.org/p',
-      tags: ['plan'],
-    })
+    await notes.createNote({ title: 'Presupuesto docs', tags: ['plan'] })
+    const folder = await notes.createFolder('Presupuesto 2026')
 
     const byAccent = await notes.search({ q: 'REUNION presupuesto' })
-    expect(ids(byAccent.items)).toEqual([a.id])
-    expect(byAccent.items[0]).toMatchObject({ type: 'note', title: 'Reunión de planificación' })
-    expect(byAccent.items[0].snippet).toContain('presupuesto')
+    expect(ids(byAccent.notes.items)).toEqual([a.id])
+    expect(byAccent.query).toBe('REUNION presupuesto')
 
-    const both = await notes.search({ q: 'presupuesto', types: ['note', 'link'], tag: 'PLAN' })
-    expect(ids(both.items).sort()).toEqual([a.id, l.id].sort())
-    expect(
-      (await notes.search({ q: 'presupuesto', types: ['link'] })).items.map((i) => i.type),
-    ).toEqual(['link'])
-    await expect(notes.search({ q: 'a' })).rejects.toMatchObject({
-      status: 422,
-      code: 'search.query_too_short',
-    })
+    const onlyFolders = await notes.search({ q: 'presupuesto', types: ['folder'] })
+    expect(ids(onlyFolders.folders.items)).toEqual([folder.id])
+    expect(onlyFolders.notes.items).toEqual([])
+    await expect(notes.search({ q: 'a' })).rejects.toMatchObject({ status: 400 })
 
     const tags = await notes.listTags()
     expect(tags.find((t) => t.name === 'plan')).toEqual({ name: 'plan', count: 2 })

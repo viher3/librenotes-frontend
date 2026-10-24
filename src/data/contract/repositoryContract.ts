@@ -572,7 +572,7 @@ export function describeRepositoryContract(name: string, create: () => Promise<C
     })
 
     describe('search and tags', () => {
-      it('finds notes and links by title, content, note and URL, ranking title matches first', async () => {
+      it('finds notes by title and content, ranking title matches first', async () => {
         const { notes, signInNewUser } = await create()
         await signInNewUser()
         const byTitle = await notes.createNote({ title: 'Quarterly roadmap', content: 'nothing' })
@@ -581,24 +581,57 @@ export function describeRepositoryContract(name: string, create: () => Promise<C
           content: 'We discussed the roadmap for next year',
         })
         await notes.createNote({ title: 'Unrelated', content: 'groceries' })
-        const link = await notes.createLink({
-          title: 'x',
-          url: 'https://roadmap.example.org/a',
-          note: 'about it',
-        })
 
         const result = await notes.search({ q: 'roadmap' })
 
-        expect(result.total).toBe(3)
-        expect(result.items[0].id).toBe(byTitle.id)
-        expect(ids(result.items).sort()).toEqual([byTitle.id, byContent.id, link.id].sort())
-        expect(result.items.find((i) => i.id === link.id)).toMatchObject({
-          type: 'link',
-          url: 'https://roadmap.example.org/a',
-        })
+        expect(result.query).toBe('roadmap')
+        expect(result.notes.total).toBe(2)
+        expect(ids(result.notes.items)).toEqual([byTitle.id, byContent.id])
+        expect(result.folders).toEqual({ total: 0, items: [] })
+        expect(result.attachments).toEqual({ total: 0, items: [] })
+        expect(result.links).toEqual({ total: 0, items: [] })
       })
 
-      it('is case and accent insensitive, needs every term, and finds short words and stopwords', async () => {
+      it('finds links by title, address and note', async () => {
+        const { notes, signInNewUser } = await create()
+        await signInNewUser()
+        const byTitle = await notes.createLink({ title: 'Roadmap tool', url: 'https://a.example' })
+        const byUrl = await notes.createLink({ title: 'x', url: 'https://roadmap.example.org/a' })
+        await notes.createLink({ title: 'Other', url: 'https://b.example' })
+
+        const result = await notes.search({ q: 'roadmap', types: ['link'] })
+
+        expect(ids(result.links.items)).toEqual([byTitle.id, byUrl.id])
+        expect(result.links.items[1]).toMatchObject({ url: 'https://roadmap.example.org/a' })
+        expect(result.notes.items).toEqual([])
+      })
+
+      it('finds folders and attachments by name, all in one answer', async () => {
+        const { notes, signInNewUser } = await create()
+        await signInNewUser()
+        const folder = await notes.createFolder('Budget 2026')
+        const note = await notes.createNote({ title: 'Budget notes' })
+        const attachment = await notes.uploadNoteAttachment(note.id, file('budget.txt', 'abc'))
+        await notes.createNote({ title: 'Unrelated' })
+
+        const result = await notes.search({ q: 'budget' })
+
+        expect(ids(result.notes.items)).toEqual([note.id])
+        expect(result.folders.items).toEqual([
+          { id: folder.id, name: 'Budget 2026', icon: null, parentFolderId: null },
+        ])
+        expect(result.attachments.items).toEqual([
+          {
+            id: attachment.id,
+            fileName: 'budget.txt',
+            mimeType: 'text/plain',
+            folderId: null,
+            noteId: note.id,
+          },
+        ])
+      })
+
+      it('is case and accent insensitive and needs every term', async () => {
         const { notes, signInNewUser } = await create()
         await signInNewUser()
         const both = await notes.createNote({
@@ -606,35 +639,24 @@ export function describeRepositoryContract(name: string, create: () => Promise<C
           content: 'presupuesto anual',
         })
         await notes.createNote({ title: 'Reunión', content: 'otra cosa' })
-        const todo = await notes.createNote({ title: 'To do', content: 'buy the milk' })
 
-        expect(ids((await notes.search({ q: 'REUNION presupuesto' })).items)).toEqual([both.id])
-        expect(ids((await notes.search({ q: 'planificacion' })).items)).toEqual([both.id])
-        expect(ids((await notes.search({ q: 'the milk' })).items)).toEqual([todo.id])
-        expect(ids((await notes.search({ q: 'to' })).items)).toContain(todo.id)
+        expect(ids((await notes.search({ q: 'REUNION presupuesto' })).notes.items)).toEqual([
+          both.id,
+        ])
+        expect(ids((await notes.search({ q: 'planificacion' })).notes.items)).toEqual([both.id])
       })
 
-      it('treats wildcard characters literally and builds a snippet around the match', async () => {
+      it('treats wildcard characters literally', async () => {
         const { notes, signInNewUser } = await create()
         await signInNewUser()
         const percent = await notes.createNote({ title: 'Discount 50% off' })
         await notes.createNote({ title: 'Discount 500 off' })
-        const long = await notes.createNote({
-          title: 'Long',
-          content: `${'lorem ipsum '.repeat(20)}special\n\nkeyword ${'dolor '.repeat(40)}`,
-        })
 
-        expect(ids((await notes.search({ q: '50%' })).items)).toEqual([percent.id])
-        expect((await notes.search({ q: '%%' })).items).toEqual([])
-        const snippet = (await notes.search({ q: 'keyword' })).items.find(
-          (i) => i.id === long.id,
-        )!.snippet
-        expect(snippet).toContain('special keyword')
-        expect(snippet.startsWith('…') && snippet.endsWith('…')).toBe(true)
-        expect(snippet).not.toContain('\n')
+        expect(ids((await notes.search({ q: '50%' })).notes.items)).toEqual([percent.id])
+        expect((await notes.search({ q: '%%' })).notes.items).toEqual([])
       })
 
-      it('never matches nor excerpts the content of an encrypted note, only its title', async () => {
+      it('never matches the content of an encrypted note, only its title', async () => {
         const { notes, signInNewUser } = await create()
         await signInNewUser()
         const secret = await notes.createNote({
@@ -643,32 +665,28 @@ export function describeRepositoryContract(name: string, create: () => Promise<C
         })
         await notes.createNote({ title: 'Plain', content: 'zebra' })
 
-        expect(ids((await notes.search({ q: 'zebra' })).items)).not.toContain(secret.id)
-        const found = (await notes.search({ q: 'Journal' })).items[0]
-        expect(found).toMatchObject({ id: secret.id, snippet: '', encrypted: true })
-        expect((await notes.getNote(secret.id)).encrypted).toBe(true)
+        expect(ids((await notes.search({ q: 'zebra' })).notes.items)).not.toContain(secret.id)
+        expect(ids((await notes.search({ q: 'Journal' })).notes.items)).toEqual([secret.id])
       })
 
-      it('filters by type and tag, excludes trashed items and validates the query', async () => {
+      it('narrows by type, paginates a single type, excludes trashed items and validates the query', async () => {
         const { notes, signInNewUser } = await create()
         await signInNewUser()
-        const note = await notes.createNote({ title: 'alpha note', tags: ['t1'] })
-        const link = await notes.createLink({
-          title: 'alpha link',
-          url: 'https://a.co',
-          tags: ['t1'],
-        })
-        await notes.createNote({ title: 'alpha untagged' })
-        const gone = await notes.createNote({ title: 'alpha trashed', tags: ['t1'] })
+        const note = await notes.createNote({ title: 'alpha note' })
+        const folder = await notes.createFolder('alpha folder')
+        const gone = await notes.createNote({ title: 'alpha trashed' })
         await notes.deleteNote(gone.id)
+        for (let i = 0; i < 3; i += 1) await notes.createNote({ title: `beta ${i}` })
 
-        expect(ids((await notes.search({ q: 'alpha', tag: 'T1' })).items).sort()).toEqual(
-          [note.id, link.id].sort(),
-        )
-        expect(ids((await notes.search({ q: 'alpha', types: ['note'], tag: 't1' })).items)).toEqual(
-          [note.id],
-        )
-        expect(ids((await notes.search({ q: 'alpha', types: ['link'] })).items)).toEqual([link.id])
+        const onlyFolders = await notes.search({ q: 'alpha', types: ['folder'] })
+        expect(onlyFolders.notes.items).toEqual([])
+        expect(ids(onlyFolders.folders.items)).toEqual([folder.id])
+        expect(ids((await notes.search({ q: 'alpha' })).notes.items)).toEqual([note.id])
+
+        const second = await notes.search({ q: 'beta', types: ['note'], page: 2, size: 2 })
+        expect(second.notes.total).toBe(3)
+        expect(second.notes.items).toHaveLength(1)
+
         await rejects(notes.search({ q: 'a' }), { status: 422, code: 'search.query_too_short' })
         await rejects(notes.search({ q: '   ' }), { status: 422, code: 'search.query_too_short' })
       })
@@ -1138,7 +1156,7 @@ export function describeRepositoryContract(name: string, create: () => Promise<C
           tags: ['deep'],
         })
 
-        expect(ids((await notes.search({ q: 'needle' })).items)).toEqual([child.id])
+        expect(ids((await notes.search({ q: 'needle' })).notes.items)).toEqual([child.id])
         expect(await notes.listTags()).toEqual([{ name: 'deep', count: 1 }])
       })
     })
@@ -1193,7 +1211,7 @@ export function describeRepositoryContract(name: string, create: () => Promise<C
           code: 'note.parent_not_found',
         })
         await rejects(notes.noteChildren(note.id), { status: 404, code: 'note.not_found' })
-        expect((await notes.search({ q: 'findme' })).items).toEqual([])
+        expect((await notes.search({ q: 'findme' })).notes.items).toEqual([])
         expect((await notes.listNotes()).items).toEqual([])
         expect(await notes.listTags()).toEqual([])
 

@@ -135,20 +135,53 @@ export interface Page<T> {
   lastPage: number
 }
 
-export interface SearchResult {
-  type: 'note' | 'link'
+/** A document found by title or content. */
+export interface NoteHit {
   id: ID
   title: string
   icon: Icon
-  /** Plain-text excerpt around the first match; may start/end with an ellipsis. Empty when encrypted. */
-  snippet: string
-  /** An encrypted note is matched by title and tags only. */
-  encrypted: boolean
   folderId: ID | null
-  tags: string[]
   updatedAt: string
-  /** Only for links. */
-  url: string | null
+}
+
+export interface FolderHit {
+  id: ID
+  name: string
+  icon: Icon
+  parentFolderId: ID | null
+}
+
+export interface LinkHit {
+  id: ID
+  title: string
+  icon: Icon
+  url: string
+  folderId: ID | null
+  parentNoteId: ID | null
+  updatedAt: string
+}
+
+export interface AttachmentHit {
+  id: ID
+  fileName: string
+  mimeType: string
+  folderId: ID | null
+  noteId: ID | null
+}
+
+/** One kind of result: how many matched and the ones returned (at most `size`). */
+export interface SearchGroup<T> {
+  total: number
+  items: T[]
+}
+
+/** Results grouped by kind. */
+export interface SearchResults {
+  query: string
+  notes: SearchGroup<NoteHit>
+  folders: SearchGroup<FolderHit>
+  attachments: SearchGroup<AttachmentHit>
+  links: SearchGroup<LinkHit>
 }
 
 export interface TagCount {
@@ -201,11 +234,14 @@ export interface ListNotesParams extends ListParams {
 
 export type ListLinksParams = ListParams
 
+export type SearchType = 'note' | 'folder' | 'attachment' | 'link'
+
 export interface SearchParams {
   /** At least 2 characters. */
   q: string
-  types?: ('note' | 'link')[]
-  tag?: string
+  /** Defaults to all four. */
+  types?: SearchType[]
+  /** Only used when `types` has a single entry. */
   page?: number
   size?: number
 }

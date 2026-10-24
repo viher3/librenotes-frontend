@@ -31,7 +31,11 @@ import {
   type NoteSummary,
   type Page,
   type PathItem,
-  type SearchResult,
+  type SearchGroup,
+  type NoteHit,
+  type FolderHit,
+  type AttachmentHit,
+  type LinkHit,
   type Trash,
   type TrashKind,
   type User,
@@ -122,8 +126,6 @@ interface AttachmentRecord extends Owned {
 
 const MAX_PAGE_SIZE = 100
 const DEFAULT_PAGE_SIZE = 20
-const SNIPPET_LENGTH = 160
-const SNIPPET_LEAD = 50
 /** Wrong current-password attempts allowed per window before changing the password is locked (as the backend). */
 const PASSWORD_ATTEMPTS = 3
 const PASSWORD_ATTEMPTS_WINDOW_MS = 15 * 60 * 1000
@@ -459,19 +461,6 @@ export function createMockRepositories(options: MockOptions = {}): {
 
   const mustBeTrashed = (item: Owned, id: ID) => {
     if (!item.deletedAt) fail(409, 'notes.not_in_trash', { value: id })
-  }
-
-  // ---- search
-  function snippetOf(body: string, term: string): string {
-    const folded = foldForSearch(body)
-    const position = term ? folded.indexOf(foldForSearch(term)) : -1
-    const start = position > 0 ? Math.max(0, position - SNIPPET_LEAD) : 0
-    const slice = body
-      .slice(start, start + SNIPPET_LENGTH)
-      .replace(/\s+/g, ' ')
-      .trim()
-    if (slice === '') return ''
-    return `${start > 0 ? '…' : ''}${slice}${start + SNIPPET_LENGTH < body.length ? '…' : ''}`
   }
 
   // ---- repositories
@@ -908,83 +897,99 @@ export function createMockRepositories(options: MockOptions = {}): {
       if (query.length < MIN_SEARCH_LENGTH)
         fail(422, 'search.query_too_short', { min_length: MIN_SEARCH_LENGTH })
       const terms = [...new Set(foldForSearch(query).split(/\s+/).filter(Boolean))].slice(0, 8)
-      const types = params.types?.length ? params.types : (['note', 'link'] as const)
-      const tag = params.tag === undefined ? undefined : normalizeTag(params.tag)
+      const types = params.types?.length
+        ? params.types
+        : (['note', 'folder', 'attachment', 'link'] as const)
       if (params.page !== undefined && params.page < 1) invalid('[page] Must be a positive integer')
 
-      type Candidate = {
-        type: 'note' | 'link'
-        id: ID
-        title: string
-        icon: string | null
-        body: string
-        encrypted: boolean
-        url: string | null
-        folderId: ID | null
-        tags: string[]
-        updatedAt: string
+      const matchesAll = (text: string) => {
+        const haystack = foldForSearch(text)
+        return terms.every((term) => haystack.includes(term))
       }
-      const candidates: Candidate[] = [
-        ...(types.includes('note')
-          ? mine(notes).map((n): Candidate => ({
-              type: 'note',
+      // Only a search for a single kind is paginated; otherwise each group returns its first `size`.
+      const window = { page: types.length === 1 ? params.page : undefined, size: params.size }
+      const group = <T, R>(items: T[], map: (item: T) => R): SearchGroup<R> => ({
+        total: items.length,
+        items: page(items, window, map).items,
+      })
+      const empty = { total: 0, items: [] }
+
+      const noteHits = types.includes('note')
+        ? mine(notes)
+            // Ciphertext is not matched, like the backend does: an encrypted note is found by title only.
+            .filter((n) =>
+              matchesAll(isEncryptedContent(n.content) ? n.title : `${n.title}\n${n.content}`),
+            )
+            .map((n) => ({ n, titleRank: matchesAll(n.title) ? 0 : 1 }))
+            .sort(
+              (a, b) =>
+                a.titleRank - b.titleRank ||
+                b.n.updatedAt.localeCompare(a.n.updatedAt) ||
+                a.n.id.localeCompare(b.n.id),
+            )
+        : []
+      const folderHits = types.includes('folder')
+        ? mine(folders)
+            .filter((f) => matchesAll(f.name))
+            .sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id))
+        : []
+      const attachmentHits = types.includes('attachment')
+        ? mine(attachments)
+            .filter((a) => matchesAll(a.fileName))
+            .sort((a, b) => a.fileName.localeCompare(b.fileName) || a.id.localeCompare(b.id))
+        : []
+      const linkHits = types.includes('link')
+        ? mine(links)
+            .filter((l) => matchesAll(`${l.title}\n${l.url}\n${l.note ?? ''}`))
+            .map((l) => ({ l, titleRank: matchesAll(l.title) ? 0 : 1 }))
+            .sort(
+              (a, b) =>
+                a.titleRank - b.titleRank ||
+                b.l.updatedAt.localeCompare(a.l.updatedAt) ||
+                a.l.id.localeCompare(b.l.id),
+            )
+        : []
+
+      return {
+        query,
+        notes: noteHits.length
+          ? group(noteHits, ({ n }): NoteHit => ({
               id: n.id,
               title: n.title,
               icon: n.icon,
-              // Ciphertext is neither matched nor excerpted, like the backend does.
-              body: isEncryptedContent(n.content) ? '' : n.content,
-              encrypted: isEncryptedContent(n.content),
-              url: null,
               folderId: n.folderId,
-              tags: n.tags,
               updatedAt: n.updatedAt,
             }))
-          : []),
-        ...(types.includes('link')
-          ? mine(links).map((l): Candidate => ({
-              type: 'link',
+          : empty,
+        folders: folderHits.length
+          ? group(folderHits, (f): FolderHit => ({
+              id: f.id,
+              name: f.name,
+              icon: f.icon,
+              parentFolderId: f.parentFolderId,
+            }))
+          : empty,
+        attachments: attachmentHits.length
+          ? group(attachmentHits, (a): AttachmentHit => ({
+              id: a.id,
+              fileName: a.fileName,
+              mimeType: a.mimeType,
+              folderId: a.folderId,
+              noteId: a.noteId,
+            }))
+          : empty,
+        links: linkHits.length
+          ? group(linkHits, ({ l }): LinkHit => ({
               id: l.id,
               title: l.title,
               icon: l.icon,
-              body: l.note ?? '',
-              encrypted: false,
               url: l.url,
               folderId: l.folderId,
-              tags: l.tags,
+              parentNoteId: l.parentNoteId,
               updatedAt: l.updatedAt,
             }))
-          : []),
-      ]
-
-      const matches = candidates
-        .filter((c) => tag === undefined || c.tags.includes(tag))
-        .filter((c) => {
-          const haystack = foldForSearch(`${c.title}\n${c.body}\n${c.url ?? ''}`)
-          return terms.every((term) => haystack.includes(term))
-        })
-        .map((c) => ({
-          c,
-          titleRank: terms.every((t) => foldForSearch(c.title).includes(t)) ? 0 : 1,
-        }))
-        .sort(
-          (a, b) =>
-            a.titleRank - b.titleRank ||
-            b.c.updatedAt.localeCompare(a.c.updatedAt) ||
-            a.c.id.localeCompare(b.c.id),
-        )
-
-      return page(matches, params, ({ c }): SearchResult => ({
-        type: c.type,
-        id: c.id,
-        title: c.title,
-        icon: c.icon,
-        snippet: snippetOf(c.body, terms.find((t) => foldForSearch(c.body).includes(t)) ?? ''),
-        encrypted: c.encrypted,
-        folderId: c.folderId,
-        tags: [...c.tags],
-        updatedAt: c.updatedAt,
-        url: c.url,
-      }))
+          : empty,
+      }
     },
 
     async listTags() {
