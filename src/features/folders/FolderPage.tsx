@@ -12,6 +12,7 @@ import { useNewDocument } from '@/features/documents/useNewDocument'
 import { siteName } from '@/features/links/hostname'
 import { useNewLink } from '@/features/links/NewLinkProvider'
 import { useFolderContents, useTreeActions } from '@/features/tree/queries'
+import { useEntityMenu } from '@/features/tree/EntityMenuProvider'
 import { useMoveDialog } from '@/features/tree/useMoveDialog'
 import { Alert } from '@/components/Alert'
 import { AttachmentsPanel } from '@/features/attachments/AttachmentsPanel'
@@ -32,6 +33,7 @@ function FolderView({ id }: { id: string }) {
   const newLink = useNewLink()
   const { setIcon } = useTreeActions()
   const { openMove, dialog: moveDialog } = useMoveDialog()
+  const entityMenu = useEntityMenu()
   const uploads = useAttachmentUploads({ type: 'folder', id })
   const { dragging, dropProps } = useFileDrop(uploads.add)
 
@@ -135,6 +137,15 @@ function FolderView({ id }: { id: string }) {
               title={note.title}
               detail={formatRelativeTime(note.updatedAt, language)}
               onMove={() => openMove({ kind: 'note', id: note.id }, note.title)}
+              onContextMenu={(event) =>
+                entityMenu.open(event, {
+                  kind: 'note',
+                  id: note.id,
+                  name: note.title,
+                  pinned: note.pinned,
+                  childCount: note.childCount,
+                })
+              }
             />
           ))}
         </CardSection>
@@ -149,6 +160,9 @@ function FolderView({ id }: { id: string }) {
               title={link.title}
               detail={siteName(link.url)}
               onMove={() => openMove({ kind: 'link', id: link.id }, link.title)}
+              onContextMenu={(event) =>
+                entityMenu.open(event, { kind: 'link', id: link.id, name: link.title })
+              }
             />
           ))}
         </CardSection>

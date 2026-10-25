@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import type { MouseEvent, ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 
@@ -42,10 +42,12 @@ interface ItemCardProps {
   detail?: string
   /** When given, a "Move" button shows on hover. */
   onMove?: () => void
+  /** Right button pressed on the card. */
+  onContextMenu?: (event: MouseEvent) => void
 }
 
 /** A document, folder or link as a card that leads to it. */
-export function ItemCard({ to, href, icon, title, detail, onMove }: ItemCardProps) {
+export function ItemCard({ to, href, icon, title, detail, onMove, onContextMenu }: ItemCardProps) {
   const className =
     'flex flex-col gap-0.5 rounded-lg border border-neutral-200 p-3 hover:bg-neutral-50 focus-visible:outline-2 focus-visible:outline-indigo-500 dark:border-neutral-800 dark:hover:bg-neutral-900'
   const content = (
@@ -60,7 +62,7 @@ export function ItemCard({ to, href, icon, title, detail, onMove }: ItemCardProp
     </>
   )
   return (
-    <li className={CARD_GROUP}>
+    <li className={CARD_GROUP} onContextMenu={onContextMenu}>
       {to ? (
         <Link to={to} className={className}>
           {content}

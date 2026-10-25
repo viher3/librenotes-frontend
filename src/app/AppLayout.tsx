@@ -14,6 +14,7 @@ import { useNewDocument, useNewDocumentShortcut } from '@/features/documents/use
 import { TagList } from '@/features/tags/TagList'
 import { NewLinkProvider } from '@/features/links/NewLinkProvider'
 import { SearchProvider, useSearch } from '@/features/search/SearchProvider'
+import { EntityMenuProvider } from '@/features/tree/EntityMenuProvider'
 import { SidebarTree } from '@/features/tree/SidebarTree'
 import { Alert } from '@/components/Alert'
 
@@ -46,7 +47,9 @@ export function AppLayout() {
   return (
     <NewLinkProvider>
       <SearchProvider>
-        <Shell />
+        <EntityMenuProvider>
+          <Shell />
+        </EntityMenuProvider>
       </SearchProvider>
     </NewLinkProvider>
   )

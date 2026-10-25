@@ -177,7 +177,11 @@ function DocumentEditor({ note, noteKey, onKeyChange, onLock }: DocumentEditorPr
   const { t, i18n } = useTranslation('documents')
   const { t: te } = useTranslation('encryption')
   const navigate = useNavigate()
-  const isNew = (useLocation().state as { isNew?: boolean } | null)?.isNew === true
+  const location = useLocation()
+  const locationState = location.state as { isNew?: boolean; edit?: boolean } | null
+  const isNew = locationState?.isNew === true
+  // Asked to open for editing (from the context menu).
+  const editRequested = locationState?.edit === true
   const saveRaw = useSaveNote(note.id)
   // What the next save encrypts with. A ref, not the prop: it must change at the very moment encryption does,
   // so that no autosave in between sends the content in the wrong form.
@@ -200,6 +204,12 @@ function DocumentEditor({ note, noteKey, onKeyChange, onLock }: DocumentEditorPr
   const { openMove, dialog: moveDialog } = useMoveDialog()
   const [mode, setMode] = useEditorMode(note.id)
   const [pinned, setPinned] = useState(note.pinned)
+  // Pinned from elsewhere (the context menu) while this page is open.
+  const [seenPinned, setSeenPinned] = useState(note.pinned)
+  if (seenPinned !== note.pinned) {
+    setSeenPinned(note.pinned)
+    setPinned(note.pinned)
+  }
   const [pinError, setPinError] = useState(false)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [lossy, setLossy] = useState(false)
@@ -246,7 +256,7 @@ function DocumentEditor({ note, noteKey, onKeyChange, onLock }: DocumentEditorPr
   const [saved, setSavedState] = useState(note.content)
   const contentRef = useRef(content)
   const savedRef = useRef(saved)
-  const [editing, setEditing] = useState(isNew || recovered !== null)
+  const [editing, setEditing] = useState(isNew || recovered !== null || editRequested)
   const [savingContent, setSavingContent] = useState(false)
   const [contentError, setContentError] = useState<string | null>(null)
   const [confirmingDiscard, setConfirmingDiscard] = useState(false)
@@ -312,6 +322,16 @@ function DocumentEditor({ note, noteKey, onKeyChange, onLock }: DocumentEditorPr
     focusRequest.current = point ?? true
     setStarted(true)
     setEditing(true)
+  }
+
+  // Asked to edit again while this document is already open: a new navigation, not a new page.
+  const [handledKey, setHandledKey] = useState(location.key)
+  if (handledKey !== location.key) {
+    setHandledKey(location.key)
+    if (editRequested) {
+      setStarted(true)
+      setEditing(true)
+    }
   }
 
   const stopEditing = () => {

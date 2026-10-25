@@ -20,7 +20,10 @@
     "newLinkInside": "Enlace nuevo dentro",
     "addLink": "Añadir enlace",
     "openLink": "Abrir enlace en una pestaña nueva",
-    "changeIcon": "Cambiar icono"
+    "changeIcon": "Cambiar icono",
+    "pin": "Fijar",
+    "unpin": "Dejar de fijar",
+    "edit": "Editar"
   },
   "newFolder": "Carpeta nueva",
   "folderDialog": {

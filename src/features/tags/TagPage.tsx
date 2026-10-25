@@ -5,6 +5,7 @@ import { Alert } from '@/components/Alert'
 import { Button } from '@/components/Button'
 import { CardSection, ItemCard } from '@/components/ItemCard'
 import { errorMessage } from '@/features/auth/errors'
+import { useEntityMenu } from '@/features/tree/EntityMenuProvider'
 import { siteName } from '@/features/links/hostname'
 import { formatRelativeTime } from '@/lib/format'
 import { normalizeTag } from '@/data/rules'
@@ -17,6 +18,7 @@ export default function TagPage() {
   const { t, i18n } = useTranslation('tags')
   const notes = useTaggedNotes(name)
   const links = useTaggedLinks(name)
+  const entityMenu = useEntityMenu()
   const language = i18n.resolvedLanguage ?? 'en'
 
   const failure = notes.error ?? links.error
@@ -77,6 +79,15 @@ export default function TagPage() {
               icon={iconFor('note', note.icon, note.pinned, note.encrypted)}
               title={note.title}
               detail={formatRelativeTime(note.updatedAt, language)}
+              onContextMenu={(event) =>
+                entityMenu.open(event, {
+                  kind: 'note',
+                  id: note.id,
+                  name: note.title,
+                  pinned: note.pinned,
+                  childCount: note.childCount,
+                })
+              }
             />
           ))}
         </CardSection>
@@ -101,6 +112,9 @@ export default function TagPage() {
               icon={iconFor('link', link.icon)}
               title={link.title}
               detail={siteName(link.url)}
+              onContextMenu={(event) =>
+                entityMenu.open(event, { kind: 'link', id: link.id, name: link.title })
+              }
             />
           ))}
         </CardSection>

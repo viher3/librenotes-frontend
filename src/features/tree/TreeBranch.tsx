@@ -1,3 +1,4 @@
+import type { MouseEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/Button'
@@ -8,6 +9,7 @@ import { DRAG_TYPE, type DropTarget } from './dnd'
 import { NodeMenu, type MenuItem } from './NodeMenu'
 import { branchKey } from './expanded'
 import { useFolderContents, useNoteChildren, type NodeRef } from './queries'
+import { useEntityMenu } from './EntityMenuProvider'
 import { useTree } from './TreeContext'
 
 export type BranchParent =
@@ -152,6 +154,7 @@ function FolderRow({ folder, level }: { folder: FolderSummary; level: number }) 
 function NoteRow({ note, level }: { note: NoteSummary; level: number }) {
   const { t } = useTranslation('tree')
   const { onAction } = useTree()
+  const entityMenu = useEntityMenu()
   const node: NodeRef = { kind: 'note', id: note.id }
   const items: MenuItem[] = [
     {
@@ -193,6 +196,15 @@ function NoteRow({ note, level }: { note: NoteSummary; level: number }) {
       items={items}
       dropTarget={{ type: 'note', id: note.id }}
       branch={{ type: 'note', id: note.id }}
+      onContextMenu={(event) =>
+        entityMenu.open(event, {
+          kind: 'note',
+          id: note.id,
+          name: note.title,
+          pinned: note.pinned,
+          childCount: note.childCount,
+        })
+      }
     />
   )
 }
@@ -200,6 +212,7 @@ function NoteRow({ note, level }: { note: NoteSummary; level: number }) {
 function LinkRow({ link, level }: { link: LinkItem; level: number }) {
   const { t } = useTranslation('tree')
   const { onAction } = useTree()
+  const entityMenu = useEntityMenu()
   const node: NodeRef = { kind: 'link', id: link.id }
   const items: MenuItem[] = [
     {
@@ -232,6 +245,9 @@ function LinkRow({ link, level }: { link: LinkItem; level: number }) {
       icon={iconFor('link', link.icon)}
       to={`/link/${link.id}`}
       items={items}
+      onContextMenu={(event) =>
+        entityMenu.open(event, { kind: 'link', id: link.id, name: link.title })
+      }
     />
   )
 }
@@ -251,6 +267,8 @@ interface TreeItemProps {
   branch?: BranchParent
   /** Open the row when its name is activated (folders behave like in a file explorer). */
   openOnActivate?: boolean
+  /** Right button pressed on the row. */
+  onContextMenu?: (event: MouseEvent) => void
 }
 
 function TreeItem({
@@ -264,6 +282,7 @@ function TreeItem({
   dropTarget,
   branch,
   openOnActivate = false,
+  onContextMenu,
 }: TreeItemProps) {
   const { t } = useTranslation('tree')
   const tree = useTree()
@@ -294,6 +313,7 @@ function TreeItem({
         className={rowClass}
         style={{ paddingInlineStart: `${(level - 1) * 14 + 4}px` }}
         draggable
+        onContextMenu={onContextMenu}
         onDragStart={(event) => {
           event.stopPropagation()
           event.dataTransfer.setData(DRAG_TYPE, JSON.stringify(node))

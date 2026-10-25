@@ -20,7 +20,10 @@
     "newLinkInside": "New link inside",
     "addLink": "Add link",
     "openLink": "Open link in a new tab",
-    "changeIcon": "Change icon"
+    "changeIcon": "Change icon",
+    "pin": "Pin",
+    "unpin": "Unpin",
+    "edit": "Edit"
   },
   "newFolder": "New folder",
   "folderDialog": {

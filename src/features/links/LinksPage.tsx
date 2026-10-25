@@ -4,6 +4,7 @@ import { Alert } from '@/components/Alert'
 import { Button } from '@/components/Button'
 import { CardSection, ItemCard } from '@/components/ItemCard'
 import { errorMessage } from '@/features/auth/errors'
+import { useEntityMenu } from '@/features/tree/EntityMenuProvider'
 import { useMoveDialog } from '@/features/tree/useMoveDialog'
 import { siteName } from './hostname'
 import { useNewLink } from './NewLinkProvider'
@@ -15,6 +16,7 @@ export default function LinksPage() {
   const { open } = useNewLink()
   const query = useLinks()
   const { openMove, dialog } = useMoveDialog()
+  const entityMenu = useEntityMenu()
   const links = query.data?.pages.flatMap((page) => page.items) ?? []
 
   return (
@@ -60,6 +62,9 @@ export default function LinksPage() {
               title={link.title}
               detail={siteName(link.url)}
               onMove={() => openMove({ kind: 'link', id: link.id }, link.title)}
+              onContextMenu={(event) =>
+                entityMenu.open(event, { kind: 'link', id: link.id, name: link.title })
+              }
             />
           ))}
         </CardSection>

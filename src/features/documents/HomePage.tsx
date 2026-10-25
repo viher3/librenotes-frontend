@@ -11,13 +11,26 @@ import { formatRelativeTime } from '@/lib/format'
 import { siteName } from '@/features/links/hostname'
 import { useRootLinks } from '@/features/links/queries'
 import { useFolderContents } from '@/features/tree/queries'
+import { useEntityMenu } from '@/features/tree/EntityMenuProvider'
 import { useMoveDialog } from '@/features/tree/useMoveDialog'
 import { useNotesList, useRootNotes } from './queries'
 
 function DocumentCard({ note, onMove }: { note: NoteSummary; onMove: () => void }) {
   const { t, i18n } = useTranslation('documents')
+  const entityMenu = useEntityMenu()
   return (
-    <li className={CARD_GROUP}>
+    <li
+      className={CARD_GROUP}
+      onContextMenu={(event) =>
+        entityMenu.open(event, {
+          kind: 'note',
+          id: note.id,
+          name: note.title,
+          pinned: note.pinned,
+          childCount: note.childCount,
+        })
+      }
+    >
       <Link
         to={`/doc/${note.id}`}
         className="flex flex-col gap-1 rounded-lg border border-neutral-200 p-3 hover:bg-neutral-50 focus-visible:outline-2 focus-visible:outline-indigo-500 dark:border-neutral-800 dark:hover:bg-neutral-900"
@@ -98,6 +111,7 @@ export function HomePage() {
   const { t } = useTranslation('documents')
   const { t: tTree } = useTranslation('tree')
   const { openMove, dialog } = useMoveDialog()
+  const entityMenu = useEntityMenu()
   const moveNote = (note: NoteSummary) => openMove({ kind: 'note', id: note.id }, note.title)
   const pinned = useNotesList({
     pinned: true,
@@ -209,6 +223,9 @@ export function HomePage() {
                   title={link.title}
                   detail={siteName(link.url)}
                   onMove={() => openMove({ kind: 'link', id: link.id }, link.title)}
+                  onContextMenu={(event) =>
+                    entityMenu.open(event, { kind: 'link', id: link.id, name: link.title })
+                  }
                 />
               ))}
             </CardSection>
