@@ -23,7 +23,8 @@
     "changeIcon": "Change icon",
     "pin": "Pin",
     "unpin": "Unpin",
-    "edit": "Edit"
+    "edit": "Edit",
+    "openFolder": "Open folder"
   },
   "newFolder": "New folder",
   "folderDialog": {

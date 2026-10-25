@@ -1,7 +1,8 @@
-import type { MouseEvent } from 'react'
+import { useState, type MouseEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/Button'
+import { ContextMenu } from '@/components/ContextMenu'
 import { CHEVRON } from '@/components/glyphs'
 import { iconFor } from '@/components/itemIcons'
 import type { FolderSummary, Link as LinkItem, NoteSummary } from '@/data/types'
@@ -286,6 +287,7 @@ function TreeItem({
 }: TreeItemProps) {
   const { t } = useTranslation('tree')
   const tree = useTree()
+  const [menuAt, setMenuAt] = useState<{ x: number; y: number } | null>(null)
   const key = node.kind === 'link' ? `link:${node.id}` : branchKey(node.kind, node.id)
   const open = expandable && tree.isOpen(key)
   const selected = tree.currentKey === key
@@ -313,7 +315,14 @@ function TreeItem({
         className={rowClass}
         style={{ paddingInlineStart: `${(level - 1) * 14 + 4}px` }}
         draggable
-        onContextMenu={onContextMenu}
+        onContextMenu={
+          onContextMenu ??
+          ((event) => {
+            event.preventDefault()
+            event.stopPropagation()
+            setMenuAt({ x: event.clientX, y: event.clientY })
+          })
+        }
         onDragStart={(event) => {
           event.stopPropagation()
           event.dataTransfer.setData(DRAG_TYPE, JSON.stringify(node))
@@ -353,6 +362,15 @@ function TreeItem({
         </Link>
         <NodeMenu name={label} items={items} />
       </div>
+      {menuAt && (
+        <ContextMenu
+          label={t('actions.open', { name: label })}
+          x={menuAt.x}
+          y={menuAt.y}
+          items={items}
+          onClose={() => setMenuAt(null)}
+        />
+      )}
       {open && branch && (
         <ul role="group">
           <TreeBranch parent={branch} level={level + 1} />

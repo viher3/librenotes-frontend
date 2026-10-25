@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { EditableIcon } from '@/components/EditableIcon'
 import { iconFor } from '@/components/itemIcons'
@@ -15,6 +16,7 @@ import { useFolderContents, useTreeActions } from '@/features/tree/queries'
 import { useEntityMenu } from '@/features/tree/EntityMenuProvider'
 import { useMoveDialog } from '@/features/tree/useMoveDialog'
 import { Alert } from '@/components/Alert'
+import { PromptDialog } from '@/components/PromptDialog'
 import { AttachmentsPanel } from '@/features/attachments/AttachmentsPanel'
 import { useAttachmentUploads } from '@/features/attachments/queries'
 import { useFileDrop } from '@/features/attachments/useFileDrop'
@@ -31,7 +33,8 @@ function FolderView({ id }: { id: string }) {
   const query = useFolderContents(id)
   const { createDocument, pending, error } = useNewDocument()
   const newLink = useNewLink()
-  const { setIcon } = useTreeActions()
+  const { setIcon, createFolder } = useTreeActions()
+  const [creatingFolder, setCreatingFolder] = useState(false)
   const { openMove, dialog: moveDialog } = useMoveDialog()
   const entityMenu = useEntityMenu()
   const uploads = useAttachmentUploads({ type: 'folder', id })
@@ -105,6 +108,9 @@ function FolderView({ id }: { id: string }) {
           >
             {t('folderPage.newLink')}
           </Button>
+          <Button variant="secondary" onClick={() => setCreatingFolder(true)}>
+            {t('actions.newFolderInside')}
+          </Button>
         </div>
       </div>
       {error && <Alert tone="error">{error}</Alert>}
@@ -123,6 +129,9 @@ function FolderView({ id }: { id: string }) {
               to={`/folder/${sub.id}`}
               icon={iconFor('folder', sub.icon)}
               title={sub.name}
+              onContextMenu={(event) =>
+                entityMenu.open(event, { kind: 'folder', id: sub.id, name: sub.name })
+              }
             />
           ))}
         </CardSection>
@@ -174,6 +183,21 @@ function FolderView({ id }: { id: string }) {
         dragging={dragging}
       />
       {moveDialog}
+      {creatingFolder && (
+        <PromptDialog
+          title={t('folderDialog.newTitle')}
+          label={t('folderDialog.label')}
+          submitLabel={t('folderDialog.create')}
+          cancelLabel={t('folderDialog.cancel')}
+          requiredMessage={t('folderDialog.required')}
+          describeError={errorMessage}
+          onCancel={() => setCreatingFolder(false)}
+          onSubmit={async (name) => {
+            await createFolder.mutateAsync({ name, parentFolderId: folder.id })
+            setCreatingFolder(false)
+          }}
+        />
+      )}
     </div>
   )
 }

@@ -22,7 +22,7 @@ import { useTreeActions, type NodeRef } from './queries'
 
 /** A document or link a context menu can be opened on. */
 export interface MenuEntity {
-  kind: 'note' | 'link'
+  kind: 'note' | 'link' | 'folder'
   id: ID
   name: string
   /** Documents only: links cannot be pinned. */
@@ -63,6 +63,7 @@ export function EntityMenuProvider({ children }: { children: ReactNode }) {
 
   const documentId = useMatch('/doc/:id')?.params.id ?? ''
   const linkId = useMatch('/link/:id')?.params.id ?? ''
+  const folderId = useMatch('/folder/:id')?.params.id ?? ''
 
   const pin = useMutation({
     mutationFn: ({ id, pinned }: { id: ID; pinned: boolean }) => notes.updateNote(id, { pinned }),
@@ -83,7 +84,10 @@ export function EntityMenuProvider({ children }: { children: ReactNode }) {
       ? queryClient.getQueryData<LinkDetail>(linkKeys.detail(linkId))
       : undefined
     const path = openNote?.path ?? openLink?.path ?? []
-    const insideRemoved = path.some((item) => item.type === node.kind && item.id === node.id)
+    const openFolderId = folderId
+    const insideRemoved =
+      (node.kind === 'folder' && openFolderId === node.id) ||
+      path.some((item) => item.type === node.kind && item.id === node.id)
     const isRemoved =
       (node.kind === 'note' && documentId === node.id) ||
       (node.kind === 'link' && linkId === node.id)
@@ -117,11 +121,11 @@ export function EntityMenuProvider({ children }: { children: ReactNode }) {
     items.push(
       {
         id: 'edit',
-        label: t('actions.edit'),
+        label: entity.kind === 'folder' ? t('actions.openFolder') : t('actions.edit'),
         onSelect: () =>
           entity.kind === 'note'
             ? navigate(`/doc/${entity.id}`, { state: { edit: true } })
-            : navigate(`/link/${entity.id}`),
+            : navigate(entity.kind === 'folder' ? `/folder/${entity.id}` : `/link/${entity.id}`),
       },
       {
         id: 'move',
@@ -164,14 +168,23 @@ export function EntityMenuProvider({ children }: { children: ReactNode }) {
     const { entity } = dialog
     const node: NodeRef = { kind: entity.kind, id: entity.id }
     const isNote = entity.kind === 'note'
-    const body = !isNote
-      ? t('deleteLink.body', { name: entity.name })
-      : (entity.childCount ?? 0) > 0
-        ? t('deleteNote.bodyWithChildren', { name: entity.name })
-        : t('deleteNote.body', { name: entity.name })
+    const isFolder = entity.kind === 'folder'
+    const body = isFolder
+      ? t('deleteFolder.body', { name: entity.name })
+      : !isNote
+        ? t('deleteLink.body', { name: entity.name })
+        : (entity.childCount ?? 0) > 0
+          ? t('deleteNote.bodyWithChildren', { name: entity.name })
+          : t('deleteNote.body', { name: entity.name })
     dialogView = (
       <ConfirmDialog
-        title={isNote ? t('deleteNote.title') : t('deleteLink.title')}
+        title={
+          isFolder
+            ? t('deleteFolder.title')
+            : isNote
+              ? t('deleteNote.title')
+              : t('deleteLink.title')
+        }
         confirmLabel={tDocs('deleteDialog.confirm')}
         cancelLabel={tDocs('deleteDialog.cancel')}
         destructive

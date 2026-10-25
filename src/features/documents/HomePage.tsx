@@ -199,6 +199,9 @@ export function HomePage() {
                   to={`/folder/${folder.id}`}
                   icon={iconFor('folder', folder.icon)}
                   title={folder.name}
+                  onContextMenu={(event) =>
+                    entityMenu.open(event, { kind: 'folder', id: folder.id, name: folder.name })
+                  }
                 />
               ))}
             </CardSection>

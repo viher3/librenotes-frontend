@@ -23,7 +23,8 @@
     "changeIcon": "Cambiar icono",
     "pin": "Fijar",
     "unpin": "Dejar de fijar",
-    "edit": "Editar"
+    "edit": "Editar",
+    "openFolder": "Abrir carpeta"
   },
   "newFolder": "Carpeta nueva",
   "folderDialog": {
