@@ -4,6 +4,7 @@ import { Alert } from '@/components/Alert'
 import { Button } from '@/components/Button'
 import { CardSection, ItemCard } from '@/components/ItemCard'
 import { errorMessage } from '@/features/auth/errors'
+import { useMoveDialog } from '@/features/tree/useMoveDialog'
 import { siteName } from './hostname'
 import { useNewLink } from './NewLinkProvider'
 import { useLinks } from './queries'
@@ -13,6 +14,7 @@ export default function LinksPage() {
   const { t } = useTranslation('links')
   const { open } = useNewLink()
   const query = useLinks()
+  const { openMove, dialog } = useMoveDialog()
   const links = query.data?.pages.flatMap((page) => page.items) ?? []
 
   return (
@@ -57,6 +59,7 @@ export default function LinksPage() {
               icon={iconFor('link', link.icon)}
               title={link.title}
               detail={siteName(link.url)}
+              onMove={() => openMove({ kind: 'link', id: link.id }, link.title)}
             />
           ))}
         </CardSection>
@@ -72,6 +75,7 @@ export default function LinksPage() {
           {t('list.loadMore')}
         </Button>
       )}
+      {dialog}
     </div>
   )
 }

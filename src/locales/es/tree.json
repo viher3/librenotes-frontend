@@ -49,14 +49,15 @@
   },
   "moveDialog": {
     "title": "Mover «{{name}}»",
-    "hint": "Elige dónde ponerlo.",
+    "hint": "Elige dónde ponerlo y pulsa «Mover aquí».",
     "topLevel": "Nivel superior",
     "moveHere": "Mover aquí",
     "itself": "Este es el elemento que se mueve",
     "cancel": "Cancelar",
     "moving": "Moviendo…",
     "loadError": "No se ha podido cargar esta carpeta.",
-    "moveTo": "Mover a {{target}}"
+    "selected": "Destino: {{target}}",
+    "noneSelected": "Selecciona un destino."
   },
   "breadcrumb": {
     "label": "Ruta de navegación",
@@ -87,5 +88,7 @@
   },
   "create": {
     "open": "Crear nuevo"
-  }
+  },
+  "moveButton": "Mover",
+  "moveButtonLabel": "Mover {{name}}"
 }

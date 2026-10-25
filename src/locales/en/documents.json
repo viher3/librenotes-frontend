@@ -5,6 +5,8 @@
   "home": {
     "title": "Your documents",
     "pinned": "Pinned",
+    "root": "All documents",
+    "loadMore": "Show more",
     "recent": "Recent",
     "empty": "You don't have any documents yet.",
     "emptyHint": "Create your first one to get started.",
@@ -30,13 +32,17 @@
     "emptyPreview": "Nothing to preview yet.",
     "modeVisual": "Visual",
     "modeMarkdown": "Markdown",
-    "modeLabel": "Editing mode"
+    "modeLabel": "Editing mode",
+    "edit": "Edit",
+    "save": "Save",
+    "cancel": "Cancel"
   },
   "status": {
     "saved": "Saved",
     "saving": "Saving…",
     "error": "Couldn't save — retrying…",
-    "titleRequired": "A title is required to save"
+    "titleRequired": "A title is required to save",
+    "unsaved": "Unsaved changes"
   },
   "pinFailed": "Couldn't change the pin. Try again.",
   "deleteDialog": {
@@ -130,5 +136,19 @@
     },
     "lossy": "Part of this document uses Markdown the visual editor can't show exactly, so editing here may change it.",
     "editAsMarkdown": "Edit as Markdown"
+  },
+  "saveFailed": "Couldn't save. Try again.",
+  "draftRecovered": "We recovered changes that were not saved last time.",
+  "leaveDialog": {
+    "title": "Leave without saving?",
+    "body": "You have changes that are not saved. If you leave now they will be lost.",
+    "confirm": "Leave without saving",
+    "cancel": "Keep editing"
+  },
+  "discardDialog": {
+    "title": "Discard your changes?",
+    "body": "The changes you made since the last save will be lost.",
+    "confirm": "Discard changes",
+    "cancel": "Keep editing"
   }
 }

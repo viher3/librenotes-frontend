@@ -16,6 +16,7 @@ import { useAutosave } from '@/features/documents/useAutosave'
 import { useSaveGuards } from '@/features/documents/useSaveGuards'
 import { TagEditor } from '@/features/tags/TagEditor'
 import { useTags } from '@/features/tags/queries'
+import { useMoveDialog } from '@/features/tree/useMoveDialog'
 import { useDeleteLink, useLink, useSaveLink } from './queries'
 
 const MAX_TITLE_LENGTH = 255
@@ -69,6 +70,8 @@ function LinkEditor({ link }: { link: LinkDetail }) {
   const navigate = useNavigate()
   const save = useSaveLink(link.id)
   const deleteLink = useDeleteLink()
+  const { t: tTree } = useTranslation('tree')
+  const { openMove, dialog: moveDialog } = useMoveDialog()
   const knownTags = useTags().data?.map((tag) => tag.name) ?? []
   const [confirmingDelete, setConfirmingDelete] = useState(false)
 
@@ -139,6 +142,12 @@ function LinkEditor({ link }: { link: LinkDetail }) {
           className="min-w-0 flex-1 rounded-md border border-transparent bg-transparent px-2 py-1 text-2xl font-semibold hover:border-neutral-300 focus-visible:border-indigo-500 focus-visible:outline-none dark:hover:border-neutral-700"
         />
         <SaveIndicator status={status} problem={problem} />
+        <Button
+          variant="secondary"
+          onClick={() => openMove({ kind: 'link', id: link.id }, draft.title.trim() || link.title)}
+        >
+          {tTree('moveButton')}
+        </Button>
         <Button variant="secondary" onClick={() => setConfirmingDelete(true)}>
           {t('page.delete')}
         </Button>
@@ -183,6 +192,7 @@ function LinkEditor({ link }: { link: LinkDetail }) {
         suggestions={knownTags}
       />
 
+      {moveDialog}
       {confirmingDelete && (
         <ConfirmDialog
           title={t('deleteDialog.title')}

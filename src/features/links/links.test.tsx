@@ -678,3 +678,39 @@ describe('links list', () => {
     ).toBeInTheDocument()
   })
 })
+
+describe('moving a link', () => {
+  it('moves the open link with the Move button', async () => {
+    const mock = await signedInBackend()
+    const folder = await mock.notes.createFolder('Archive')
+    const { user, link } = await openLink(mock)
+
+    await user.click(screen.getByRole('button', { name: 'Move' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Move “Symfony”' })
+    await user.click(await within(dialog).findByRole('button', { name: 'Archive' }))
+    await user.click(within(dialog).getByRole('button', { name: 'Move here' }))
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect((await mock.notes.getLink(link.id)).folderId).toBe(folder.id)
+  })
+
+  it('offers Move on a link card of the folder page', async () => {
+    const mock = await signedInBackend()
+    const from = await mock.notes.createFolder('From')
+    const to = await mock.notes.createFolder('To')
+    const link = await mock.notes.createLink({
+      title: 'Symfony',
+      url: 'https://symfony.com',
+      folderId: from.id,
+    })
+    const { user } = await renderApp(`/folder/${from.id}`, mock)
+
+    await user.click(await screen.findByRole('button', { name: 'Move Symfony' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Move “Symfony”' })
+    await user.click(await within(dialog).findByRole('button', { name: 'To' }))
+    await user.click(within(dialog).getByRole('button', { name: 'Move here' }))
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect((await mock.notes.getLink(link.id)).folderId).toBe(to.id)
+  })
+})

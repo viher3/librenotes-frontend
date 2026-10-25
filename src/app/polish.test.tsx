@@ -61,6 +61,7 @@ describe('theme', () => {
     const mock = await signedInBackend()
     const note = await mock.notes.createNote({ title: 'Doc' })
     const { user } = await renderApp(`/doc/${note.id}`, mock)
+    await user.click(await screen.findByRole('button', { name: 'Edit' }))
     await screen.findByLabelText('Document content (Markdown)')
     const dark = async () => (await findEditor()).state.facet(EditorView.darkTheme)
     expect(await dark()).toBe(true)

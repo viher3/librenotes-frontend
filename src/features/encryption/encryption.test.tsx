@@ -78,8 +78,11 @@ describe('encrypting a document', () => {
     expect((await mock.notes.getNote(note.id)).encrypted).toBe(true)
     expect(sent).toHaveLength(1)
 
-    // Keep typing: the autosave must encrypt too.
+    // Keep typing: saving must encrypt too.
+    await user.click(await screen.findByRole('button', { name: 'Edit' }))
     await setEditorText('# Even more secret')
+    expect(await editorText()).toBe('# Even more secret')
+    await user.click(screen.getByRole('button', { name: 'Save' }))
     await waitFor(async () => {
       expect((await mock.notes.getNote(note.id)).content).not.toBe(stored)
     })
@@ -88,7 +91,6 @@ describe('encrypting a document', () => {
       expect(isEncryptedContent(content)).toBe(true)
       expect(content).not.toContain('Even more')
     }
-    expect(await editorText()).toBe('# Even more secret')
   })
 
   it('needs matching passwords of enough length and an acknowledgement', async () => {
@@ -146,6 +148,7 @@ describe('opening an encrypted document', () => {
     await user.click(screen.getByRole('button', { name: 'Unlock' }))
 
     await screen.findByLabelText('Document title')
+    await user.click(await screen.findByRole('button', { name: 'Edit' }))
     expect(await editorText()).toBe('# Secret plan')
   })
 
@@ -236,6 +239,7 @@ describe('opening an encrypted document', () => {
     await user.type(screen.getByLabelText('Password'), 'a brand new phrase')
     await user.click(screen.getByRole('button', { name: 'Unlock' }))
     await screen.findByLabelText('Document title')
+    await user.click(await screen.findByRole('button', { name: 'Edit' }))
     expect(await editorText()).toBe('# Secret plan')
   })
 })

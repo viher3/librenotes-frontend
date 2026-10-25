@@ -31,6 +31,24 @@ export function useLinks() {
   })
 }
 
+/** The links in no folder and under no note, newest first, a page at a time. */
+export function useRootLinks() {
+  const { notes } = useRepositories()
+  return useInfiniteQuery({
+    queryKey: [...linkKeys.all, 'root'],
+    initialPageParam: 1,
+    queryFn: ({ pageParam }) =>
+      notes.listLinks({
+        folderId: 'root',
+        page: pageParam,
+        size: 12,
+        orderBy: 'updatedAt',
+        orderDirection: 'desc',
+      }),
+    getNextPageParam: (last) => (last.page < last.lastPage ? last.page + 1 : undefined),
+  })
+}
+
 export function useCreateLink() {
   const { notes } = useRepositories()
   const queryClient = useQueryClient()

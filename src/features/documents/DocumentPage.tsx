@@ -1,7 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { EditableIcon } from '@/components/EditableIcon'
 import { useTranslation } from 'react-i18next'
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { Link, useBlocker, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { Alert } from '@/components/Alert'
 import { Button } from '@/components/Button'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
@@ -25,11 +25,13 @@ import { SubDocuments } from './SubDocuments'
 import { TagEditor } from '@/features/tags/TagEditor'
 import { useTags } from '@/features/tags/queries'
 import { useNewDocument } from './useNewDocument'
+import { useMoveDialog } from '@/features/tree/useMoveDialog'
 import { useDeleteNote, useNote, useSaveNote } from './queries'
 import { SaveIndicator } from './SaveIndicator'
 import { useAutosave } from './useAutosave'
 import { useSaveGuards } from './useSaveGuards'
 import { useEditorMode, type EditorMode } from './useEditorMode'
+import { clearDraft, loadDraft, storeDraft } from './localDraft'
 
 // Both editors are large: only the one in use is loaded.
 const VisualEditor = lazy(() => import('./visual/VisualEditor'))
@@ -194,6 +196,8 @@ function DocumentEditor({ note, noteKey, onKeyChange, onLock }: DocumentEditorPr
   const [removing, setRemoving] = useState(false)
   const [removeError, setRemoveError] = useState<string | null>(null)
   const deleteNote = useDeleteNote()
+  const { t: tTree } = useTranslation('tree')
+  const { openMove, dialog: moveDialog } = useMoveDialog()
   const [mode, setMode] = useEditorMode(note.id)
   const [pinned, setPinned] = useState(note.pinned)
   const [pinError, setPinError] = useState(false)
@@ -206,8 +210,9 @@ function DocumentEditor({ note, noteKey, onKeyChange, onLock }: DocumentEditorPr
   const uploads = useAttachmentUploads({ type: 'note', id: note.id })
   const { dragging, dropProps } = useFileDrop(uploads.add)
 
+  // Title and tags save by themselves; the content is saved when the user asks (Save), see below.
   const { draft, status, setField, flush, discard } = useAutosave({
-    initial: { title: note.title, content: note.content, tags: note.tags },
+    initial: { title: note.title, tags: note.tags },
     save,
     isValid: (field, value) => (field === 'title' ? isTitleValid(value as string) : true),
   })
@@ -234,8 +239,98 @@ function DocumentEditor({ note, noteKey, onKeyChange, onLock }: DocumentEditorPr
     el.style.height = `${el.scrollHeight}px`
   }, [draft.title])
 
-  const unsaved = status !== 'saved' || titleMissing
-  useSaveGuards({ flush, unsaved })
+  // The content: read as a page until the user starts editing, then kept as a draft until it is saved.
+  const [recovered] = useState(() => (noteKey ? null : loadDraft(note.id, note.content)))
+  const [restored, setRestored] = useState(recovered !== null)
+  const [content, setContentState] = useState(recovered ?? note.content)
+  const [saved, setSavedState] = useState(note.content)
+  const contentRef = useRef(content)
+  const savedRef = useRef(saved)
+  const [editing, setEditing] = useState(isNew || recovered !== null)
+  const [savingContent, setSavingContent] = useState(false)
+  const [contentError, setContentError] = useState<string | null>(null)
+  const [confirmingDiscard, setConfirmingDiscard] = useState(false)
+  // Where the user asked to start editing (a click on the page, or the Edit button): the cursor goes there.
+  const focusRequest = useRef<{ x: number; y: number } | true | null>(null)
+  const [started, setStarted] = useState(false) // the user chose to start editing (as opposed to a new document)
+  const allowLeave = useRef(false)
+  const contentDirty = content !== saved
+
+  const setContent = (value: string) => {
+    contentRef.current = value
+    setContentState(value)
+  }
+  const markSaved = (value: string) => {
+    savedRef.current = value
+    setSavedState(value)
+    setRestored(false)
+  }
+
+  // Unsaved content survives a crash or a reload in a local draft (never for encrypted documents).
+  useEffect(() => {
+    if (cipher.current) clearDraft(note.id)
+    else if (content !== saved) storeDraft(note.id, saved, content)
+    else clearDraft(note.id)
+  }, [note.id, content, saved, noteKey])
+
+  // Leaving the document through the app asks first; closing or reloading the page is handled in useSaveGuards.
+  const blocker = useBlocker(() => {
+    editor.current?.flush?.() // what was typed in the last moments counts too
+    return !allowLeave.current && contentRef.current !== savedRef.current
+  })
+
+  useEffect(() => {
+    if (!editing || focusRequest.current === null) return
+    const request = focusRequest.current
+    focusRequest.current = null
+    editor.current?.focus?.(request === true ? undefined : request)
+  }, [editing])
+
+  const saveContent = async (): Promise<boolean> => {
+    editor.current?.flush?.()
+    const value = contentRef.current
+    if (value === savedRef.current) return true
+    setSavingContent(true)
+    setContentError(null)
+    try {
+      await save({ content: value })
+      markSaved(value)
+      return true
+    } catch (error) {
+      setContentError(errorMessage(error))
+      return false
+    } finally {
+      setSavingContent(false)
+    }
+  }
+
+  const saveAndClose = async () => {
+    if (await saveContent()) setEditing(false)
+  }
+
+  const startEditing = (point?: { x: number; y: number }) => {
+    focusRequest.current = point ?? true
+    setStarted(true)
+    setEditing(true)
+  }
+
+  const stopEditing = () => {
+    setContent(savedRef.current)
+    clearDraft(note.id)
+    setRestored(false)
+    setContentError(null)
+    setConfirmingDiscard(false)
+    setEditing(false)
+  }
+
+  const saveAll = useCallback(async () => {
+    await flush()
+    if (editing) await saveContent()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flush, editing])
+
+  const unsaved = status !== 'saved' || titleMissing || contentDirty
+  useSaveGuards({ flush, save: saveAll, unsaved })
 
   const togglePin = async () => {
     const next = !pinned
@@ -254,10 +349,13 @@ function DocumentEditor({ note, noteKey, onKeyChange, onLock }: DocumentEditorPr
     if (!(await flush())) throw new Error('unsaved changes')
     const previous = cipher.current
     cipher.current = key
-    const content = draft.content
+    editor.current?.flush?.()
+    const content = contentRef.current
     try {
       const stored = key ? await encryptContent(key, content, note.id) : content
       await saveRaw({ content: stored })
+      markSaved(content)
+      clearDraft(note.id)
       onKeyChange(key ? { key, content, stored } : null)
     } catch (error) {
       cipher.current = previous
@@ -285,6 +383,7 @@ function DocumentEditor({ note, noteKey, onKeyChange, onLock }: DocumentEditorPr
 
   const lock = async () => {
     await flush()
+    if (!(await saveContent())) return // the edits are kept on screen rather than lost by locking
     onLock()
   }
 
@@ -292,6 +391,8 @@ function DocumentEditor({ note, noteKey, onKeyChange, onLock }: DocumentEditorPr
     deleteNote.mutate(note.id, {
       onSuccess: () => {
         discard() // the document is gone: do not try to save it again
+        allowLeave.current = true
+        clearDraft(note.id)
         navigate('/', { replace: true })
       },
     })
@@ -299,8 +400,12 @@ function DocumentEditor({ note, noteKey, onKeyChange, onLock }: DocumentEditorPr
   // Embeds an attached image where the cursor is; while the editor is still loading it goes at the end.
   const insertImage = (attachment: Note['attachments'][number]) => {
     const markup = imageMarkdown(attachment)
-    if (editor.current) editor.current.insert(markup)
-    else setField('content', `${draft.content}${draft.content === '' ? '' : '\n\n'}${markup}\n`)
+    if (editing && editor.current) editor.current.insert(markup)
+    else {
+      // Not editing yet: the image goes at the end and the page opens for editing.
+      setContent(`${content}${content === '' ? '' : '\n\n'}${markup}\n`)
+      setEditing(true)
+    }
   }
 
   return (
@@ -336,10 +441,28 @@ function DocumentEditor({ note, noteKey, onKeyChange, onLock }: DocumentEditorPr
       </div>
       <div className="flex flex-wrap items-center gap-3">
         <SaveIndicator
-          status={status}
+          status={savingContent ? 'saving' : contentDirty ? 'unsaved' : status}
           problem={titleMissing ? t('status.titleRequired') : undefined}
         />
-        <ModeSwitch mode={mode} onChange={setMode} />
+        {editing ? (
+          <>
+            <Button onClick={() => void saveAndClose()} disabled={savingContent}>
+              {t('editor.save')}
+            </Button>
+            <Button
+              variant="secondary"
+              disabled={savingContent}
+              onClick={() => (contentDirty ? setConfirmingDiscard(true) : stopEditing())}
+            >
+              {t('editor.cancel')}
+            </Button>
+            <ModeSwitch mode={mode} onChange={setMode} />
+          </>
+        ) : (
+          <Button variant="secondary" onClick={() => startEditing()}>
+            {t('editor.edit')}
+          </Button>
+        )}
         {noteKey ? (
           <>
             <Button variant="secondary" onClick={() => void lock()}>
@@ -357,6 +480,13 @@ function DocumentEditor({ note, noteKey, onKeyChange, onLock }: DocumentEditorPr
         <Button variant="secondary" onClick={() => void togglePin()} aria-pressed={pinned}>
           {pinned ? t('editor.unpin') : t('editor.pin')}
         </Button>
+        <Button
+          variant="secondary"
+          disabled={editing}
+          onClick={() => openMove({ kind: 'note', id: note.id }, draft.title.trim() || note.title)}
+        >
+          {tTree('moveButton')}
+        </Button>
         <Button variant="secondary" onClick={() => setConfirmingDelete(true)}>
           {t('editor.delete')}
         </Button>
@@ -369,7 +499,9 @@ function DocumentEditor({ note, noteKey, onKeyChange, onLock }: DocumentEditorPr
       />
 
       {pinError && <Alert tone="error">{t('pinFailed')}</Alert>}
-      {lossy && mode === 'visual' && (
+      {restored && editing && <Alert>{t('draftRecovered')}</Alert>}
+      {contentError && <Alert tone="error">{t('saveFailed')}</Alert>}
+      {lossy && editing && mode === 'visual' && (
         <Alert>
           <span>{t('visual.lossy')}</span>{' '}
           <Button
@@ -398,7 +530,16 @@ function DocumentEditor({ note, noteKey, onKeyChange, onLock }: DocumentEditorPr
         onInsert={insertImage}
       />
 
-      <div className="min-h-[16rem] flex-1 overflow-auto rounded-md border border-neutral-200 dark:border-neutral-800">
+      <div
+        className={`min-h-[16rem] flex-1 overflow-auto rounded-md ${editing ? 'border border-neutral-200 dark:border-neutral-800' : 'cursor-text'}`}
+        onClick={(event) => {
+          if (editing) return
+          // Links open, and selecting text to copy it is not a request to edit.
+          if ((event.target as HTMLElement).closest('a')) return
+          if (!window.getSelection()?.isCollapsed) return
+          startEditing({ x: event.clientX, y: event.clientY })
+        }}
+      >
         <Suspense
           fallback={
             <p className="p-3 text-sm text-neutral-600 dark:text-neutral-400">
@@ -406,25 +547,26 @@ function DocumentEditor({ note, noteKey, onKeyChange, onLock }: DocumentEditorPr
             </p>
           }
         >
-          {mode === 'visual' ? (
-            <VisualEditor
-              // Another mode or another document starts from a clean editor.
-              key={`visual-${note.id}`}
-              value={draft.content}
-              onChange={(value) => setField('content', value)}
-              label={t('editor.contentLabel')}
-              autoFocus={!isNew}
-              handleRef={editor}
-              onLossy={() => setLossy(true)}
-            />
-          ) : (
+          {editing && mode === 'markdown' ? (
             <MarkdownEditor
               key={`markdown-${note.id}`}
-              value={draft.content}
-              onChange={(value) => setField('content', value)}
+              value={content}
+              onChange={setContent}
               label={t('editor.contentLabel')}
-              autoFocus={!isNew}
+              autoFocus={!isNew || started}
               handleRef={editor}
+            />
+          ) : (
+            <VisualEditor
+              // Another document starts from a clean editor.
+              key={`visual-${note.id}`}
+              value={content}
+              onChange={setContent}
+              label={t('editor.contentLabel')}
+              readOnly={!editing}
+              autoFocus={editing && !isNew}
+              handleRef={editor}
+              onLossy={() => setLossy(true)}
             />
           )}
         </Suspense>
@@ -466,6 +608,36 @@ function DocumentEditor({ note, noteKey, onKeyChange, onLock }: DocumentEditorPr
         </ConfirmDialog>
       )}
 
+      {confirmingDiscard && (
+        <ConfirmDialog
+          title={t('discardDialog.title')}
+          confirmLabel={t('discardDialog.confirm')}
+          cancelLabel={t('discardDialog.cancel')}
+          destructive
+          onConfirm={stopEditing}
+          onCancel={() => setConfirmingDiscard(false)}
+        >
+          <p>{t('discardDialog.body')}</p>
+        </ConfirmDialog>
+      )}
+
+      {blocker.state === 'blocked' && (
+        <ConfirmDialog
+          title={t('leaveDialog.title')}
+          confirmLabel={t('leaveDialog.confirm')}
+          cancelLabel={t('leaveDialog.cancel')}
+          destructive
+          onConfirm={() => {
+            clearDraft(note.id)
+            blocker.proceed()
+          }}
+          onCancel={() => blocker.reset()}
+        >
+          <p>{t('leaveDialog.body')}</p>
+        </ConfirmDialog>
+      )}
+
+      {moveDialog}
       {confirmingDelete && (
         <ConfirmDialog
           title={t('deleteDialog.title')}

@@ -1,4 +1,10 @@
-import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from 'react'
+import {
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
+} from 'react'
 import { useTranslation } from 'react-i18next'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { Button } from '@/components/Button'
@@ -120,7 +126,9 @@ function Shell() {
   }
 
   return (
-    <div className={`flex h-screen flex-col md:flex-row ${resizing ? 'cursor-col-resize select-none' : ''}`}>
+    <div
+      className={`flex h-screen flex-col md:flex-row ${resizing ? 'cursor-col-resize select-none' : ''}`}
+    >
       <a
         href="#main"
         onClick={(event) => {
@@ -168,7 +176,7 @@ function Shell() {
         inert={sidebarHidden}
         data-open={drawerOpen}
         style={desktop ? { width: sidebarWidth } : undefined}
-        className={`fixed inset-y-0 start-0 z-40 flex w-72 max-w-[85vw] shrink-0 flex-col gap-3 overflow-y-auto border-e border-neutral-200 bg-white p-4 transition-transform md:static md:z-auto md:max-w-none md:translate-x-0 dark:border-neutral-800 dark:bg-neutral-950 ${
+        className={`fixed inset-y-0 start-0 z-40 flex w-full shrink-0 flex-col gap-3 overflow-y-auto border-e border-neutral-200 bg-white p-4 transition-transform md:static md:z-auto md:w-72 md:translate-x-0 dark:border-neutral-800 dark:bg-neutral-950 ${
           menuOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >

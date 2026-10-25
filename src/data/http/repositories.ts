@@ -309,6 +309,17 @@ function createNotesRepository(
         api.GET('/attachments/{id}/content', { ...path(id), parseAs: 'blob' }),
       ) as Promise<Blob>
     },
+    async moveAttachment(id, destination) {
+      await unwrap(
+        api.PATCH('/attachments/{id}/move', {
+          ...path(id),
+          body: {
+            folder_id: destination.type === 'folder' ? destination.id : null,
+            note_id: destination.type === 'note' ? destination.id : null,
+          },
+        }),
+      )
+    },
     async deleteAttachment(id) {
       await unwrap(api.DELETE('/attachments/{id}', path(id)))
     },

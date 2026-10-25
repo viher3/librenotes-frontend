@@ -884,6 +884,21 @@ export function createMockRepositories(options: MockOptions = {}): {
       return attachmentOf(id).blob
     },
 
+    async moveAttachment(id, destination) {
+      await begin()
+      const a = attachmentOf(id)
+      if (destination.type === 'root') return fail(422, 'attachment.invalid_location')
+      if (destination.type === 'folder') {
+        a.folderId = targetFolder(destination.id)
+        a.noteId = null
+      } else {
+        const note = notes.get(destination.id)
+        if (!note || note.ownerId !== owner() || note.deletedAt) return fail(422, 'note.not_found')
+        a.noteId = note.id
+        a.folderId = null
+      }
+    },
+
     async deleteAttachment(id) {
       await begin()
       const a = attachmentOf(id, true)

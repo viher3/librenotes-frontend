@@ -1,5 +1,6 @@
 import { editorViewCtx, parserCtx, type Editor } from '@milkdown/kit/core'
 import { Slice } from '@milkdown/kit/prose/model'
+import { TextSelection } from '@milkdown/kit/prose/state'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   useCallback,
@@ -27,6 +28,10 @@ export type TestHost = HTMLElement & { __editor?: Editor }
 export interface EditorHandle {
   /** Puts Markdown at the cursor (an image, say). */
   insert: (markdown: string) => void
+  /** Reports what was typed so far without waiting for the pause. */
+  flush?: () => void
+  /** Puts the cursor in the page: where `point` (screen coordinates) falls, or where it was. */
+  focus?: (point?: { x: number; y: number }) => void
 }
 
 interface VisualEditorProps {
@@ -35,6 +40,8 @@ interface VisualEditorProps {
   /** Accessible name of the editing area. */
   label: string
   autoFocus?: boolean
+  /** Shows the page as it looks, without letting it be edited. */
+  readOnly?: boolean
   handleRef?: Ref<EditorHandle>
   /** Called once when the document uses Markdown that the visual editor cannot show exactly. */
   onLossy?: () => void
@@ -49,6 +56,7 @@ export default function VisualEditor({
   onChange,
   label,
   autoFocus,
+  readOnly = false,
   handleRef,
   onLossy,
 }: VisualEditorProps) {
@@ -59,6 +67,7 @@ export default function VisualEditor({
   const handle = useRef<VisualEditorHandle | null>(null)
   const lastMarkdown = useRef(value)
   const trailingNewline = useRef(/\n$/.test(value))
+  const readOnlyRef = useRef(readOnly)
 
   const latest = useRef({
     onChange,
@@ -116,6 +125,7 @@ export default function VisualEditor({
       root,
       value: lastMarkdown.current,
       label,
+      editable: () => !readOnlyRef.current,
       onUserChange: (markdown) => {
         const text = markdown.replace(/\n+$/, '') + (trailingNewline.current ? '\n' : '')
         lastMarkdown.current = text
@@ -199,6 +209,12 @@ export default function VisualEditor({
     return () => handle.current?.flush()
   }, [])
 
+  // Switching between reading and editing: ProseMirror asks `editable` again.
+  useEffect(() => {
+    readOnlyRef.current = readOnly
+    handle.current?.editor.action((ctx) => ctx.get(editorViewCtx).setProps({}))
+  }, [readOnly])
+
   // A change of `value` that is not what the editor itself just reported replaces the document.
   useEffect(() => {
     if (value === lastMarkdown.current || !handle.current) return
@@ -221,6 +237,18 @@ export default function VisualEditor({
           const content = doc.childCount === 1 && first?.isTextblock ? first.content : doc.content
           view.dispatch(view.state.tr.replaceSelection(new Slice(content, 0, 0)).scrollIntoView())
           view.focus()
+        })
+      },
+      flush: () => handle.current?.flush(),
+      focus(point) {
+        handle.current?.editor.action((ctx) => {
+          const view = ctx.get(editorViewCtx)
+          view.focus()
+          const at = point && view.posAtCoords({ left: point.x, top: point.y })
+          if (at) {
+            const selection = TextSelection.near(view.state.doc.resolve(at.pos))
+            view.dispatch(view.state.tr.setSelection(selection))
+          }
         })
       },
     }),

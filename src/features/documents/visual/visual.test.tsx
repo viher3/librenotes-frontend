@@ -21,24 +21,30 @@ async function signedInBackend(): Promise<Backend> {
   return mock
 }
 
-async function openVisual(mock: Backend, content: string) {
+/** Presses Save: the content only reaches the server then. */
+const save = () => fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+
+async function openVisual(mock: Backend, content: string, { edit = true } = {}) {
   const note = await mock.notes.createNote({ title: 'Page', content })
   const app = await renderApp(`/doc/${note.id}`, mock, { editorMode: 'visual' })
   await screen.findByLabelText('Document title')
+  if (edit) await app.user.click(await screen.findByRole('button', { name: 'Edit' }))
   const view = await findVisualView()
   return { note, view, ...app }
 }
 
 describe('visual editor', () => {
-  it('does not lose the last keystrokes when the user leaves right away', async () => {
+  it('counts the last keystrokes as unsaved when the user leaves right away', async () => {
     const mock = await signedInBackend()
-    AUTOSAVE_DEFAULTS.delayMs = 5000
     const { note, view, user } = await openVisual(mock, 'before')
 
     view$.end(view)
     view$.type(view, ' and the last words')
     await user.click(screen.getByRole('link', { name: 'Home' }))
 
+    expect(await screen.findByRole('alertdialog', { name: 'Leave without saving?' })).toBeVisible()
+    await user.click(screen.getByRole('button', { name: 'Keep editing' }))
+    await user.click(screen.getByRole('button', { name: 'Save' }))
     await waitFor(async () =>
       expect((await mock.notes.getNote(note.id)).content).toBe('before and the last words'),
     )
@@ -59,11 +65,14 @@ describe('visual editor', () => {
   it('is what a document opens in, with an accessible editing area', async () => {
     const mock = await signedInBackend()
     const note = await mock.notes.createNote({ title: 'Page', content: 'hello' })
-    await renderApp(`/doc/${note.id}`, mock, { editorMode: 'visual' })
+    const { user } = await renderApp(`/doc/${note.id}`, mock, { editorMode: 'visual' })
 
     const area = await screen.findByRole('textbox', { name: 'Document content (Markdown)' })
     expect(area).toHaveAttribute('aria-multiline', 'true')
-    expect(area).toHaveAttribute('contenteditable', 'true')
+    // It opens as a page to read; Edit makes it editable.
+    expect(area).not.toHaveAttribute('contenteditable', 'true')
+    await user.click(await screen.findByRole('button', { name: 'Edit' }))
+    await waitFor(() => expect(area).toHaveAttribute('contenteditable', 'true'))
     expect(document.querySelector('.cm-editor')).not.toBeInTheDocument()
   })
 
@@ -86,6 +95,7 @@ describe('visual editor', () => {
     view$.end(view)
     view$.type(view, ' plus')
 
+    save()
     await waitFor(async () =>
       expect((await mock.notes.getNote(note.id)).content).toBe('# Title plus'),
     )
@@ -98,6 +108,7 @@ describe('visual editor', () => {
     view$.end(view)
     view$.type(view, '!')
 
+    save()
     await waitFor(async () =>
       expect((await mock.notes.getNote(note.id)).content).toBe(
         '- one\n- two\n\n```js\nconst a = 1\n```\n\nend!',
@@ -114,6 +125,7 @@ describe('visual editor', () => {
     view$.end(view)
     view$.type(view, '!')
 
+    save()
     await waitFor(async () =>
       expect((await mock.notes.getNote(note.id)).content).toBe(
         '<img src=x onerror=alert(1)>\n\ntext!',
@@ -123,13 +135,10 @@ describe('visual editor', () => {
 
   it('can be switched to the source and back without losing edits', async () => {
     const mock = await signedInBackend()
-    const { note, view, user } = await openVisual(mock, 'plain')
+    const { view, user } = await openVisual(mock, 'plain')
 
     view$.end(view)
     view$.type(view, ' text')
-    await waitFor(async () =>
-      expect((await mock.notes.getNote(note.id)).content).toBe('plain text'),
-    )
     await user.click(screen.getByRole('button', { name: 'Markdown' }))
 
     const source = await screen.findByLabelText('Document content (Markdown)')
@@ -216,6 +225,7 @@ describe('slash menu', () => {
     await waitFor(() => expect(screen.queryByRole('listbox')).not.toBeInTheDocument())
     view$.type(view, 'Chapter')
 
+    save()
     await waitFor(async () =>
       expect((await mock.notes.getNote(note.id)).content).toBe('## Chapter'),
     )
@@ -237,6 +247,7 @@ describe('slash menu', () => {
     await waitFor(() => expect(screen.queryByRole('listbox')).not.toBeInTheDocument())
     view$.type(view, 'wise words')
 
+    save()
     await waitFor(async () =>
       expect((await mock.notes.getNote(note.id)).content).toBe('> wise words'),
     )
@@ -265,6 +276,7 @@ describe('slash menu', () => {
     if (command !== '/divider') view$.type(view, 'item')
     else view$.type(view, '')
 
+    save()
     await waitFor(async () => {
       const content = (await mock.notes.getNote(note.id)).content.trim()
       expect(content.startsWith(expected.split('\n')[0])).toBe(true)
@@ -297,13 +309,14 @@ describe('floating toolbar', () => {
 
     await user.click(within(await toolbar()).getByRole('button', { name: 'Bold' }))
 
-    await waitFor(async () =>
-      expect((await mock.notes.getNote(note.id)).content).toBe('**hello** world'),
-    )
     await waitFor(() =>
       expect(screen.getByRole('button', { name: 'Bold' })).toHaveAttribute('aria-pressed', 'true'),
     )
     expect(screen.getByRole('button', { name: 'Italic' })).toHaveAttribute('aria-pressed', 'false')
+    save()
+    await waitFor(async () =>
+      expect((await mock.notes.getNote(note.id)).content).toBe('**hello** world'),
+    )
   })
 
   it.each([
@@ -315,6 +328,7 @@ describe('floating toolbar', () => {
 
     await user.click(within(await toolbar()).getByRole('button', { name }))
 
+    save()
     await waitFor(async () => expect((await mock.notes.getNote(note.id)).content).toBe(expected))
   })
 
@@ -324,6 +338,7 @@ describe('floating toolbar', () => {
     await user.click(within(await toolbar()).getByRole('button', { name: 'Link' }))
     await user.type(screen.getByLabelText('Link address'), 'https://example.com{Enter}')
 
+    save()
     await waitFor(async () =>
       expect((await mock.notes.getNote(note.id)).content).toBe(
         '[hello](https://example.com) world',
@@ -367,13 +382,11 @@ describe('task lists', () => {
     const items = () => [...view.dom.querySelectorAll('li[data-item-type="task"]')]
 
     await user.click(items()[0])
-    await waitFor(async () =>
-      expect((await mock.notes.getNote(note.id)).content).toBe('- [x] first\n- [x] second'),
-    )
-
     // Two clicks in a row at one spot are a double click to ProseMirror, which is something else.
     await new Promise((r) => setTimeout(r, 600))
     await user.click(items()[1])
+
+    save()
     await waitFor(async () =>
       expect((await mock.notes.getNote(note.id)).content).toBe('- [x] first\n- [ ] second'),
     )
@@ -390,6 +403,7 @@ describe('images from the attachments panel', () => {
       new File(['PNG'], 'chart.png', { type: 'image/png' }),
     )
     const { user } = await renderApp(`/doc/${note.id}`, mock, { editorMode: 'visual' })
+    await user.click(await screen.findByRole('button', { name: 'Edit' }))
     const view = await findVisualView()
     view$.select(view, 8) // between "before " and "after"
 
@@ -397,6 +411,7 @@ describe('images from the attachments panel', () => {
       await screen.findByRole('button', { name: 'Insert chart.png into the document' }),
     )
 
+    save()
     await waitFor(async () =>
       expect((await mock.notes.getNote(note.id)).content).toBe(
         `before ![chart.png](attachment:${picture.id})after`,

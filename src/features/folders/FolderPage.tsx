@@ -12,6 +12,7 @@ import { useNewDocument } from '@/features/documents/useNewDocument'
 import { siteName } from '@/features/links/hostname'
 import { useNewLink } from '@/features/links/NewLinkProvider'
 import { useFolderContents, useTreeActions } from '@/features/tree/queries'
+import { useMoveDialog } from '@/features/tree/useMoveDialog'
 import { Alert } from '@/components/Alert'
 import { AttachmentsPanel } from '@/features/attachments/AttachmentsPanel'
 import { useAttachmentUploads } from '@/features/attachments/queries'
@@ -30,6 +31,7 @@ function FolderView({ id }: { id: string }) {
   const { createDocument, pending, error } = useNewDocument()
   const newLink = useNewLink()
   const { setIcon } = useTreeActions()
+  const { openMove, dialog: moveDialog } = useMoveDialog()
   const uploads = useAttachmentUploads({ type: 'folder', id })
   const { dragging, dropProps } = useFileDrop(uploads.add)
 
@@ -132,6 +134,7 @@ function FolderView({ id }: { id: string }) {
               icon={iconFor('note', note.icon, note.pinned, note.encrypted)}
               title={note.title}
               detail={formatRelativeTime(note.updatedAt, language)}
+              onMove={() => openMove({ kind: 'note', id: note.id }, note.title)}
             />
           ))}
         </CardSection>
@@ -145,6 +148,7 @@ function FolderView({ id }: { id: string }) {
               icon={iconFor('link', link.icon)}
               title={link.title}
               detail={siteName(link.url)}
+              onMove={() => openMove({ kind: 'link', id: link.id }, link.title)}
             />
           ))}
         </CardSection>
@@ -155,6 +159,7 @@ function FolderView({ id }: { id: string }) {
         uploads={uploads}
         dragging={dragging}
       />
+      {moveDialog}
     </div>
   )
 }

@@ -33,6 +33,8 @@ async function openDocument(
     content?: string
     pinned?: boolean
     editorMode?: 'visual' | 'markdown' | 'keep'
+    /** Opens the page for editing, as a click on Edit does (the default); `false` leaves it as a read-only page. */
+    edit?: boolean
   } = {},
 ) {
   const note = await mock.notes.createNote({
@@ -42,6 +44,8 @@ async function openDocument(
   })
   const app = await renderApp(`/doc/${note.id}`, mock, { editorMode: input.editorMode })
   await screen.findByLabelText('Document title')
+  if (input.edit !== false)
+    await app.user.click(await screen.findByRole('button', { name: 'Edit' }))
   return { note, ...app }
 }
 
@@ -101,7 +105,7 @@ describe('home', () => {
     list.mockRestore()
     await user.click(screen.getByRole('button', { name: 'Try again' }))
     expect(
-      await within(screen.getByRole('main')).findByRole('link', { name: /Survivor/ }),
+      (await within(screen.getByRole('main')).findAllByRole('link', { name: /Survivor/ }))[0],
     ).toBeInTheDocument()
   })
 
@@ -237,30 +241,40 @@ describe('document page', () => {
     expect(screen.queryByRole('region', { name: 'Preview' })).not.toBeInTheDocument()
   })
 
-  it('saves what is typed after a pause, only the changed field', async () => {
+  it('saves the content only when Save is pressed, and only the changed field', async () => {
     const mock = await signedInBackend()
-    const { note } = await openDocument(mock)
+    const { note, user } = await openDocument(mock)
     const update = vi.spyOn(mock.notes, 'updateNote')
 
     await setEditorText('# Changed\n\nBody')
+
+    expect(status()).toHaveTextContent('Unsaved changes')
+    await new Promise((r) => setTimeout(r, 80)) // longer than the autosave pause
+    expect(update).not.toHaveBeenCalled()
+
+    await user.click(screen.getByRole('button', { name: 'Save' }))
 
     await waitFor(() => expect(status()).toHaveTextContent('Saved'))
     expect(update).toHaveBeenCalledTimes(1)
     expect(update).toHaveBeenCalledWith(note.id, { content: '# Changed\n\nBody' })
     expect((await mock.notes.getNote(note.id)).content).toBe('# Changed\n\nBody')
+    // Saving goes back to reading the page.
+    expect(await screen.findByRole('button', { name: 'Edit' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument()
   })
 
   it('shows saving while a request is in flight', async () => {
     const mock = await signedInBackend()
-    await openDocument(mock)
+    const { user } = await openDocument(mock)
     let finish!: () => void
     const update = vi
       .spyOn(mock.notes, 'updateNote')
       .mockImplementation(() => new Promise<void>((resolve) => (finish = resolve)))
 
     await setEditorText('typing')
+    await user.click(screen.getByRole('button', { name: 'Save' }))
 
-    await waitFor(() => expect(update).toHaveBeenCalled()) // the request is out, not just scheduled
+    await waitFor(() => expect(update).toHaveBeenCalled())
     expect(status()).toHaveTextContent('Saving…')
     finish()
     await waitFor(() => expect(status()).toHaveTextContent('Saved'))
@@ -304,69 +318,91 @@ describe('document page', () => {
     await user.clear(screen.getByLabelText('Document title'))
 
     await setEditorText('kept')
+    await user.click(screen.getByRole('button', { name: 'Save' }))
 
     await waitFor(async () => expect((await mock.notes.getNote(note.id)).content).toBe('kept'))
   })
 
-  it('saves immediately with Ctrl+S instead of waiting', async () => {
-    AUTOSAVE_DEFAULTS.delayMs = 60_000
+  it('saves immediately with Ctrl+S and keeps editing', async () => {
     const mock = await signedInBackend()
     const { note, user } = await openDocument(mock)
     await setEditorText('urgent')
-    expect(status()).toHaveTextContent('Saving…')
+    expect(status()).toHaveTextContent('Unsaved changes')
 
     await user.keyboard('{Control>}s{/Control}')
 
     await waitFor(() => expect(status()).toHaveTextContent('Saved'))
     expect((await mock.notes.getNote(note.id)).content).toBe('urgent')
+    expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument()
   })
 
-  it('saves right away when the tab is hidden', async () => {
+  it('saves the title right away when the tab is hidden, but not the unsaved content', async () => {
     AUTOSAVE_DEFAULTS.delayMs = 60_000
     const mock = await signedInBackend()
-    const { note } = await openDocument(mock)
-    await setEditorText('before leaving')
+    const { note, user } = await openDocument(mock)
+    await user.type(screen.getByLabelText('Document title'), ' II')
+    await setEditorText('still a draft')
 
     Object.defineProperty(document, 'hidden', { configurable: true, value: true })
     fireEvent(document, new Event('visibilitychange'))
     Object.defineProperty(document, 'hidden', { configurable: true, value: false })
 
-    await waitFor(async () =>
-      expect((await mock.notes.getNote(note.id)).content).toBe('before leaving'),
-    )
+    await waitFor(async () => expect((await mock.notes.getNote(note.id)).title).toBe('Plan II'))
+    expect((await mock.notes.getNote(note.id)).content).toBe('# Hello')
   })
 
-  it('keeps the text on screen when saving fails, retries, and recovers', async () => {
+  it('keeps the text on screen when saving fails, and saves on the next try', async () => {
     const mock = await signedInBackend()
-    const { note } = await openDocument(mock)
+    const { note, user } = await openDocument(mock)
     const update = vi.spyOn(mock.notes, 'updateNote')
     update.mockRejectedValueOnce(new ApiError({ status: 0, code: 'network_error' }))
 
     await setEditorText('precious')
+    await user.click(screen.getByRole('button', { name: 'Save' }))
 
-    await waitFor(() => expect(status()).toHaveTextContent("Couldn't save — retrying…"))
+    expect(await screen.findByText("Couldn't save. Try again.")).toBeInTheDocument()
     expect(await editorText()).toBe('precious')
+    expect(status()).toHaveTextContent('Unsaved changes')
+
+    await user.click(screen.getByRole('button', { name: 'Save' }))
     await waitFor(() => expect(status()).toHaveTextContent('Saved'))
     expect(update).toHaveBeenCalledTimes(2)
     expect((await mock.notes.getNote(note.id)).content).toBe('precious')
   })
 
-  it('does not lose pending edits when the user navigates away', async () => {
-    AUTOSAVE_DEFAULTS.delayMs = 60_000
+  it('asks before leaving with unsaved changes, and leaves without them if the user insists', async () => {
     const mock = await signedInBackend()
     const { note, user } = await openDocument(mock)
     await setEditorText('last words')
 
     await user.click(screen.getByRole('link', { name: 'Home' }))
+    const dialog = await screen.findByRole('alertdialog', { name: 'Leave without saving?' })
+    await user.click(within(dialog).getByRole('button', { name: 'Keep editing' }))
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+    expect(screen.getByLabelText('Document title')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('link', { name: 'Home' }))
+    await user.click(
+      within(await screen.findByRole('alertdialog')).getByRole('button', {
+        name: 'Leave without saving',
+      }),
+    )
 
     await screen.findByRole('heading', { name: 'Your documents' })
-    await waitFor(async () =>
-      expect((await mock.notes.getNote(note.id)).content).toBe('last words'),
-    )
+    expect((await mock.notes.getNote(note.id)).content).toBe('# Hello')
+  })
+
+  it('leaves without asking when nothing is unsaved', async () => {
+    const mock = await signedInBackend()
+    const { user } = await openDocument(mock)
+
+    await user.click(screen.getByRole('link', { name: 'Home' }))
+
+    await screen.findByRole('heading', { name: 'Your documents' })
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
   })
 
   it('asks the browser to confirm closing the page only while something is unsaved', async () => {
-    AUTOSAVE_DEFAULTS.delayMs = 60_000
     const mock = await signedInBackend()
     const { user } = await openDocument(mock)
 
@@ -379,11 +415,66 @@ describe('document page', () => {
     window.dispatchEvent(dirty)
     expect(dirty.defaultPrevented).toBe(true)
 
-    await user.keyboard('{Control>}s{/Control}')
+    await user.click(screen.getByRole('button', { name: 'Save' }))
     await waitFor(() => expect(status()).toHaveTextContent('Saved'))
     const saved = new Event('beforeunload', { cancelable: true })
     window.dispatchEvent(saved)
     expect(saved.defaultPrevented).toBe(false)
+  })
+
+  it('opens as a read-only page and starts editing when the content is clicked', async () => {
+    const mock = await signedInBackend()
+    const { user } = await openDocument(mock, {
+      content: '# Big title',
+      editorMode: 'visual',
+      edit: false,
+    })
+    const page = await screen.findByTestId('visual-editor')
+    expect(await within(page).findByRole('heading', { name: 'Big title' })).toBeInTheDocument()
+    expect(page.querySelector('[contenteditable="true"]')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Visual' })).not.toBeInTheDocument()
+
+    await user.click(page)
+
+    expect(await screen.findByRole('button', { name: 'Save' })).toBeInTheDocument()
+    await waitFor(() => expect(page.querySelector('[contenteditable="true"]')).not.toBeNull())
+  })
+
+  it('discards the changes on Cancel after confirming', async () => {
+    const mock = await signedInBackend()
+    const { note, user } = await openDocument(mock)
+    await setEditorText('oops')
+
+    await user.click(screen.getByRole('button', { name: 'Cancel' }))
+    await user.click(
+      within(await screen.findByRole('alertdialog')).getByRole('button', {
+        name: 'Discard changes',
+      }),
+    )
+
+    expect(await screen.findByRole('button', { name: 'Edit' })).toBeInTheDocument()
+    expect((await mock.notes.getNote(note.id)).content).toBe('# Hello')
+    await user.click(screen.getByRole('button', { name: 'Edit' }))
+    expect(await editorText()).toBe('# Hello')
+  })
+
+  it('recovers unsaved changes from a local draft after a reload', async () => {
+    const mock = await signedInBackend()
+    const { note, user, unmount } = await openDocument(mock)
+    await setEditorText('not saved yet')
+    unmount()
+
+    await renderApp(`/doc/${note.id}`, mock, { editorMode: 'keep' })
+
+    expect(
+      await screen.findByText('We recovered changes that were not saved last time.'),
+    ).toBeInTheDocument()
+    expect(await editorText()).toBe('not saved yet')
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+    await waitFor(async () =>
+      expect((await mock.notes.getNote(note.id)).content).toBe('not saved yet'),
+    )
   })
 
   it('switches between the visual and the Markdown editor, remembering the choice per document', async () => {
@@ -405,8 +496,9 @@ describe('document page', () => {
     expect(screen.getByRole('button', { name: 'Markdown' })).toHaveAttribute('aria-pressed', 'true')
 
     unmount()
-    await renderApp(`/doc/${note.id}`, mock, { editorMode: 'keep' })
+    const reopened = await renderApp(`/doc/${note.id}`, mock, { editorMode: 'keep' })
     await screen.findByLabelText('Document title')
+    await reopened.user.click(await screen.findByRole('button', { name: 'Edit' }))
     expect(await editorText()).toBe('# Hello')
 
     const other = await mock.notes.createNote({ title: 'Other' })
@@ -457,7 +549,9 @@ describe('document page', () => {
       }),
     ).toBeInTheDocument()
 
-    await user.click(within(screen.getByRole('main')).getByRole('link', { name: /Plan/ }))
+    await user.click(
+      within(screen.getByRole('region', { name: 'Pinned' })).getByRole('link', { name: /Plan/ }),
+    )
     await user.click(await screen.findByRole('button', { name: 'Unpin' }))
     await waitFor(async () => expect((await mock.notes.getNote(note.id)).pinned).toBe(false))
   })
@@ -617,16 +711,57 @@ describe('document page', () => {
     const mock = await signedInBackend()
     await mock.auth.updateProfile({ locale: 'es' })
     const note = await mock.notes.createNote({ title: 'Plan', content: 'hola' })
-    await renderApp(`/doc/${note.id}`, mock)
+    const { user } = await renderApp(`/doc/${note.id}`, mock)
 
     expect(await screen.findByLabelText('Título del documento')).toHaveValue('Plan')
     expect(screen.getByRole('button', { name: 'Fijar' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Eliminar' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Editar' }))
     expect(screen.getByRole('group', { name: 'Modo de edición' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Guardar' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Visual' })).toBeInTheDocument()
     await waitFor(() =>
       expect(screen.getAllByRole('status').some((el) => el.textContent === 'Guardado')).toBe(true),
     )
     expect(i18n.resolvedLanguage).toBe('es')
+  })
+})
+
+describe('moving a document from its page and its card', () => {
+  it('moves the open document with the Move button, and the breadcrumb follows', async () => {
+    const mock = await signedInBackend()
+    const folder = await mock.notes.createFolder('Archive')
+    const { user, note } = await openDocument(mock, { edit: false })
+
+    await user.click(screen.getByRole('button', { name: 'Move' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Move “Plan”' })
+    await user.click(await within(dialog).findByRole('button', { name: 'Archive' }))
+    await user.click(within(dialog).getByRole('button', { name: 'Move here' }))
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect((await mock.notes.getNote(note.id)).folderId).toBe(folder.id)
+    expect(
+      await within(await screen.findByRole('navigation', { name: 'Breadcrumb' })).findByRole(
+        'link',
+        {
+          name: 'Archive',
+        },
+      ),
+    ).toBeInTheDocument()
+  })
+
+  it('offers Move on a document card of the home page', async () => {
+    const mock = await signedInBackend()
+    const folder = await mock.notes.createFolder('Archive')
+    const note = await mock.notes.createNote({ title: 'Loose' })
+    const { user } = await renderApp('/', mock)
+
+    await user.click((await screen.findAllByRole('button', { name: 'Move Loose' }))[0])
+    const dialog = await screen.findByRole('dialog', { name: 'Move “Loose”' })
+    await user.click(await within(dialog).findByRole('button', { name: 'Archive' }))
+    await user.click(within(dialog).getByRole('button', { name: 'Move here' }))
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect((await mock.notes.getNote(note.id)).folderId).toBe(folder.id)
   })
 })

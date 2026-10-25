@@ -3159,6 +3159,83 @@ export interface paths {
     }
     trace?: never
   }
+  '/attachments/{id}/move': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    /** Move an attachment to a folder or a note */
+    patch: {
+      parameters: {
+        query?: never
+        header?: never
+        path: {
+          /** @description Attachment ID */
+          id: string
+        }
+        cookie?: never
+      }
+      requestBody: {
+        content: {
+          'application/json': components['schemas']['MoveAttachmentRequest']
+        }
+      }
+      responses: {
+        /** @description Moved */
+        200: {
+          headers: {
+            [name: string]: unknown
+          }
+          content?: never
+        }
+        /** @description Invalid data */
+        400: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': components['schemas']['ApiError']
+          }
+        }
+        /** @description Missing or invalid token */
+        401: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': components['schemas']['ApiError']
+          }
+        }
+        /** @description Not found (or owned by another user) */
+        404: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': components['schemas']['ApiError']
+          }
+        }
+        /** @description Target folder or note not found */
+        422: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': components['schemas']['ApiError']
+          }
+        }
+      }
+    }
+    trace?: never
+  }
   '/trash/links/{id}/restore': {
     parameters: {
       query?: never
@@ -3975,6 +4052,18 @@ export interface components {
       url?: string
       note?: string | null
       tags?: components['schemas']['TagNames']
+    }
+    MoveAttachmentRequest: {
+      /**
+       * Format: uuid
+       * @description Move it to this folder (exactly one of `folder_id` and `note_id`).
+       */
+      folder_id?: string | null
+      /**
+       * Format: uuid
+       * @description Move it to this note instead of a folder.
+       */
+      note_id?: string | null
     }
     MoveLinkRequest: {
       /** Format: uuid */

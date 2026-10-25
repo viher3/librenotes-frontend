@@ -5,6 +5,8 @@
   "home": {
     "title": "Tus documentos",
     "pinned": "Fijados",
+    "root": "Todos los documentos",
+    "loadMore": "Mostrar más",
     "recent": "Recientes",
     "empty": "Aún no tienes documentos.",
     "emptyHint": "Crea el primero para empezar.",
@@ -30,13 +32,17 @@
     "emptyPreview": "Todavía no hay nada que previsualizar.",
     "modeVisual": "Visual",
     "modeMarkdown": "Markdown",
-    "modeLabel": "Modo de edición"
+    "modeLabel": "Modo de edición",
+    "edit": "Editar",
+    "save": "Guardar",
+    "cancel": "Cancelar"
   },
   "status": {
     "saved": "Guardado",
     "saving": "Guardando…",
     "error": "No se pudo guardar — reintentando…",
-    "titleRequired": "Hace falta un título para guardar"
+    "titleRequired": "Hace falta un título para guardar",
+    "unsaved": "Cambios sin guardar"
   },
   "pinFailed": "No se pudo cambiar el fijado. Inténtalo de nuevo.",
   "deleteDialog": {
@@ -130,5 +136,19 @@
     },
     "lossy": "Parte de este documento usa Markdown que el editor visual no puede mostrar con exactitud, así que editarlo aquí podría cambiarlo.",
     "editAsMarkdown": "Editar como Markdown"
+  },
+  "saveFailed": "No se pudo guardar. Inténtalo de nuevo.",
+  "draftRecovered": "Hemos recuperado cambios que no se guardaron la última vez.",
+  "leaveDialog": {
+    "title": "¿Salir sin guardar?",
+    "body": "Tienes cambios sin guardar. Si sales ahora se perderán.",
+    "confirm": "Salir sin guardar",
+    "cancel": "Seguir editando"
+  },
+  "discardDialog": {
+    "title": "¿Descartar los cambios?",
+    "body": "Se perderán los cambios hechos desde la última vez que guardaste.",
+    "confirm": "Descartar cambios",
+    "cancel": "Seguir editando"
   }
 }

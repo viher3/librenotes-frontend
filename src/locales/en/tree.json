@@ -49,14 +49,15 @@
   },
   "moveDialog": {
     "title": "Move “{{name}}”",
-    "hint": "Choose where to put it.",
+    "hint": "Choose where to put it, then press “Move here”.",
     "topLevel": "Top level",
     "moveHere": "Move here",
     "itself": "This is the item being moved",
     "cancel": "Cancel",
     "moving": "Moving…",
     "loadError": "Couldn't load this folder.",
-    "moveTo": "Move to {{target}}"
+    "selected": "Destination: {{target}}",
+    "noneSelected": "Select a destination."
   },
   "breadcrumb": {
     "label": "Breadcrumb",
@@ -87,5 +88,7 @@
   },
   "create": {
     "open": "Create new"
-  }
+  },
+  "moveButton": "Move",
+  "moveButtonLabel": "Move {{name}}"
 }

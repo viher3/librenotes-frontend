@@ -248,9 +248,12 @@ describe('attachments of a document', () => {
   describe('dropping files', () => {
     it('attaches files dropped anywhere on the page, even on the editor, without pasting them into the text', async () => {
       const mock = await signedInBackend()
-      const { note } = await openNote(mock)
+      const { note, user } = await openNote(mock)
+      await user.click(await screen.findByRole('button', { name: 'Edit' }))
       await setEditorText('hello')
+      await user.click(screen.getByRole('button', { name: 'Save' }))
       await waitFor(async () => expect((await mock.notes.getNote(note.id)).content).toBe('hello'))
+      await user.click(await screen.findByRole('button', { name: 'Edit' }))
 
       const content = (await findEditor()).contentDOM
       // CodeMirror would read a dropped file into the text: the drop must never get as far as the editor.
@@ -415,6 +418,7 @@ describe('attachments of a document', () => {
     it('puts the image where the cursor is and saves the document', async () => {
       const mock = await signedInBackend()
       const { note, stored, user } = await openNote(mock, [png()])
+      await user.click(await screen.findByRole('button', { name: 'Edit' }))
       await setEditorText('before after')
       const view = await findEditor()
       view.dispatch({ selection: { anchor: 7 } })
@@ -425,6 +429,7 @@ describe('attachments of a document', () => {
 
       const markup = `![diagram \\[v2\\].png](attachment:${stored[0].id})`
       expect(await editorText()).toBe(`before ${markup}after`)
+      await user.click(screen.getByRole('button', { name: 'Save' }))
       await waitFor(async () =>
         expect((await mock.notes.getNote(note.id)).content).toBe(`before ${markup}after`),
       )
@@ -552,5 +557,45 @@ describe('attachments of a folder', () => {
       ).toEqual(['dropped.txt']),
     )
     await waitFor(() => expect(within(region).getByText('dropped.txt')).toBeInTheDocument())
+  })
+})
+
+describe('moving attachments', () => {
+  it('moves a file to a folder picked in the tree, and it leaves the document', async () => {
+    const mock = await signedInBackend()
+    const folder = await mock.notes.createFolder('Archive')
+    const { user, stored, note } = await openNote(mock, [file('a.txt')])
+
+    await user.click(within(panel()).getByRole('button', { name: 'Move a.txt' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Move “a.txt”' })
+    expect(within(dialog).queryByRole('button', { name: 'Top level' })).not.toBeInTheDocument()
+    expect(within(dialog).getByRole('button', { name: 'Move here' })).toBeDisabled()
+    await user.click(await within(dialog).findByRole('button', { name: 'Archive' }))
+    await user.click(within(dialog).getByRole('button', { name: 'Move here' }))
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(await mock.notes.getAttachment(stored[0].id)).toMatchObject({
+      folderId: folder.id,
+      noteId: null,
+    })
+    await waitFor(() => expect(within(panel()).queryByText('a.txt')).not.toBeInTheDocument())
+    expect((await mock.notes.getNote(note.id)).attachments).toEqual([])
+  })
+
+  it('shows why a move failed and stays open', async () => {
+    const mock = await signedInBackend()
+    await mock.notes.createFolder('Archive')
+    vi.spyOn(mock.notes, 'moveAttachment').mockRejectedValue(
+      new ApiError({ status: 422, code: 'folder.not_found' }),
+    )
+    const { user } = await openNote(mock, [file('a.txt')])
+
+    await user.click(within(panel()).getByRole('button', { name: 'Move a.txt' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Move “a.txt”' })
+    await user.click(await within(dialog).findByRole('button', { name: 'Archive' }))
+    await user.click(within(dialog).getByRole('button', { name: 'Move here' }))
+
+    expect(await within(dialog).findByRole('alert')).toBeInTheDocument()
+    expect(within(dialog).getByRole('button', { name: 'Move here' })).toBeEnabled()
   })
 })

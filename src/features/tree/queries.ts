@@ -33,6 +33,9 @@ export interface NodeRef {
   id: ID
 }
 
+/** What the move dialog can move: a tree node, or a file (it goes into a folder or under a note, never the top). */
+export type MoveItem = NodeRef | { kind: 'attachment'; id: ID }
+
 /** The operations behind the tree's menus and drag & drop. Each one refreshes what depends on it. */
 export function useTreeActions() {
   const { notes } = useRepositories()
@@ -65,8 +68,10 @@ export function useTreeActions() {
   })
 
   const move = useMutation({
-    mutationFn: ({ node, destination }: { node: NodeRef; destination: Destination }) => {
+    mutationFn: ({ node, destination }: { node: MoveItem; destination: Destination }) => {
       switch (node.kind) {
+        case 'attachment':
+          return notes.moveAttachment(node.id, destination)
         case 'folder':
           // A folder lives in a folder or at the top level, never under a document.
           if (destination.type === 'note') {

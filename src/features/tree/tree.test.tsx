@@ -572,6 +572,17 @@ describe('tree: moving', () => {
     return screen.findByRole('dialog', { name: `Move “${label}”` })
   }
 
+  /** Picks a destination row and confirms with the dialog's "Move here". */
+  const moveTo = async (
+    user: Awaited<ReturnType<typeof renderApp>>['user'],
+    dialog: HTMLElement,
+    target: string,
+  ) => {
+    await user.click(await within(dialog).findByRole('button', { name: target }))
+    expect(within(dialog).getByText(`Destination: ${target}`)).toBeInTheDocument()
+    await user.click(within(dialog).getByRole('button', { name: 'Move here' }))
+  }
+
   it('moves a document into a folder with the dialog', async () => {
     const mock = await signedInBackend()
     const { alpha, standalone } = await seed(mock)
@@ -580,7 +591,8 @@ describe('tree: moving', () => {
 
     const dialog = await openMoveDialog(user, 'Standalone')
     expect(within(dialog).getByText('Top level')).toBeInTheDocument()
-    await user.click(await within(dialog).findByRole('button', { name: 'Move to Alpha' }))
+    expect(within(dialog).getByRole('button', { name: 'Move here' })).toBeDisabled() // nothing chosen yet
+    await moveTo(user, dialog, 'Alpha')
 
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
     expect((await mock.notes.getNote(standalone.id)).folderId).toBe(alpha.id)
@@ -596,7 +608,7 @@ describe('tree: moving', () => {
     const dialog = await openMoveDialog(user, 'Standalone')
     await user.click(await within(dialog).findByRole('button', { name: 'Expand Alpha' }))
     await user.click(await within(dialog).findByRole('button', { name: 'Expand Plan' }))
-    await user.click(await within(dialog).findByRole('button', { name: 'Move to Task' }))
+    await moveTo(user, dialog, 'Task')
 
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
     expect((await mock.notes.getNote(standalone.id)).parentNoteId).toBe(task.id)
@@ -609,7 +621,7 @@ describe('tree: moving', () => {
     await waitFor(() => expect(hasRow('Task')).toBe(true))
 
     const dialog = await openMoveDialog(user, 'Task')
-    await user.click(within(dialog).getByRole('button', { name: 'Move to Top level' }))
+    await moveTo(user, dialog, 'Top level')
 
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
     expect(await mock.notes.getNote(task.id)).toMatchObject({
@@ -629,9 +641,9 @@ describe('tree: moving', () => {
     await user.click(await within(dialog).findByRole('button', { name: 'Expand Alpha' }))
 
     expect(await within(dialog).findByText('This is the item being moved')).toBeInTheDocument()
-    expect(within(dialog).queryByRole('button', { name: 'Move to Plan' })).not.toBeInTheDocument()
+    expect(within(dialog).queryByRole('button', { name: 'Plan' })).not.toBeInTheDocument()
     expect(within(dialog).queryByRole('button', { name: 'Expand Plan' })).not.toBeInTheDocument() // its children are not reachable
-    expect(within(dialog).queryByRole('button', { name: 'Move to Task' })).not.toBeInTheDocument()
+    expect(within(dialog).queryByRole('button', { name: 'Task' })).not.toBeInTheDocument()
   })
 
   it('only offers folders as destinations for a folder', async () => {
@@ -643,12 +655,10 @@ describe('tree: moving', () => {
 
     const dialog = await openMoveDialog(user, 'Alpha')
 
-    expect(await within(dialog).findByRole('button', { name: 'Move to Other' })).toBeInTheDocument()
-    expect(
-      within(dialog).queryByRole('button', { name: 'Move to Standalone' }),
-    ).not.toBeInTheDocument()
+    expect(await within(dialog).findByRole('button', { name: 'Other' })).toBeInTheDocument()
+    expect(within(dialog).queryByRole('button', { name: 'Standalone' })).not.toBeInTheDocument()
     expect(within(dialog).getByText('This is the item being moved')).toBeInTheDocument()
-    await user.click(within(dialog).getByRole('button', { name: 'Move to Other' }))
+    await moveTo(user, dialog, 'Other')
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
     expect((await mock.notes.folderContents(alpha.id)).folder?.parentFolderId).toBe(other.id)
   })
@@ -663,12 +673,12 @@ describe('tree: moving', () => {
     await waitFor(() => expect(hasRow('Standalone')).toBe(true))
 
     const dialog = await openMoveDialog(user, 'Standalone')
-    await user.click(await within(dialog).findByRole('button', { name: 'Move to Top level' }))
+    await moveTo(user, dialog, 'Top level')
 
     expect(await within(dialog).findByRole('alert')).toHaveTextContent(
       "A document can't be moved inside itself",
     )
-    expect(within(dialog).getByRole('button', { name: 'Move to Top level' })).toBeEnabled()
+    expect(within(dialog).getByRole('button', { name: 'Move here' })).toBeEnabled()
   })
 
   it('moves a link', async () => {
@@ -678,7 +688,7 @@ describe('tree: moving', () => {
     await waitFor(() => expect(hasRow('Bookmark')).toBe(true))
 
     const dialog = await openMoveDialog(user, 'Bookmark')
-    await user.click(await within(dialog).findByRole('button', { name: 'Move to Alpha' }))
+    await moveTo(user, dialog, 'Alpha')
 
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
     expect((await mock.notes.getLink(bookmark.id)).folderId).toBe(alpha.id)

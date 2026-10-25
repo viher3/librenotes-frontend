@@ -5,6 +5,7 @@ import { Button } from '@/components/Button'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import type { Attachment } from '@/data/types'
 import { errorMessage } from '@/features/auth/errors'
+import { useMoveDialog } from '@/features/tree/useMoveDialog'
 import { formatBytes, isEmbeddableImage, saveBlob } from './files'
 import {
   useDeleteAttachment,
@@ -36,6 +37,8 @@ export function AttachmentsPanel({
   const input = useRef<HTMLInputElement>(null)
   const download = useDownloadAttachment()
   const remove = useDeleteAttachment(owner)
+  const { t: tTree } = useTranslation('tree')
+  const { openMove, dialog: moveDialog } = useMoveDialog()
   const [downloading, setDownloading] = useState<string | null>(null)
   const [downloadFailed, setDownloadFailed] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<Attachment | null>(null)
@@ -141,6 +144,16 @@ export function AttachmentsPanel({
               <Button
                 variant="ghost"
                 className="px-2 py-0.5 text-xs"
+                aria-label={tTree('moveButtonLabel', { name: attachment.fileName })}
+                onClick={() =>
+                  openMove({ kind: 'attachment', id: attachment.id }, attachment.fileName)
+                }
+              >
+                {tTree('moveButton')}
+              </Button>
+              <Button
+                variant="ghost"
+                className="px-2 py-0.5 text-xs"
                 aria-label={t('deleteLabel', { name: attachment.fileName })}
                 onClick={() => {
                   remove.reset()
@@ -192,6 +205,7 @@ export function AttachmentsPanel({
         </ul>
       )}
 
+      {moveDialog}
       {deleting && (
         <ConfirmDialog
           title={t('deleteDialog.title')}

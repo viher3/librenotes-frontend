@@ -100,6 +100,8 @@ export interface NotesRepository {
   getAttachment(id: ID): Promise<AttachmentDetail>
   /** The file itself. Needs the session, so it cannot be a plain `<a href>`: use an object URL. */
   downloadAttachment(id: ID): Promise<Blob>
+  /** Moves the file to a folder or a note; it cannot live at the top level (422 `attachment.invalid_location`). */
+  moveAttachment(id: ID, destination: Destination): Promise<void>
   deleteAttachment(id: ID): Promise<void>
 
   // Search and tags

@@ -30,6 +30,8 @@ export interface VisualEditorOptions {
   root: HTMLElement
   value: string
   label: string
+  /** Asked by ProseMirror whenever it needs to know; `false` shows the page without letting it be edited. */
+  editable?: () => boolean
   /** Called with the new Markdown after the user changed something (never for the initial load). */
   onUserChange: (markdown: string) => void
   /** Extra Milkdown plugins (node views, menus). */
@@ -106,6 +108,7 @@ export async function createVisualEditor(
       ctx.set(remarkStringifyOptionsCtx, { ...stringifyOptions })
       ctx.update(editorViewOptionsCtx, (previous) => ({
         ...previous,
+        ...(options.editable ? { editable: options.editable } : {}),
         attributes: {
           ...(previous.attributes as Record<string, string> | undefined),
           'aria-label': options.label,

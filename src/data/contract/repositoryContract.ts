@@ -571,6 +571,39 @@ export function describeRepositoryContract(name: string, create: () => Promise<C
       })
     })
 
+    describe('moving attachments', () => {
+      it('moves a file between notes and folders, never to the top level', async () => {
+        const { notes, signInNewUser } = await create()
+        await signInNewUser()
+        const note = await notes.createNote({ title: 'N' })
+        const folder = await notes.createFolder('F')
+        const attachment = await notes.uploadNoteAttachment(note.id, file('a.txt', 'a'))
+        const MISSING = '00000000-0000-4000-8000-000000000000'
+
+        await notes.moveAttachment(attachment.id, { type: 'folder', id: folder.id })
+        expect(await notes.getAttachment(attachment.id)).toMatchObject({
+          folderId: folder.id,
+          noteId: null,
+        })
+        expect((await notes.getNote(note.id)).attachments).toEqual([])
+
+        await notes.moveAttachment(attachment.id, { type: 'note', id: note.id })
+        expect(await notes.getAttachment(attachment.id)).toMatchObject({
+          folderId: null,
+          noteId: note.id,
+        })
+
+        await rejects(notes.moveAttachment(attachment.id, { type: 'root' }), {
+          status: 422,
+          code: 'attachment.invalid_location',
+        })
+        await rejects(notes.moveAttachment(attachment.id, { type: 'folder', id: MISSING }), {
+          status: 422,
+          code: 'folder.not_found',
+        })
+      })
+    })
+
     describe('search and tags', () => {
       it('finds notes by title and content, ranking title matches first', async () => {
         const { notes, signInNewUser } = await create()

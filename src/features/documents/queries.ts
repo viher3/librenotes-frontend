@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
 import { useRepositories } from '@/data/DataProvider'
 import type { CreateNoteInput, ID, ListNotesParams, Note, UpdateNoteInput } from '@/data/types'
@@ -10,6 +10,26 @@ export { noteKeys }
 export function useNotesList(params: ListNotesParams) {
   const { notes } = useRepositories()
   return useQuery({ queryKey: noteKeys.list(params), queryFn: () => notes.listNotes(params) })
+}
+
+const ROOT_PAGE_SIZE = 12
+
+/** The documents in no folder and under no note, newest first, a page at a time. */
+export function useRootNotes() {
+  const { notes } = useRepositories()
+  return useInfiniteQuery({
+    queryKey: [...noteKeys.lists(), 'root'],
+    initialPageParam: 1,
+    queryFn: ({ pageParam }) =>
+      notes.listNotes({
+        folderId: 'root',
+        page: pageParam,
+        size: ROOT_PAGE_SIZE,
+        orderBy: 'updatedAt',
+        orderDirection: 'desc',
+      }),
+    getNextPageParam: (last) => (last.page < last.lastPage ? last.page + 1 : undefined),
+  })
 }
 
 /**
