@@ -77,6 +77,10 @@ export function SidebarTree() {
   useEffect(() => {
     if (currentPath.length > 0) expand(...currentPath.map(keyOfPathItem))
   }, [currentPath, expand])
+  // Opening a folder's page opens that folder in the tree (and only that one).
+  useEffect(() => {
+    if (folderId) expand(branchKey('folder', folderId))
+  }, [folderId, expand])
 
   // ---- actions from the rows' menus
   const onAction = useCallback(

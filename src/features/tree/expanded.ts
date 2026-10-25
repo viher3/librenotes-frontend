@@ -1,33 +1,15 @@
 import { useCallback, useState } from 'react'
 
-const KEY = 'librenotes.tree.expanded'
-
 /** Identifies a branch of the tree: `folder:<id>` or `note:<id>`. */
 export const branchKey = (kind: 'folder' | 'note', id: string) => `${kind}:${id}`
 
-function read(): Set<string> {
-  try {
-    const stored: unknown = JSON.parse(localStorage.getItem(KEY) ?? '[]')
-    return new Set(
-      Array.isArray(stored) ? stored.filter((k): k is string => typeof k === 'string') : [],
-    )
-  } catch {
-    return new Set()
-  }
-}
-
-/** Which branches are open. Remembered between visits (a per-viewer convenience, so it lives in the browser). */
+/** Which branches are open. Not remembered between visits: the tree starts collapsed and branches open as the user navigates. */
 export function useExpandedBranches() {
-  const [open, setOpen] = useState<Set<string>>(read)
+  const [open, setOpen] = useState<Set<string>>(() => new Set())
 
   const update = useCallback((change: (current: Set<string>) => Set<string>) => {
     setOpen((current) => {
       const next = change(current)
-      try {
-        localStorage.setItem(KEY, JSON.stringify([...next]))
-      } catch {
-        /* storage unavailable: the tree just starts collapsed next time */
-      }
       return next
     })
   }, [])

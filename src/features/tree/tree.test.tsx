@@ -150,7 +150,7 @@ describe('tree: browsing', () => {
     expect(open).toHaveBeenCalledWith('https://bookmark.example', '_blank', 'noopener,noreferrer')
   })
 
-  it('remembers which branches are open', async () => {
+  it('starts collapsed on a new visit', async () => {
     const mock = await signedInBackend()
     await seed(mock)
     const first = await renderApp('/', mock)
@@ -161,8 +161,9 @@ describe('tree: browsing', () => {
 
     await renderApp('/', mock)
 
-    await waitFor(() => expect(hasRow('Plan')).toBe(true))
-    expect(row('Alpha')).toHaveAttribute('aria-expanded', 'true')
+    await waitFor(() => expect(hasRow('Alpha')).toBe(true))
+    expect(row('Alpha')).toHaveAttribute('aria-expanded', 'false')
+    expect(hasRow('Plan')).toBe(false)
   })
 
   it('navigates when a row is clicked', async () => {
