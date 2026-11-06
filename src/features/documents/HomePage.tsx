@@ -1,39 +1,68 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
-import { CARD_GROUP, CardMoveButton, CardSection, ItemCard } from '@/components/ItemCard'
+import {
+  CARD_GROUP,
+  CardMoveButton,
+  CardSection,
+  ItemCard,
+  PICKED,
+  SectionCheckbox,
+  SelectCheckbox,
+  pickHandlers,
+  type CardSelection,
+  type SectionSelection,
+} from '@/components/ItemCard'
 import { iconFor } from '@/components/itemIcons'
 import { Alert } from '@/components/Alert'
 import { Button } from '@/components/Button'
-import type { NoteSummary } from '@/data/types'
+import type { BulkItem, NoteSummary } from '@/data/types'
 import { errorMessage } from '@/features/auth/errors'
 import { formatRelativeTime } from '@/lib/format'
 import { siteName } from '@/features/links/hostname'
 import { useRootLinks } from '@/features/links/queries'
 import { useFolderContents } from '@/features/tree/queries'
-import { useEntityMenu } from '@/features/tree/EntityMenuProvider'
+import { SelectionBar, SelectionToggle } from '@/features/tree/SelectionBar'
+import { cardSelection, useSelection, type Selection } from '@/features/tree/useSelection'
+import { useBulkActions } from '@/features/tree/useBulkActions'
 import { useMoveDialog } from '@/features/tree/useMoveDialog'
 import { useNotesList, useRootNotes } from './queries'
 
-function DocumentCard({ note, onMove }: { note: NoteSummary; onMove: () => void }) {
+interface Picking {
+  selection: Selection
+  onContextMenu: ReturnType<typeof useBulkActions>['onContextMenu']
+}
+
+const noteItem = (note: NoteSummary): BulkItem => ({ kind: 'note', id: note.id })
+
+function DocumentCard({
+  note,
+  onMove,
+  picking,
+}: {
+  note: NoteSummary
+  onMove: () => void
+  picking: Picking
+}) {
   const { t, i18n } = useTranslation('documents')
-  const entityMenu = useEntityMenu()
+  const selection: CardSelection = cardSelection(picking.selection, noteItem(note))
   return (
     <li
       className={CARD_GROUP}
-      onContextMenu={(event) =>
-        entityMenu.open(event, {
-          kind: 'note',
-          id: note.id,
-          name: note.title,
-          pinned: note.pinned,
-          childCount: note.childCount,
-        })
-      }
+      onContextMenu={picking.onContextMenu(noteItem(note), {
+        kind: 'note',
+        id: note.id,
+        name: note.title,
+        pinned: note.pinned,
+        childCount: note.childCount,
+      })}
     >
       <Link
         to={`/doc/${note.id}`}
-        className="flex flex-col gap-1 rounded-lg border border-neutral-200 p-3 hover:bg-neutral-50 focus-visible:outline-2 focus-visible:outline-indigo-500 dark:border-neutral-800 dark:hover:bg-neutral-900"
+        className={`flex flex-col gap-1 rounded-lg border border-neutral-200 p-3 ps-9 hover:bg-neutral-50 focus-visible:outline-2 focus-visible:outline-indigo-500 dark:border-neutral-800 dark:hover:bg-neutral-900 ${
+          selection.selected ? PICKED : ''
+        }`}
+        {...pickHandlers(selection)}
       >
         <span className="flex items-center gap-2 font-medium">
           {note.icon && <span aria-hidden="true">{note.icon}</span>}
@@ -67,7 +96,12 @@ function DocumentCard({ note, onMove }: { note: NoteSummary; onMove: () => void 
           </span>
         )}
       </Link>
-      <CardMoveButton name={note.title} onClick={onMove} />
+      <SelectCheckbox
+        name={note.title}
+        selection={selection}
+        className="absolute start-3 top-3.5"
+      />
+      {!selection.active && <CardMoveButton name={note.title} onClick={onMove} />}
     </li>
   )
 }
@@ -76,20 +110,26 @@ function Section({
   title,
   notes,
   onMove,
+  picking,
 }: {
   title: string
   notes: NoteSummary[]
   onMove: (note: NoteSummary) => void
+  picking: Picking
 }) {
   if (notes.length === 0) return null
+  const selectAll: SectionSelection | undefined = picking.selection.active
+    ? picking.selection.section(notes.map(noteItem))
+    : undefined
   return (
     <section aria-label={title} className="flex flex-col gap-2">
-      <h3 className="text-sm font-semibold tracking-wide text-neutral-600 dark:text-neutral-400 uppercase">
+      <h3 className="flex items-center gap-2 text-sm font-semibold tracking-wide text-neutral-600 dark:text-neutral-400 uppercase">
+        {selectAll && <SectionCheckbox title={title} selectAll={selectAll} />}
         {title}
       </h3>
       <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
         {notes.map((note) => (
-          <DocumentCard key={note.id} note={note} onMove={() => onMove(note)} />
+          <DocumentCard key={note.id} note={note} onMove={() => onMove(note)} picking={picking} />
         ))}
       </ul>
     </section>
@@ -111,7 +151,6 @@ export function HomePage() {
   const { t } = useTranslation('documents')
   const { t: tTree } = useTranslation('tree')
   const { openMove, dialog } = useMoveDialog()
-  const entityMenu = useEntityMenu()
   const moveNote = (note: NoteSummary) => openMove({ kind: 'note', id: note.id }, note.title)
   const pinned = useNotesList({
     pinned: true,
@@ -135,6 +174,19 @@ export function HomePage() {
   const linkItems = rootLinks.data?.pages.flatMap((page) => page.items) ?? []
   const rootItems = root.data?.pages.flatMap((page) => page.items) ?? []
 
+  // Everything the page shows, in the order it is shown.
+  const folderPicks: BulkItem[] = folderItems.map((f) => ({ kind: 'folder', id: f.id }))
+  const linkPicks: BulkItem[] = linkItems.map((l) => ({ kind: 'link', id: l.id }))
+  const selection = useSelection([
+    ...(pinned.data?.items ?? []).map(noteItem),
+    ...(recent.data?.items ?? []).map(noteItem),
+    ...folderPicks,
+    ...rootItems.map(noteItem),
+    ...linkPicks,
+  ])
+  const bulk = useBulkActions(selection)
+  const picking: Picking = { selection, onContextMenu: bulk.onContextMenu }
+
   const loading =
     pinned.isPending ||
     recent.isPending ||
@@ -153,7 +205,15 @@ export function HomePage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h2 className="text-2xl font-semibold">{t('home.title')}</h2>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-2xl font-semibold">{t('home.title')}</h2>
+        <SelectionToggle selection={selection} />
+      </div>
+      <SelectionBar
+        selection={selection}
+        onMove={bulk.moveSelected}
+        onDelete={bulk.deleteSelected}
+      />
 
       {failure && (
         <div className="flex flex-col items-start gap-2">
@@ -184,24 +244,39 @@ export function HomePage() {
         </div>
       )}
 
-      <Section title={t('home.pinned')} notes={pinned.data?.items ?? []} onMove={moveNote} />
-      <Section title={t('home.recent')} notes={recent.data?.items ?? []} onMove={moveNote} />
+      <Section
+        title={t('home.pinned')}
+        notes={pinned.data?.items ?? []}
+        onMove={moveNote}
+        picking={picking}
+      />
+      <Section
+        title={t('home.recent')}
+        notes={recent.data?.items ?? []}
+        onMove={moveNote}
+        picking={picking}
+      />
       {(allFolders.length > 0 || rootItems.length > 0 || linkItems.length > 0) && (
         <section aria-label={t('home.root')} className="flex flex-col gap-4">
           <h3 className="text-sm font-semibold tracking-wide text-neutral-600 dark:text-neutral-400 uppercase">
             {t('home.root')}
           </h3>
           {folderItems.length > 0 && (
-            <CardSection title={tTree('folderPage.folders')}>
+            <CardSection
+              title={tTree('folderPage.folders')}
+              selectAll={selection.active ? selection.section(folderPicks) : undefined}
+            >
               {folderItems.map((folder) => (
                 <ItemCard
                   key={folder.id}
                   to={`/folder/${folder.id}`}
                   icon={iconFor('folder', folder.icon)}
                   title={folder.name}
-                  onContextMenu={(event) =>
-                    entityMenu.open(event, { kind: 'folder', id: folder.id, name: folder.name })
-                  }
+                  selection={cardSelection(selection, { kind: 'folder', id: folder.id })}
+                  onContextMenu={bulk.onContextMenu(
+                    { kind: 'folder', id: folder.id },
+                    { kind: 'folder', id: folder.id, name: folder.name },
+                  )}
                 />
               ))}
             </CardSection>
@@ -209,7 +284,12 @@ export function HomePage() {
           {allFolders.length > shownFolders && (
             <MoreButton onClick={() => setShownFolders((n) => n + FOLDER_PAGE_SIZE)} />
           )}
-          <Section title={tTree('folderPage.documents')} notes={rootItems} onMove={moveNote} />
+          <Section
+            title={tTree('folderPage.documents')}
+            notes={rootItems}
+            onMove={moveNote}
+            picking={picking}
+          />
           {root.hasNextPage && (
             <MoreButton
               disabled={root.isFetchingNextPage}
@@ -217,7 +297,10 @@ export function HomePage() {
             />
           )}
           {linkItems.length > 0 && (
-            <CardSection title={tTree('folderPage.links')}>
+            <CardSection
+              title={tTree('folderPage.links')}
+              selectAll={selection.active ? selection.section(linkPicks) : undefined}
+            >
               {linkItems.map((link) => (
                 <ItemCard
                   key={link.id}
@@ -226,9 +309,11 @@ export function HomePage() {
                   title={link.title}
                   detail={siteName(link.url)}
                   onMove={() => openMove({ kind: 'link', id: link.id }, link.title)}
-                  onContextMenu={(event) =>
-                    entityMenu.open(event, { kind: 'link', id: link.id, name: link.title })
-                  }
+                  selection={cardSelection(selection, { kind: 'link', id: link.id })}
+                  onContextMenu={bulk.onContextMenu(
+                    { kind: 'link', id: link.id },
+                    { kind: 'link', id: link.id, name: link.title },
+                  )}
                 />
               ))}
             </CardSection>
@@ -242,6 +327,7 @@ export function HomePage() {
         </section>
       )}
       {dialog}
+      {bulk.dialogs}
     </div>
   )
 }

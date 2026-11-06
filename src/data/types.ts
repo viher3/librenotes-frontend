@@ -212,6 +212,20 @@ export interface Trash {
 
 export type TrashKind = 'folder' | 'note' | 'link' | 'attachment'
 
+/** Something that can be picked in a list and acted on together with others. */
+export interface BulkItem {
+  kind: 'folder' | 'note' | 'link' | 'attachment'
+  id: ID
+}
+
+/** The most items one bulk action takes (the backend refuses more). */
+export const MAX_BULK_ITEMS = 100
+
+/** What a bulk action did: how many top-level items it touched (items inside other picked items count with them). */
+export interface BulkResult {
+  count: number
+}
+
 export type OrderDirection = 'asc' | 'desc'
 export type OrderBy = 'updatedAt' | 'createdAt' | 'title'
 

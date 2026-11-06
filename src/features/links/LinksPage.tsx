@@ -4,7 +4,10 @@ import { Alert } from '@/components/Alert'
 import { Button } from '@/components/Button'
 import { CardSection, ItemCard } from '@/components/ItemCard'
 import { errorMessage } from '@/features/auth/errors'
-import { useEntityMenu } from '@/features/tree/EntityMenuProvider'
+import { SelectionBar, SelectionToggle } from '@/features/tree/SelectionBar'
+import { cardSelection, useSelection } from '@/features/tree/useSelection'
+import { useBulkActions } from '@/features/tree/useBulkActions'
+import type { BulkItem } from '@/data/types'
 import { useMoveDialog } from '@/features/tree/useMoveDialog'
 import { siteName } from './hostname'
 import { useNewLink } from './NewLinkProvider'
@@ -16,15 +19,25 @@ export default function LinksPage() {
   const { open } = useNewLink()
   const query = useLinks()
   const { openMove, dialog } = useMoveDialog()
-  const entityMenu = useEntityMenu()
   const links = query.data?.pages.flatMap((page) => page.items) ?? []
+  const linkItems: BulkItem[] = links.map((l) => ({ kind: 'link', id: l.id }))
+  const selection = useSelection(linkItems)
+  const bulk = useBulkActions(selection)
 
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-2xl font-semibold">{t('list.title')}</h2>
-        <Button onClick={() => open()}>{t('new')}</Button>
+        <div className="flex flex-wrap gap-2">
+          <SelectionToggle selection={selection} />
+          <Button onClick={() => open()}>{t('new')}</Button>
+        </div>
       </div>
+      <SelectionBar
+        selection={selection}
+        onMove={bulk.moveSelected}
+        onDelete={bulk.deleteSelected}
+      />
 
       {query.isError && (
         <div className="flex flex-col items-start gap-2">
@@ -53,7 +66,10 @@ export default function LinksPage() {
       )}
 
       {links.length > 0 && (
-        <CardSection title={t('list.title')}>
+        <CardSection
+          title={t('list.title')}
+          selectAll={selection.active ? selection.section(linkItems) : undefined}
+        >
           {links.map((link) => (
             <ItemCard
               key={link.id}
@@ -62,9 +78,11 @@ export default function LinksPage() {
               title={link.title}
               detail={siteName(link.url)}
               onMove={() => openMove({ kind: 'link', id: link.id }, link.title)}
-              onContextMenu={(event) =>
-                entityMenu.open(event, { kind: 'link', id: link.id, name: link.title })
-              }
+              selection={cardSelection(selection, { kind: 'link', id: link.id })}
+              onContextMenu={bulk.onContextMenu(
+                { kind: 'link', id: link.id },
+                { kind: 'link', id: link.id, name: link.title },
+              )}
             />
           ))}
         </CardSection>
@@ -81,6 +99,7 @@ export default function LinksPage() {
         </Button>
       )}
       {dialog}
+      {bulk.dialogs}
     </div>
   )
 }

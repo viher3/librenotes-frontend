@@ -19,8 +19,10 @@ import { SessionStore } from '../session'
 import {
   LOCALES,
   MAX_ATTACHMENT_BYTES,
+  MAX_BULK_ITEMS,
   type Attachment,
   type AttachmentDetail,
+  type BulkItem,
   type Destination,
   type FolderContents,
   type ID,
@@ -430,6 +432,65 @@ export function createMockRepositories(options: MockOptions = {}): {
     for (const a of attachments.values()) if (a.noteId === note.id) mark(a)
     for (const link of childLinks(note.id, true)) mark(link)
     for (const child of childNotes(note.id, true)) setNoteTreeTrashed(child, deletedAt)
+  }
+
+  /**
+   * The items a bulk action acts on: 1 to 100, all of them the user's and not in the trash (404 otherwise), repeated
+   * ones counted once, and the ones inside another picked folder or note left out (they travel with it).
+   */
+  function pickItems(items: BulkItem[]) {
+    if (items.length < 1 || items.length > MAX_BULK_ITEMS)
+      invalid(`[items] Must have between 1 and ${MAX_BULK_ITEMS} items`)
+    const folderRecords = new Map<ID, FolderRecord>()
+    const noteRecords = new Map<ID, NoteRecord>()
+    const linkRecords = new Map<ID, LinkRecord>()
+    const attachmentRecords = new Map<ID, AttachmentRecord>()
+    for (const { kind, id } of items) {
+      if (kind === 'folder') folderRecords.set(id, folderOf(id))
+      else if (kind === 'note') noteRecords.set(id, noteOf(id))
+      else if (kind === 'link') linkRecords.set(id, linkOf(id))
+      else attachmentRecords.set(id, attachmentOf(id))
+    }
+
+    const insidePicked = (folderId: ID | null, noteId: ID | null): boolean => {
+      for (let depth = 0; depth < 100; depth++) {
+        if (noteId) {
+          if (noteRecords.has(noteId)) return true
+          const note = notes.get(noteId)
+          if (!note) return false
+          folderId = note.folderId
+          noteId = note.parentNoteId
+        } else if (folderId) {
+          if (folderRecords.has(folderId)) return true
+          const folder = folders.get(folderId)
+          if (!folder) return false
+          folderId = folder.parentFolderId
+        } else {
+          return false
+        }
+      }
+      return false
+    }
+
+    const folders_ = [...folderRecords.values()].filter(
+      (f) => !insidePicked(f.parentFolderId, null),
+    )
+    const notes_ = [...noteRecords.values()].filter(
+      (n) => !insidePicked(n.folderId, n.parentNoteId),
+    )
+    const links_ = [...linkRecords.values()].filter(
+      (l) => !insidePicked(l.folderId, l.parentNoteId),
+    )
+    const attachments_ = [...attachmentRecords.values()].filter(
+      (a) => !insidePicked(a.folderId, a.noteId),
+    )
+    return {
+      folders: folders_,
+      notes: notes_,
+      links: links_,
+      attachments: attachments_,
+      count: folders_.length + notes_.length + links_.length + attachments_.length,
+    }
   }
 
   function setTrashed(deletedAt: string | null, folderIds: Set<ID>) {
@@ -893,7 +954,8 @@ export function createMockRepositories(options: MockOptions = {}): {
         a.noteId = null
       } else {
         const note = notes.get(destination.id)
-        if (!note || note.ownerId !== owner() || note.deletedAt) return fail(422, 'note.not_found')
+        if (!note || note.ownerId !== owner() || note.deletedAt)
+          return fail(422, 'note.parent_not_found')
         a.noteId = note.id
         a.folderId = null
       }
@@ -903,6 +965,65 @@ export function createMockRepositories(options: MockOptions = {}): {
       await begin()
       const a = attachmentOf(id, true)
       a.deletedAt ??= now()
+    },
+
+    // ---- bulk actions
+    async moveMany(items, destination) {
+      await begin()
+      const picked = pickItems(items)
+      const target = placementOf(
+        destinationIds(destination).folderId,
+        destinationIds(destination).parentNoteId,
+      )
+      // Folders live in folders or at the top level; files need a folder or a note.
+      if (target.parentNoteId && picked.folders.length > 0) fail(422, 'notes.invalid_location')
+      if (!target.folderId && !target.parentNoteId && picked.attachments.length > 0)
+        fail(422, 'attachment.invalid_location')
+      // Nothing may end up inside itself.
+      for (const folder of picked.folders) {
+        if (
+          target.folderId &&
+          (target.folderId === folder.id || subfolderIds(folder.id).includes(target.folderId))
+        )
+          fail(422, 'folder.cycle_detected')
+      }
+      for (const note of picked.notes) {
+        if (
+          target.parentNoteId &&
+          (target.parentNoteId === note.id ||
+            descendantNotes(note.id).some((d) => d.id === target.parentNoteId))
+        )
+          fail(422, 'note.cycle_detected', { note_id: note.id, target_id: target.parentNoteId })
+      }
+
+      const stamp = now()
+      for (const folder of picked.folders) folder.parentFolderId = target.folderId
+      for (const item of [...picked.notes, ...picked.links]) {
+        item.folderId = target.folderId
+        item.parentNoteId = target.parentNoteId
+        item.updatedAt = stamp
+      }
+      // A file in a note has no folder of its own.
+      for (const file of picked.attachments) {
+        file.folderId = target.folderId
+        file.noteId = target.parentNoteId
+      }
+      return { count: picked.count }
+    },
+
+    async deleteMany(items) {
+      await begin()
+      const picked = pickItems(items)
+      const stamp = now()
+      for (const folder of picked.folders)
+        setTrashed(
+          folder.deletedAt ?? stamp,
+          withinFolders([folder.id, ...subfolderIds(folder.id)]),
+        )
+      for (const note of picked.notes) setNoteTreeTrashed(note, stamp)
+      for (const link of picked.links) link.deletedAt ??= stamp
+      for (const file of picked.attachments) file.deletedAt ??= stamp
+      return { count: picked.count }
     },
 
     // ---- search and tags

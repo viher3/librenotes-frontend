@@ -61,7 +61,8 @@
     "moving": "Moviendo…",
     "loadError": "No se ha podido cargar esta carpeta.",
     "selected": "Destino: {{target}}",
-    "noneSelected": "Selecciona un destino."
+    "noneSelected": "Selecciona un destino.",
+    "titleMany": "Mover {{count}} elementos"
   },
   "breadcrumb": {
     "label": "Ruta de navegación",
@@ -94,5 +95,38 @@
     "open": "Crear nuevo"
   },
   "moveButton": "Mover",
-  "moveButtonLabel": "Mover {{name}}"
+  "moveButtonLabel": "Mover {{name}}",
+  "bulk": {
+    "select": "Seleccionar",
+    "done": "Hecho",
+    "toolbar": "Acciones sobre los elementos seleccionados",
+    "selectItem": "Seleccionar {{name}}",
+    "selectSection": "Seleccionar todo en {{section}}",
+    "selectedCount_one": "{{count}} seleccionado",
+    "selectedCount_other": "{{count}} seleccionados",
+    "limit": "Selecciona hasta {{max}} elementos a la vez",
+    "move": "Mover a…",
+    "delete": "Eliminar",
+    "clear": "Quitar selección",
+    "moveMenu_one": "Mover {{count}} elemento a…",
+    "moveMenu_other": "Mover {{count}} elementos a…",
+    "deleteMenu_one": "Eliminar {{count}} elemento",
+    "deleteMenu_other": "Eliminar {{count}} elementos",
+    "menuLabel_one": "Acciones sobre {{count}} elemento seleccionado",
+    "menuLabel_other": "Acciones sobre {{count}} elementos seleccionados",
+    "deleteTitle_one": "¿Eliminar este elemento?",
+    "deleteTitle_other": "¿Eliminar {{count}} elementos?",
+    "deleteBody": "Esto moverá a la papelera: {{items}}.",
+    "deleteNested": "Todo lo que hay dentro de las carpetas y los documentos, archivos adjuntos incluidos, se va con ellos. Puedes restaurarlo todo desde la papelera.",
+    "counts": {
+      "folder_one": "{{count}} carpeta",
+      "folder_other": "{{count}} carpetas",
+      "note_one": "{{count}} documento",
+      "note_other": "{{count}} documentos",
+      "link_one": "{{count}} enlace",
+      "link_other": "{{count}} enlaces",
+      "attachment_one": "{{count}} archivo",
+      "attachment_other": "{{count}} archivos"
+    }
+  }
 }

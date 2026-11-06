@@ -10,7 +10,9 @@ import { errorMessage } from '@/features/auth/errors'
 import { useFolderContents, useNoteChildren, type MoveItem } from './queries'
 
 interface MoveDialogProps {
-  node: MoveItem
+  /** What is being moved: one item, or several picked together. */
+  nodes: MoveItem[]
+  /** The name of the item, when it is only one. */
   name: string
   /** Moves the item; rejects with the reason it could not. */
   onMove: (destination: Destination) => Promise<void>
@@ -29,7 +31,7 @@ interface Choice {
  * notes and links can also go under a note, and files go into a folder or under a note. The item being moved cannot be chosen, and nothing inside it is
  * offered (a note cannot end up inside itself).
  */
-export function MoveDialog({ node, name, onMove, onClose }: MoveDialogProps) {
+export function MoveDialog({ nodes, name, onMove, onClose }: MoveDialogProps) {
   const { t } = useTranslation('tree')
   const [open, setOpen] = useState<Set<string>>(new Set())
   const [choice, setChoice] = useState<Choice | null>(null)
@@ -56,7 +58,16 @@ export function MoveDialog({ node, name, onMove, onClose }: MoveDialogProps) {
   }
 
   return (
-    <Modal title={t('moveDialog.title', { name })} width="md" busy={busy} onClose={onClose}>
+    <Modal
+      title={
+        nodes.length === 1
+          ? t('moveDialog.title', { name })
+          : t('moveDialog.titleMany', { count: nodes.length })
+      }
+      width="md"
+      busy={busy}
+      onClose={onClose}
+    >
       <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">{t('moveDialog.hint')}</p>
       {failure && (
         <div className="mt-3">
@@ -65,12 +76,12 @@ export function MoveDialog({ node, name, onMove, onClose }: MoveDialogProps) {
       )}
       <ul className="mt-3 flex flex-col gap-0.5" aria-busy={busy}>
         <li>
-          {node.kind === 'attachment' ? (
+          {nodes.some((node) => node.kind === 'attachment') ? (
             <ul className="flex flex-col gap-0.5">
               <PickerBranch
                 parent={{ type: 'root' }}
                 level={0}
-                node={node}
+                nodes={nodes}
                 open={open}
                 toggle={toggle}
                 busy={busy}
@@ -97,7 +108,7 @@ export function MoveDialog({ node, name, onMove, onClose }: MoveDialogProps) {
                 <PickerBranch
                   parent={{ type: 'root' }}
                   level={1}
-                  node={node}
+                  nodes={nodes}
                   open={open}
                   toggle={toggle}
                   busy={busy}
@@ -127,7 +138,7 @@ export function MoveDialog({ node, name, onMove, onClose }: MoveDialogProps) {
 type Parent = { type: 'root' } | { type: 'folder'; id: string } | { type: 'note'; id: string }
 
 interface PickerProps {
-  node: MoveItem
+  nodes: MoveItem[]
   open: Set<string>
   toggle: (key: string) => void
   busy: boolean
@@ -179,7 +190,7 @@ function PickerRowShell({
 
 function PickerBranch({ parent, level, ...rest }: PickerProps & { parent: Parent; level: number }) {
   const { t } = useTranslation('tree')
-  const { node } = rest
+  const { nodes } = rest
   const folderQuery = useFolderContents(
     parent.type === 'folder' ? parent.id : null,
     parent.type !== 'note',
@@ -207,12 +218,11 @@ function PickerBranch({ parent, level, ...rest }: PickerProps & { parent: Parent
     parent.type === 'note'
       ? []
       : [...(folderQuery.data?.subfolders ?? [])].sort((a, b) => a.name.localeCompare(b.name))
-  // Only notes can hold notes and links; a folder being moved can only go into folders.
-  // (A file can go under any note too.)
-  const notes =
-    node.kind === 'folder'
-      ? []
-      : [...(query.data?.notes ?? [])].sort((a, b) => a.title.localeCompare(b.title))
+  // Only notes can hold notes and links; a folder being moved can only go into folders, so as soon as one is among
+  // the items no note is offered. (A file can go under any note too.)
+  const notes = nodes.some((node) => node.kind === 'folder')
+    ? []
+    : [...(query.data?.notes ?? [])].sort((a, b) => a.title.localeCompare(b.title))
 
   return (
     <>
@@ -223,7 +233,7 @@ function PickerBranch({ parent, level, ...rest }: PickerProps & { parent: Parent
           label={folder.name}
           icon={iconFor('folder', folder.icon)}
           expandable
-          isSelf={node.kind === 'folder' && node.id === folder.id}
+          isSelf={nodes.some((node) => node.kind === 'folder' && node.id === folder.id)}
           destination={{ type: 'folder', id: folder.id }}
           branch={{ type: 'folder', id: folder.id }}
           level={level}
@@ -237,7 +247,7 @@ function PickerBranch({ parent, level, ...rest }: PickerProps & { parent: Parent
           label={note.title}
           icon={iconFor('note', note.icon, note.pinned, note.encrypted)}
           expandable={note.childCount > 0}
-          isSelf={node.kind === 'note' && node.id === note.id}
+          isSelf={nodes.some((node) => node.kind === 'note' && node.id === note.id)}
           destination={{ type: 'note', id: note.id }}
           branch={{ type: 'note', id: note.id }}
           level={level}

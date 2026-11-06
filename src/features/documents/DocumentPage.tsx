@@ -22,6 +22,10 @@ import { useFileDrop } from '@/features/attachments/useFileDrop'
 import type { EditorHandle } from './visual/VisualEditor'
 import { useNewLink } from '@/features/links/NewLinkProvider'
 import { SubDocuments } from './SubDocuments'
+import { SelectionBar } from '@/features/tree/SelectionBar'
+import { useNoteChildren } from '@/features/tree/queries'
+import { useSelection } from '@/features/tree/useSelection'
+import { useBulkActions } from '@/features/tree/useBulkActions'
 import { TagEditor } from '@/features/tags/TagEditor'
 import { useTags } from '@/features/tags/queries'
 import { useNewDocument } from './useNewDocument'
@@ -202,6 +206,14 @@ function DocumentEditor({ note, noteKey, onKeyChange, onLock }: DocumentEditorPr
   const deleteNote = useDeleteNote()
   const { t: tTree } = useTranslation('tree')
   const { openMove, dialog: moveDialog } = useMoveDialog()
+  // The sub-documents, links and files of this document can be picked and moved or deleted together.
+  const children = useNoteChildren(note.id)
+  const selection = useSelection([
+    ...(children.data?.notes ?? []).map((n) => ({ kind: 'note' as const, id: n.id })),
+    ...(children.data?.links ?? []).map((l) => ({ kind: 'link' as const, id: l.id })),
+    ...note.attachments.map((a) => ({ kind: 'attachment' as const, id: a.id })),
+  ])
+  const bulk = useBulkActions(selection)
   const [mode, setMode] = useEditorMode(note.id)
   const [pinned, setPinned] = useState(note.pinned)
   // Pinned from elsewhere (the context menu) while this page is open.
@@ -535,8 +547,15 @@ function DocumentEditor({ note, noteKey, onKeyChange, onLock }: DocumentEditorPr
       )}
       {createError && <Alert tone="error">{createError}</Alert>}
 
+      <SelectionBar
+        selection={selection}
+        onMove={bulk.moveSelected}
+        onDelete={bulk.deleteSelected}
+      />
       <SubDocuments
         noteId={note.id}
+        selection={selection}
+        onItemContextMenu={bulk.onContextMenu}
         adding={creating}
         onAdd={() => createDocument({ type: 'note', id: note.id })}
         onAddLink={() => newLink.open({ type: 'note', id: note.id })}
@@ -548,6 +567,8 @@ function DocumentEditor({ note, noteKey, onKeyChange, onLock }: DocumentEditorPr
         uploads={uploads}
         dragging={dragging}
         onInsert={insertImage}
+        selection={selection}
+        onItemContextMenu={(item) => bulk.onContextMenu(item)}
       />
 
       <div
@@ -658,6 +679,7 @@ function DocumentEditor({ note, noteKey, onKeyChange, onLock }: DocumentEditorPr
       )}
 
       {moveDialog}
+      {bulk.dialogs}
       {confirmingDelete && (
         <ConfirmDialog
           title={t('deleteDialog.title')}

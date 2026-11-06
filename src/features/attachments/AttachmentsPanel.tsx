@@ -1,10 +1,12 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, type MouseEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Alert } from '@/components/Alert'
 import { Button } from '@/components/Button'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
-import type { Attachment } from '@/data/types'
+import { PICKED, SectionCheckbox, SelectCheckbox } from '@/components/ItemCard'
+import type { Attachment, BulkItem } from '@/data/types'
 import { errorMessage } from '@/features/auth/errors'
+import { cardSelection, type Selection } from '@/features/tree/useSelection'
 import { useMoveDialog } from '@/features/tree/useMoveDialog'
 import { formatBytes, isEmbeddableImage, saveBlob } from './files'
 import {
@@ -22,6 +24,10 @@ interface AttachmentsPanelProps {
   dragging: boolean
   /** When given, images get an _Insert_ button that embeds them in the document. */
   onInsert?: (attachment: Attachment) => void
+  /** When given, the files can be picked together with the other items of the page. */
+  selection?: Selection
+  /** The right-click handler of a picked file (the menu of the selection), when it is part of one. */
+  onItemContextMenu?: (item: BulkItem) => (event: MouseEvent) => void
 }
 
 /** The files of a document or folder: add (button or drop), download, delete and, for images, embed. */
@@ -31,6 +37,8 @@ export function AttachmentsPanel({
   uploads,
   dragging,
   onInsert,
+  selection,
+  onItemContextMenu,
 }: AttachmentsPanelProps) {
   const { t, i18n } = useTranslation('attachments')
   const language = i18n.resolvedLanguage ?? 'en'
@@ -65,6 +73,9 @@ export function AttachmentsPanel({
   }
 
   const empty = attachments.length === 0 && uploads.uploads.length === 0
+  const picking = selection?.active === true
+  const items: BulkItem[] = attachments.map((a) => ({ kind: 'attachment', id: a.id }))
+  const selectAll = selection && picking && items.length > 0 ? selection.section(items) : undefined
 
   return (
     <section
@@ -76,7 +87,8 @@ export function AttachmentsPanel({
       }`}
     >
       <div className="flex flex-wrap items-center gap-2">
-        <h3 className="font-medium text-neutral-600 dark:text-neutral-400">
+        <h3 className="flex items-center gap-2 font-medium text-neutral-600 dark:text-neutral-400">
+          {selectAll && <SectionCheckbox title={t('title')} selectAll={selectAll} />}
           {t('title')}
           {attachments.length > 0 && ` (${attachments.length})`}
         </h3>
@@ -113,57 +125,80 @@ export function AttachmentsPanel({
 
       {(attachments.length > 0 || uploads.uploads.length > 0) && (
         <ul className="flex flex-col divide-y divide-neutral-200 dark:divide-neutral-800">
-          {attachments.map((attachment) => (
-            <li key={attachment.id} className="flex flex-wrap items-center gap-2 py-1.5">
-              <span aria-hidden="true">{isEmbeddableImage(attachment.mimeType) ? '🖼️' : '📎'}</span>
-              <span className="min-w-0 flex-1 truncate" title={attachment.fileName}>
-                {attachment.fileName}
-              </span>
-              <span className="text-xs text-neutral-600 dark:text-neutral-400">
-                {formatBytes(attachment.sizeBytes, language)}
-              </span>
-              {onInsert && isEmbeddableImage(attachment.mimeType) && (
+          {attachments.map((attachment) => {
+            const item: BulkItem = { kind: 'attachment', id: attachment.id }
+            const pick = selection ? cardSelection(selection, item) : undefined
+            return (
+              <li
+                key={attachment.id}
+                className={`group/card flex flex-wrap items-center gap-2 py-1.5 ${pick?.selected ? PICKED : ''}`}
+                onContextMenu={onItemContextMenu?.(item)}
+                onClick={
+                  pick?.active
+                    ? (event) => {
+                        if ((event.target as HTMLElement).closest('button, input, a')) return
+                        pick.onToggle({ range: event.shiftKey })
+                      }
+                    : undefined
+                }
+              >
+                {pick && <SelectCheckbox name={attachment.fileName} selection={pick} />}
+                <span aria-hidden="true">
+                  {isEmbeddableImage(attachment.mimeType) ? '🖼️' : '📎'}
+                </span>
+                <span className="min-w-0 flex-1 truncate" title={attachment.fileName}>
+                  {attachment.fileName}
+                </span>
+                <span className="text-xs text-neutral-600 dark:text-neutral-400">
+                  {formatBytes(attachment.sizeBytes, language)}
+                </span>
+                {onInsert && isEmbeddableImage(attachment.mimeType) && (
+                  <Button
+                    variant="ghost"
+                    className="px-2 py-0.5 text-xs"
+                    aria-label={t('insertLabel', { name: attachment.fileName })}
+                    onClick={() => onInsert(attachment)}
+                  >
+                    {t('insert')}
+                  </Button>
+                )}
                 <Button
                   variant="ghost"
                   className="px-2 py-0.5 text-xs"
-                  aria-label={t('insertLabel', { name: attachment.fileName })}
-                  onClick={() => onInsert(attachment)}
+                  aria-label={t('downloadLabel', { name: attachment.fileName })}
+                  disabled={downloading === attachment.id}
+                  onClick={() => save(attachment)}
                 >
-                  {t('insert')}
+                  {t('download')}
                 </Button>
-              )}
-              <Button
-                variant="ghost"
-                className="px-2 py-0.5 text-xs"
-                aria-label={t('downloadLabel', { name: attachment.fileName })}
-                disabled={downloading === attachment.id}
-                onClick={() => save(attachment)}
-              >
-                {t('download')}
-              </Button>
-              <Button
-                variant="ghost"
-                className="px-2 py-0.5 text-xs"
-                aria-label={tTree('moveButtonLabel', { name: attachment.fileName })}
-                onClick={() =>
-                  openMove({ kind: 'attachment', id: attachment.id }, attachment.fileName)
-                }
-              >
-                {tTree('moveButton')}
-              </Button>
-              <Button
-                variant="ghost"
-                className="px-2 py-0.5 text-xs"
-                aria-label={t('deleteLabel', { name: attachment.fileName })}
-                onClick={() => {
-                  remove.reset()
-                  setDeleting(attachment)
-                }}
-              >
-                {t('delete')}
-              </Button>
-            </li>
-          ))}
+                {!picking && (
+                  <Button
+                    variant="ghost"
+                    className="px-2 py-0.5 text-xs"
+                    aria-label={tTree('moveButtonLabel', { name: attachment.fileName })}
+                    onClick={() =>
+                      openMove({ kind: 'attachment', id: attachment.id }, attachment.fileName)
+                    }
+                  >
+                    {tTree('moveButton')}
+                  </Button>
+                )}
+                {!picking && (
+                  <Button
+                    variant="ghost"
+                    className="px-2 py-0.5 text-xs"
+                    aria-label={t('deleteLabel', { name: attachment.fileName })}
+                    onClick={() => {
+                      remove.reset()
+                      setDeleting(attachment)
+                    }}
+                  >
+                    {t('delete')}
+                  </Button>
+                )}
+              </li>
+            )
+          })}
           {uploads.uploads.map((upload) => (
             <li key={upload.key} className="flex flex-wrap items-center gap-2 py-1.5">
               <span aria-hidden="true">⏳</span>

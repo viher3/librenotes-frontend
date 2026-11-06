@@ -2102,6 +2102,232 @@ export interface paths {
     }
     trace?: never
   }
+  '/bulk/move': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Move many folders, notes, links and files to a folder, under a note, or to the top level
+     * @description All or nothing - every item and the destination are validated before anything changes. Items inside another selected item travel with it; `count` is the number of top-level items affected. Up to 100 items.
+     */
+    post: {
+      parameters: {
+        query?: never
+        header?: never
+        path?: never
+        cookie?: never
+      }
+      requestBody: {
+        content: {
+          'application/json': components['schemas']['BulkMoveRequest']
+        }
+      }
+      responses: {
+        /** @description OK */
+        200: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': components['schemas']['BulkResult']
+          }
+        }
+        /** @description Invalid data (empty list, more than 100 items, unknown type) */
+        400: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': components['schemas']['ApiError']
+          }
+        }
+        /** @description Missing or invalid token */
+        401: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': components['schemas']['ApiError']
+          }
+        }
+        /** @description An item does not exist, is owned by another user or is in the trash (folder.not_found, note.not_found, link.not_found, attachment.not_found) */
+        404: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': components['schemas']['ApiError']
+          }
+        }
+        /** @description Destination folder or parent note not found (folder.not_found, note.parent_not_found), a folder sent under a note (notes.invalid_location), a file sent to the top level (attachment.invalid_location), or an item that would end up inside itself (folder.cycle_detected, note.cycle_detected) */
+        422: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': components['schemas']['ApiError']
+          }
+        }
+      }
+    }
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/bulk/trash': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Send many folders, notes, links and files to the trash
+     * @description All or nothing - every item and the destination are validated before anything changes. Items inside another selected item travel with it; `count` is the number of top-level items affected. Up to 100 items.
+     */
+    post: {
+      parameters: {
+        query?: never
+        header?: never
+        path?: never
+        cookie?: never
+      }
+      requestBody: {
+        content: {
+          'application/json': components['schemas']['BulkTrashRequest']
+        }
+      }
+      responses: {
+        /** @description OK */
+        200: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': components['schemas']['BulkResult']
+          }
+        }
+        /** @description Invalid data (empty list, more than 100 items, unknown type) */
+        400: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': components['schemas']['ApiError']
+          }
+        }
+        /** @description Missing or invalid token */
+        401: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': components['schemas']['ApiError']
+          }
+        }
+        /** @description An item does not exist, is owned by another user or is in the trash (folder.not_found, note.not_found, link.not_found, attachment.not_found) */
+        404: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': components['schemas']['ApiError']
+          }
+        }
+      }
+    }
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/attachments/{id}/move': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    /** Move a file to a folder or under a note (never the top level) */
+    patch: {
+      parameters: {
+        query?: never
+        header?: never
+        path: {
+          /** @description Attachment ID */
+          id: string
+        }
+        cookie?: never
+      }
+      requestBody: {
+        content: {
+          'application/json': components['schemas']['MoveAttachmentRequest']
+        }
+      }
+      responses: {
+        /** @description OK */
+        200: {
+          headers: {
+            [name: string]: unknown
+          }
+          content?: never
+        }
+        /** @description Invalid data */
+        400: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': components['schemas']['ApiError']
+          }
+        }
+        /** @description Missing or invalid token */
+        401: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': components['schemas']['ApiError']
+          }
+        }
+        /** @description Not found (or owned by another user, or in the trash) */
+        404: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': components['schemas']['ApiError']
+          }
+        }
+        /** @description Target folder or note not found (folder.not_found, note.parent_not_found), or no/both targets (attachment.invalid_location) */
+        422: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': components['schemas']['ApiError']
+          }
+        }
+      }
+    }
+    trace?: never
+  }
   '/attachments/{id}': {
     parameters: {
       query?: never
@@ -3159,83 +3385,6 @@ export interface paths {
     }
     trace?: never
   }
-  '/attachments/{id}/move': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    /** Move an attachment to a folder or a note */
-    patch: {
-      parameters: {
-        query?: never
-        header?: never
-        path: {
-          /** @description Attachment ID */
-          id: string
-        }
-        cookie?: never
-      }
-      requestBody: {
-        content: {
-          'application/json': components['schemas']['MoveAttachmentRequest']
-        }
-      }
-      responses: {
-        /** @description Moved */
-        200: {
-          headers: {
-            [name: string]: unknown
-          }
-          content?: never
-        }
-        /** @description Invalid data */
-        400: {
-          headers: {
-            [name: string]: unknown
-          }
-          content: {
-            'application/json': components['schemas']['ApiError']
-          }
-        }
-        /** @description Missing or invalid token */
-        401: {
-          headers: {
-            [name: string]: unknown
-          }
-          content: {
-            'application/json': components['schemas']['ApiError']
-          }
-        }
-        /** @description Not found (or owned by another user) */
-        404: {
-          headers: {
-            [name: string]: unknown
-          }
-          content: {
-            'application/json': components['schemas']['ApiError']
-          }
-        }
-        /** @description Target folder or note not found */
-        422: {
-          headers: {
-            [name: string]: unknown
-          }
-          content: {
-            'application/json': components['schemas']['ApiError']
-          }
-        }
-      }
-    }
-    trace?: never
-  }
   '/trash/links/{id}/restore': {
     parameters: {
       query?: never
@@ -3816,6 +3965,38 @@ export interface components {
        */
       parent_note_id?: string | null
     }
+    BulkItem: {
+      /** @enum {string} */
+      type: 'folder' | 'note' | 'link' | 'attachment'
+      /** Format: uuid */
+      id: string
+    }
+    BulkTrashRequest: {
+      items: components['schemas']['BulkItem'][]
+    }
+    BulkMoveRequest: {
+      items: components['schemas']['BulkItem'][]
+      /** Format: uuid */
+      folder_id?: string | null
+      /**
+       * Format: uuid
+       * @description Place the items under this note instead of in a folder (never both). Send neither for the top level.
+       */
+      parent_note_id?: string | null
+    }
+    BulkResult: {
+      data?: {
+        /** @description Top-level items affected (items inside other selected items are not counted). */
+        count?: number
+      }
+    }
+    /** @description Exactly one of folder_id / note_id. */
+    MoveAttachmentRequest: {
+      /** Format: uuid */
+      folder_id?: string | null
+      /** Format: uuid */
+      note_id?: string | null
+    }
     CreateNoteRequest: {
       /** @description A single emoji chosen by the user; null means the default icon for the item type. */
       icon?: string | null
@@ -4052,18 +4233,6 @@ export interface components {
       url?: string
       note?: string | null
       tags?: components['schemas']['TagNames']
-    }
-    MoveAttachmentRequest: {
-      /**
-       * Format: uuid
-       * @description Move it to this folder (exactly one of `folder_id` and `note_id`).
-       */
-      folder_id?: string | null
-      /**
-       * Format: uuid
-       * @description Move it to this note instead of a folder.
-       */
-      note_id?: string | null
     }
     MoveLinkRequest: {
       /** Format: uuid */

@@ -13,7 +13,10 @@ import { useNewDocument } from '@/features/documents/useNewDocument'
 import { siteName } from '@/features/links/hostname'
 import { useNewLink } from '@/features/links/NewLinkProvider'
 import { useFolderContents, useTreeActions } from '@/features/tree/queries'
-import { useEntityMenu } from '@/features/tree/EntityMenuProvider'
+import { SelectionBar, SelectionToggle } from '@/features/tree/SelectionBar'
+import { cardSelection, useSelection } from '@/features/tree/useSelection'
+import { useBulkActions } from '@/features/tree/useBulkActions'
+import type { BulkItem } from '@/data/types'
 import { useMoveDialog } from '@/features/tree/useMoveDialog'
 import { Alert } from '@/components/Alert'
 import { PromptDialog } from '@/components/PromptDialog'
@@ -36,9 +39,23 @@ function FolderView({ id }: { id: string }) {
   const { setIcon, createFolder } = useTreeActions()
   const [creatingFolder, setCreatingFolder] = useState(false)
   const { openMove, dialog: moveDialog } = useMoveDialog()
-  const entityMenu = useEntityMenu()
   const uploads = useAttachmentUploads({ type: 'folder', id })
   const { dragging, dropProps } = useFileDrop(uploads.add)
+
+  // Everything the page shows, in the order it is shown: the selection works on it.
+  const contents = query.data
+  const subfolderItems: BulkItem[] = (contents?.subfolders ?? []).map((f) => ({
+    kind: 'folder',
+    id: f.id,
+  }))
+  const noteItems: BulkItem[] = (contents?.notes ?? []).map((n) => ({ kind: 'note', id: n.id }))
+  const linkItems: BulkItem[] = (contents?.links ?? []).map((l) => ({ kind: 'link', id: l.id }))
+  const fileItems: BulkItem[] = (contents?.attachments ?? []).map((a) => ({
+    kind: 'attachment',
+    id: a.id,
+  }))
+  const selection = useSelection([...subfolderItems, ...noteItems, ...linkItems, ...fileItems])
+  const bulk = useBulkActions(selection)
 
   if (query.isPending) {
     return (
@@ -96,6 +113,7 @@ function FolderView({ id }: { id: string }) {
           <h2 className="truncate text-2xl font-semibold">{folder.name}</h2>
         </div>
         <div className="flex flex-wrap gap-2">
+          <SelectionToggle selection={selection} />
           <Button
             onClick={() => createDocument({ type: 'folder', id: folder.id })}
             disabled={pending}
@@ -114,6 +132,11 @@ function FolderView({ id }: { id: string }) {
         </div>
       </div>
       {error && <Alert tone="error">{error}</Alert>}
+      <SelectionBar
+        selection={selection}
+        onMove={bulk.moveSelected}
+        onDelete={bulk.deleteSelected}
+      />
 
       {empty && (
         <p className="rounded-lg border border-dashed border-neutral-300 p-8 text-center text-sm text-neutral-600 dark:text-neutral-400 dark:border-neutral-700">
@@ -122,22 +145,30 @@ function FolderView({ id }: { id: string }) {
       )}
 
       {subfolders.length > 0 && (
-        <CardSection title={t('folderPage.folders')}>
+        <CardSection
+          title={t('folderPage.folders')}
+          selectAll={selection.active ? selection.section(subfolderItems) : undefined}
+        >
           {subfolders.map((sub) => (
             <ItemCard
               key={sub.id}
               to={`/folder/${sub.id}`}
               icon={iconFor('folder', sub.icon)}
               title={sub.name}
-              onContextMenu={(event) =>
-                entityMenu.open(event, { kind: 'folder', id: sub.id, name: sub.name })
-              }
+              selection={cardSelection(selection, { kind: 'folder', id: sub.id })}
+              onContextMenu={bulk.onContextMenu(
+                { kind: 'folder', id: sub.id },
+                { kind: 'folder', id: sub.id, name: sub.name },
+              )}
             />
           ))}
         </CardSection>
       )}
       {notes.length > 0 && (
-        <CardSection title={t('folderPage.documents')}>
+        <CardSection
+          title={t('folderPage.documents')}
+          selectAll={selection.active ? selection.section(noteItems) : undefined}
+        >
           {notes.map((note) => (
             <ItemCard
               key={note.id}
@@ -146,21 +177,26 @@ function FolderView({ id }: { id: string }) {
               title={note.title}
               detail={formatRelativeTime(note.updatedAt, language)}
               onMove={() => openMove({ kind: 'note', id: note.id }, note.title)}
-              onContextMenu={(event) =>
-                entityMenu.open(event, {
+              selection={cardSelection(selection, { kind: 'note', id: note.id })}
+              onContextMenu={bulk.onContextMenu(
+                { kind: 'note', id: note.id },
+                {
                   kind: 'note',
                   id: note.id,
                   name: note.title,
                   pinned: note.pinned,
                   childCount: note.childCount,
-                })
-              }
+                },
+              )}
             />
           ))}
         </CardSection>
       )}
       {links.length > 0 && (
-        <CardSection title={t('folderPage.links')}>
+        <CardSection
+          title={t('folderPage.links')}
+          selectAll={selection.active ? selection.section(linkItems) : undefined}
+        >
           {links.map((link) => (
             <ItemCard
               key={link.id}
@@ -169,9 +205,11 @@ function FolderView({ id }: { id: string }) {
               title={link.title}
               detail={siteName(link.url)}
               onMove={() => openMove({ kind: 'link', id: link.id }, link.title)}
-              onContextMenu={(event) =>
-                entityMenu.open(event, { kind: 'link', id: link.id, name: link.title })
-              }
+              selection={cardSelection(selection, { kind: 'link', id: link.id })}
+              onContextMenu={bulk.onContextMenu(
+                { kind: 'link', id: link.id },
+                { kind: 'link', id: link.id, name: link.title },
+              )}
             />
           ))}
         </CardSection>
@@ -181,8 +219,11 @@ function FolderView({ id }: { id: string }) {
         attachments={attachments}
         uploads={uploads}
         dragging={dragging}
+        selection={selection}
+        onItemContextMenu={(item) => bulk.onContextMenu(item)}
       />
       {moveDialog}
+      {bulk.dialogs}
       {creatingFolder && (
         <PromptDialog
           title={t('folderDialog.newTitle')}

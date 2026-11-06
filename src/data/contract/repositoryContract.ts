@@ -604,6 +604,312 @@ export function describeRepositoryContract(name: string, create: () => Promise<C
       })
     })
 
+    describe('bulk actions', () => {
+      const MISSING = '00000000-0000-4000-8000-000000000000'
+      const fileOf = file
+      const item = (kind: 'folder' | 'note' | 'link' | 'attachment', thing: { id: ID }) => ({
+        kind,
+        id: thing.id,
+      })
+
+      it('moves folders, documents, links and files to a folder in one go', async () => {
+        const { notes, signInNewUser } = await create()
+        await signInNewUser()
+        const source = await notes.createFolder('Source')
+        const target = await notes.createFolder('Target')
+        const sub = await notes.createFolder('Sub', source.id)
+        const note = await notes.createNote({ title: 'N', folderId: source.id })
+        const link = await notes.createLink({
+          title: 'L',
+          url: 'https://a.co',
+          folderId: source.id,
+        })
+        const file = await notes.uploadFolderAttachment(source.id, fileOf('a.txt', 'a'))
+
+        const result = await notes.moveMany(
+          [item('folder', sub), item('note', note), item('link', link), item('attachment', file)],
+          { type: 'folder', id: target.id },
+        )
+
+        expect(result).toEqual({ count: 4 })
+        const moved = await notes.folderContents(target.id)
+        expect(ids(moved.subfolders)).toEqual([sub.id])
+        expect(ids(moved.notes)).toEqual([note.id])
+        expect(ids(moved.links)).toEqual([link.id])
+        expect(ids(moved.attachments)).toEqual([file.id])
+        const left = await notes.folderContents(source.id)
+        expect([...left.subfolders, ...left.notes, ...left.links, ...left.attachments]).toEqual([])
+      })
+
+      it('moves documents, links and files under a document, and to the top level', async () => {
+        const { notes, signInNewUser } = await create()
+        await signInNewUser()
+        const folder = await notes.createFolder('F')
+        const parent = await notes.createNote({ title: 'Project' })
+        const note = await notes.createNote({ title: 'Task', folderId: folder.id })
+        const link = await notes.createLink({
+          title: 'L',
+          url: 'https://a.co',
+          folderId: folder.id,
+        })
+        const file = await notes.uploadFolderAttachment(folder.id, fileOf('a.txt', 'a'))
+
+        await notes.moveMany([item('note', note), item('link', link), item('attachment', file)], {
+          type: 'note',
+          id: parent.id,
+        })
+
+        const children = await notes.noteChildren(parent.id)
+        expect(ids(children.notes)).toEqual([note.id])
+        expect(ids(children.links)).toEqual([link.id])
+        expect(await notes.getAttachment(file.id)).toMatchObject({
+          noteId: parent.id,
+          folderId: null,
+        })
+
+        await notes.moveMany([item('note', note), item('link', link)], { type: 'root' })
+        const root = await notes.folderContents()
+        expect(ids(root.notes)).toContain(note.id)
+        expect(ids(root.links)).toEqual([link.id])
+      })
+
+      it('refuses folders under a document and files at the top level, changing nothing', async () => {
+        const { notes, signInNewUser } = await create()
+        await signInNewUser()
+        const parent = await notes.createNote({ title: 'Project' })
+        const folder = await notes.createFolder('F')
+        const note = await notes.createNote({ title: 'Task', folderId: folder.id })
+        const file = await notes.uploadFolderAttachment(folder.id, fileOf('a.txt', 'a'))
+
+        await rejects(
+          notes.moveMany([item('note', note), item('folder', folder)], {
+            type: 'note',
+            id: parent.id,
+          }),
+          { status: 422, code: 'notes.invalid_location' },
+        )
+        await rejects(
+          notes.moveMany([item('note', note), item('attachment', file)], { type: 'root' }),
+          {
+            status: 422,
+            code: 'attachment.invalid_location',
+          },
+        )
+
+        expect((await notes.getNote(note.id)).folderId).toBe(folder.id)
+        expect((await notes.getAttachment(file.id)).folderId).toBe(folder.id)
+      })
+
+      it('keeps the files of a moved folder or document with it', async () => {
+        const { notes, signInNewUser } = await create()
+        await signInNewUser()
+        const target = await notes.createFolder('Target')
+        const folder = await notes.createFolder('Docs')
+        const inFolder = await notes.uploadFolderAttachment(folder.id, fileOf('a.txt', 'a'))
+        const note = await notes.createNote({ title: 'Spec' })
+        const inNote = await notes.uploadNoteAttachment(note.id, fileOf('b.txt', 'b'))
+
+        await notes.moveMany([item('folder', folder), item('note', note)], {
+          type: 'folder',
+          id: target.id,
+        })
+
+        expect(await notes.getAttachment(inFolder.id)).toMatchObject({ folderId: folder.id })
+        expect(ids((await notes.folderContents(folder.id)).attachments)).toEqual([inFolder.id])
+        expect(await notes.getAttachment(inNote.id)).toMatchObject({ noteId: note.id })
+        const moved = await notes.getNote(note.id)
+        expect(moved.folderId).toBe(target.id)
+        expect(ids(moved.attachments)).toEqual([inNote.id])
+      })
+
+      it('refuses to put an item inside itself, changing nothing', async () => {
+        const { notes, signInNewUser } = await create()
+        await signInNewUser()
+        const other = await notes.createNote({ title: 'Other' })
+        const parent = await notes.createNote({ title: 'Parent' })
+        const child = await notes.createNote({ title: 'Child', parentNoteId: parent.id })
+        const folder = await notes.createFolder('A')
+        const inner = await notes.createFolder('B', folder.id)
+
+        await rejects(
+          notes.moveMany([item('note', other), item('note', parent)], {
+            type: 'note',
+            id: child.id,
+          }),
+          { status: 422, code: 'note.cycle_detected' },
+        )
+        await rejects(
+          notes.moveMany([item('note', other), item('folder', folder)], {
+            type: 'folder',
+            id: inner.id,
+          }),
+          { status: 422, code: 'folder.cycle_detected' },
+        )
+
+        const unchanged = await notes.getNote(other.id)
+        expect(unchanged.folderId).toBeNull()
+        expect(unchanged.parentNoteId).toBeNull()
+      })
+
+      it('counts picked items once and lets the ones inside others travel with them', async () => {
+        const { notes, signInNewUser } = await create()
+        await signInNewUser()
+        const target = await notes.createFolder('Target')
+        const folder = await notes.createFolder('Docs')
+        const inFolder = await notes.createNote({ title: 'In folder', folderId: folder.id })
+        const parent = await notes.createNote({ title: 'Parent', folderId: folder.id })
+        const child = await notes.createNote({ title: 'Child', parentNoteId: parent.id })
+        const file = await notes.uploadNoteAttachment(parent.id, fileOf('a.txt', 'a'))
+
+        const result = await notes.moveMany(
+          [
+            item('note', child),
+            item('folder', folder),
+            item('note', inFolder),
+            item('attachment', file),
+            item('folder', folder),
+          ],
+          { type: 'folder', id: target.id },
+        )
+
+        expect(result).toEqual({ count: 1 })
+        expect(ids((await notes.folderContents(target.id)).subfolders)).toEqual([folder.id])
+        expect((await notes.getNote(inFolder.id)).folderId).toBe(folder.id)
+        expect((await notes.getNote(child.id)).parentNoteId).toBe(parent.id)
+        expect((await notes.getAttachment(file.id)).noteId).toBe(parent.id)
+      })
+
+      it('refuses missing items and destinations, changing nothing', async () => {
+        const { notes, signInNewUser } = await create()
+        await signInNewUser()
+        const target = await notes.createFolder('Target')
+        const note = await notes.createNote({ title: 'Task' })
+        const trashed = await notes.createNote({ title: 'Gone' })
+        await notes.deleteNote(trashed.id)
+
+        await rejects(
+          notes.moveMany([item('note', note), { kind: 'link', id: MISSING }], {
+            type: 'folder',
+            id: target.id,
+          }),
+          { status: 404, code: 'link.not_found' },
+        )
+        await rejects(
+          notes.moveMany([item('note', note), item('note', trashed)], {
+            type: 'folder',
+            id: target.id,
+          }),
+          { status: 404, code: 'note.not_found' },
+        )
+        await rejects(notes.moveMany([item('note', note)], { type: 'folder', id: MISSING }), {
+          status: 422,
+          code: 'folder.not_found',
+        })
+        await rejects(notes.moveMany([item('note', note)], { type: 'note', id: MISSING }), {
+          status: 422,
+          code: 'note.parent_not_found',
+        })
+
+        expect((await notes.getNote(note.id)).folderId).toBeNull()
+      })
+
+      it('takes between 1 and 100 items', async () => {
+        const { notes, signInNewUser } = await create()
+        await signInNewUser()
+        const note = await notes.createNote({ title: 'Task' })
+
+        await rejects(notes.moveMany([], { type: 'root' }), {
+          status: 400,
+          code: 'validation_error',
+        })
+        await rejects(notes.deleteMany([]), { status: 400, code: 'validation_error' })
+        await rejects(notes.deleteMany(Array.from({ length: 101 }, () => item('note', note))), {
+          status: 400,
+          code: 'validation_error',
+        })
+        // Repeated items collapse before they are counted.
+        await expect(
+          notes.deleteMany(Array.from({ length: 100 }, () => item('note', note))),
+        ).resolves.toEqual({ count: 1 })
+      })
+
+      it('sends many items to the trash, cascading, and they can be restored', async () => {
+        const { notes, signInNewUser } = await create()
+        await signInNewUser()
+        const folder = await notes.createFolder('Docs')
+        await notes.createNote({ title: 'In folder', folderId: folder.id })
+        const parent = await notes.createNote({ title: 'Parent' })
+        const child = await notes.createNote({ title: 'Child', parentNoteId: parent.id })
+        const noteFile = await notes.uploadNoteAttachment(parent.id, fileOf('a.txt', 'a'))
+        const link = await notes.createLink({ title: 'L', url: 'https://a.co' })
+        const loose = await notes.createFolder('Loose')
+        const looseFile = await notes.uploadFolderAttachment(loose.id, fileOf('b.txt', 'b'))
+
+        const result = await notes.deleteMany([
+          item('folder', folder),
+          item('note', parent),
+          item('note', child),
+          item('link', link),
+          item('attachment', looseFile),
+        ])
+
+        expect(result).toEqual({ count: 4 })
+        const root = await notes.folderContents()
+        expect(ids(root.subfolders)).not.toContain(folder.id)
+        expect(ids(root.notes)).not.toContain(parent.id)
+        expect(ids(root.links)).toEqual([])
+        expect((await notes.folderContents(loose.id)).attachments).toEqual([])
+        const trash = await notes.listTrash()
+        expect(ids(trash.folders)).toContain(folder.id)
+        expect(ids(trash.notes)).toContain(parent.id)
+        expect(ids(trash.notes)).not.toContain(child.id)
+        expect(ids(trash.links)).toEqual([link.id])
+        expect(ids(trash.attachments)).toEqual([looseFile.id])
+
+        await notes.restore('note', parent.id)
+        expect(ids((await notes.getNote(parent.id)).attachments)).toEqual([noteFile.id])
+        expect(ids((await notes.noteChildren(parent.id)).notes)).toEqual([child.id])
+        await rejects(notes.deleteMany([item('note', child), item('link', link)]), {
+          status: 404,
+          code: 'link.not_found',
+        })
+        expect((await notes.getNote(child.id)).title).toBe('Child')
+      })
+
+      it("never touches another user's items", async () => {
+        const { notes, signInNewUser, switchTo } = await create()
+        const owner = await signInNewUser()
+        const folder = await notes.createFolder('Private')
+        const note = await notes.createNote({ title: 'Secret', folderId: folder.id })
+        const file = await notes.uploadFolderAttachment(folder.id, fileOf('a.txt', 'a'))
+        await signInNewUser()
+
+        const mine = await notes.createFolder('Mine')
+        const theirs = await notes.createNote({ title: 'Theirs' })
+        for (const foreign of [
+          item('note', note),
+          item('folder', folder),
+          item('attachment', file),
+        ]) {
+          const expected = { status: 404, code: `${foreign.kind}.not_found` }
+          await rejects(
+            notes.moveMany([item('note', theirs), foreign], { type: 'folder', id: mine.id }),
+            expected,
+          )
+          await rejects(notes.deleteMany([item('note', theirs), foreign]), expected)
+        }
+        await rejects(notes.moveMany([item('note', theirs)], { type: 'folder', id: folder.id }), {
+          status: 422,
+          code: 'folder.not_found',
+        })
+        expect((await notes.getNote(theirs.id)).folderId).toBeNull()
+
+        await switchTo(owner)
+        expect((await notes.getNote(note.id)).folderId).toBe(folder.id)
+        expect(ids((await notes.folderContents(folder.id)).attachments)).toEqual([file.id])
+      })
+    })
+
     describe('search and tags', () => {
       it('finds notes by title and content, ranking title matches first', async () => {
         const { notes, signInNewUser } = await create()

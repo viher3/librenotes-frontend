@@ -351,6 +351,55 @@ describe('real backend', () => {
     })
   })
 
+  it('moves and trashes many items at once, all or nothing', async () => {
+    const target = await notes.createFolder('Bulk target')
+    const source = await notes.createFolder('Bulk source')
+    const sub = await notes.createFolder('Bulk sub', source.id)
+    const note = await notes.createNote({ title: 'Bulk note', folderId: source.id })
+    const link = await notes.createLink({
+      title: 'Bulk link',
+      url: 'https://a.co',
+      folderId: source.id,
+    })
+    const upload = await notes.uploadFolderAttachment(source.id, file('bulk.txt', 'bulk'))
+    const item = (kind: 'folder' | 'note' | 'link' | 'attachment', id: string) => ({ kind, id })
+
+    await expect(
+      notes.moveMany([item('note', note.id), item('attachment', upload.id)], { type: 'root' }),
+    ).rejects.toMatchObject({ status: 422, code: 'attachment.invalid_location' })
+    expect((await notes.getNote(note.id)).folderId).toBe(source.id)
+
+    const moved = await notes.moveMany(
+      [
+        item('folder', sub.id),
+        item('note', note.id),
+        item('link', link.id),
+        item('attachment', upload.id),
+      ],
+      { type: 'folder', id: target.id },
+    )
+    expect(moved).toEqual({ count: 4 })
+    const contents = await notes.folderContents(target.id)
+    expect(ids(contents.subfolders)).toEqual([sub.id])
+    expect(ids(contents.notes)).toEqual([note.id])
+    expect(ids(contents.links)).toEqual([link.id])
+    expect(ids(contents.attachments)).toEqual([upload.id])
+
+    await expect(
+      notes.deleteMany([
+        item('note', note.id),
+        item('link', '00000000-0000-4000-8000-000000000000'),
+      ]),
+    ).rejects.toMatchObject({ status: 404, code: 'link.not_found' })
+    expect((await notes.getNote(note.id)).title).toBe('Bulk note')
+
+    const trashed = await notes.deleteMany([item('folder', target.id), item('folder', source.id)])
+    expect(trashed).toEqual({ count: 2 })
+    expect(ids((await notes.listTrash()).folders)).toEqual(
+      expect.arrayContaining([target.id, source.id]),
+    )
+  })
+
   it('restores the session from the stored refresh token', async () => {
     const reloaded = createHttpRepositories({
       baseUrl: API,

@@ -311,7 +311,7 @@ export function SidebarTree() {
   } else if (dialog?.type === 'move') {
     dialogView = (
       <MoveDialog
-        node={dialog.node}
+        nodes={[dialog.node]}
         name={dialog.name}
         onClose={closeDialog}
         onMove={async (destination) => {

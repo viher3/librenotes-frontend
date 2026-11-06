@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
 import { useRepositories } from '@/data/DataProvider'
-import { ApiError } from '@/data/errors'
-import type { Destination, ID, Icon } from '@/data/types'
+import { ApiError, isApiError } from '@/data/errors'
+import type { BulkItem, Destination, ID, Icon } from '@/data/types'
 import { invalidateStructure, noteKeys, treeKeys } from '@/lib/queryKeys'
 
 export function useFolderContents(id: ID | null, enabled = true) {
@@ -104,5 +104,25 @@ export function useTreeActions() {
     },
   })
 
-  return { createFolder, renameFolder, setIcon, move, remove }
+  /** Moves or removes several things in one request: all of them or none. */
+  const bulkMove = useMutation({
+    mutationFn: ({ items, destination }: { items: BulkItem[]; destination: Destination }) =>
+      notes.moveMany(items, destination),
+    onSuccess: refresh,
+    // Something picked no longer exists: the page is out of date, so show what is there now.
+    onError: (error) => (isApiError(error) && error.status === 404 ? refresh() : undefined),
+  })
+
+  const bulkRemove = useMutation({
+    mutationFn: (items: BulkItem[]) => notes.deleteMany(items),
+    onSuccess: async (_result, items) => {
+      for (const item of items) {
+        if (item.kind === 'note') queryClient.removeQueries({ queryKey: noteKeys.detail(item.id) })
+      }
+      await refresh()
+    },
+    onError: (error) => (isApiError(error) && error.status === 404 ? refresh() : undefined),
+  })
+
+  return { createFolder, renameFolder, setIcon, move, remove, bulkMove, bulkRemove }
 }

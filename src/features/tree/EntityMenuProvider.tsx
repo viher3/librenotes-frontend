@@ -34,6 +34,8 @@ export interface MenuEntity {
 interface EntityMenuValue {
   /** Opens the menu at the pointer; use it as the `onContextMenu` of a card or row. */
   open: (event: MouseEvent, entity: MenuEntity) => void
+  /** Opens a menu of the caller's own at the pointer (the actions on a selection of several items). */
+  openCustom: (event: MouseEvent, label: string, items: ContextMenuItem[]) => void
 }
 
 const EntityMenuContext = createContext<EntityMenuValue | null>(null)
@@ -57,7 +59,12 @@ export function EntityMenuProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient()
   const { notes } = useRepositories()
   const actions = useTreeActions()
-  const [menu, setMenu] = useState<{ entity: MenuEntity; x: number; y: number } | null>(null)
+  const [menu, setMenu] = useState<{
+    label: string
+    items: ContextMenuItem[] | MenuEntity
+    x: number
+    y: number
+  } | null>(null)
   const [dialog, setDialog] = useState<Dialog | null>(null)
   const [problem, setProblem] = useState<string | null>(null)
 
@@ -102,10 +109,21 @@ export function EntityMenuProvider({ children }: { children: ReactNode }) {
         event.preventDefault()
         event.stopPropagation()
         setProblem(null)
-        setMenu({ entity, x: event.clientX, y: event.clientY })
+        setMenu({
+          label: t('actions.open', { name: entity.name }),
+          items: entity,
+          x: event.clientX,
+          y: event.clientY,
+        })
+      },
+      openCustom: (event, label, items) => {
+        event.preventDefault()
+        event.stopPropagation()
+        setProblem(null)
+        setMenu({ label, items, x: event.clientX, y: event.clientY })
       },
     }),
-    [],
+    [t],
   )
 
   const itemsFor = (entity: MenuEntity): ContextMenuItem[] => {
@@ -152,7 +170,7 @@ export function EntityMenuProvider({ children }: { children: ReactNode }) {
     const { entity } = dialog
     dialogView = (
       <MoveDialog
-        node={{ kind: entity.kind, id: entity.id }}
+        nodes={[{ kind: entity.kind, id: entity.id }]}
         name={entity.name}
         onClose={closeDialog}
         onMove={async (destination) => {
@@ -214,10 +232,10 @@ export function EntityMenuProvider({ children }: { children: ReactNode }) {
       {children}
       {menu && (
         <ContextMenu
-          label={t('actions.open', { name: menu.entity.name })}
+          label={menu.label}
           x={menu.x}
           y={menu.y}
-          items={itemsFor(menu.entity)}
+          items={Array.isArray(menu.items) ? menu.items : itemsFor(menu.items)}
           onClose={close}
         />
       )}

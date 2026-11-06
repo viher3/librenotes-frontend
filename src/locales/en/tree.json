@@ -61,7 +61,8 @@
     "moving": "Moving…",
     "loadError": "Couldn't load this folder.",
     "selected": "Destination: {{target}}",
-    "noneSelected": "Select a destination."
+    "noneSelected": "Select a destination.",
+    "titleMany": "Move {{count}} items"
   },
   "breadcrumb": {
     "label": "Breadcrumb",
@@ -94,5 +95,38 @@
     "open": "Create new"
   },
   "moveButton": "Move",
-  "moveButtonLabel": "Move {{name}}"
+  "moveButtonLabel": "Move {{name}}",
+  "bulk": {
+    "select": "Select",
+    "done": "Done",
+    "toolbar": "Actions for the selected items",
+    "selectItem": "Select {{name}}",
+    "selectSection": "Select all in {{section}}",
+    "selectedCount_one": "{{count}} selected",
+    "selectedCount_other": "{{count}} selected",
+    "limit": "Select up to {{max}} items at a time",
+    "move": "Move to…",
+    "delete": "Delete",
+    "clear": "Clear selection",
+    "moveMenu_one": "Move {{count}} item to…",
+    "moveMenu_other": "Move {{count}} items to…",
+    "deleteMenu_one": "Delete {{count}} item",
+    "deleteMenu_other": "Delete {{count}} items",
+    "menuLabel_one": "Actions for {{count}} selected item",
+    "menuLabel_other": "Actions for {{count}} selected items",
+    "deleteTitle_one": "Delete this item?",
+    "deleteTitle_other": "Delete {{count}} items?",
+    "deleteBody": "This moves to the trash: {{items}}.",
+    "deleteNested": "Everything inside the folders and documents, attached files included, goes with them. You can restore it all from the trash.",
+    "counts": {
+      "folder_one": "{{count}} folder",
+      "folder_other": "{{count}} folders",
+      "note_one": "{{count}} document",
+      "note_other": "{{count}} documents",
+      "link_one": "{{count}} link",
+      "link_other": "{{count}} links",
+      "attachment_one": "{{count}} file",
+      "attachment_other": "{{count}} files"
+    }
+  }
 }

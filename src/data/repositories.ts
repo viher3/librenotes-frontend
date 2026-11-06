@@ -2,6 +2,8 @@ import type {
   Attachment,
   ChangePasswordInput,
   AttachmentDetail,
+  BulkItem,
+  BulkResult,
   Destination,
   CreateLinkInput,
   CreateNoteInput,
@@ -103,6 +105,16 @@ export interface NotesRepository {
   /** Moves the file to a folder or a note; it cannot live at the top level (422 `attachment.invalid_location`). */
   moveAttachment(id: ID, destination: Destination): Promise<void>
   deleteAttachment(id: ID): Promise<void>
+
+  // Bulk actions
+  /**
+   * Moves folders, notes, links and files to one destination. All or nothing: if anything is refused (an item or
+   * the destination is missing, a folder would go under a note, a file to the top level, an item inside itself)
+   * nothing is moved. Items inside another picked item travel with it; 1 to 100 items.
+   */
+  moveMany(items: BulkItem[], destination: Destination): Promise<BulkResult>
+  /** Sends folders, notes, links and files to the trash, all or nothing (they come back from the trash page). */
+  deleteMany(items: BulkItem[]): Promise<BulkResult>
 
   // Search and tags
   search(params: SearchParams): Promise<SearchResults>

@@ -4,6 +4,7 @@ import type { SessionStore } from '../session'
 import {
   MAX_ATTACHMENT_BYTES,
   type Attachment,
+  type BulkItem,
   type AttachmentDetail,
   type Destination,
   type ID,
@@ -324,6 +325,22 @@ function createNotesRepository(
       await unwrap(api.DELETE('/attachments/{id}', path(id)))
     },
 
+    // Bulk actions
+    async moveMany(items, destination) {
+      const dto = await unwrap(
+        api.POST('/bulk/move', {
+          body: { items: items.map(bulkItemBody), ...destinationBody(destination) },
+        }),
+      )
+      return { count: dto.data?.count ?? 0 }
+    },
+    async deleteMany(items) {
+      const dto = await unwrap(
+        api.POST('/bulk/trash', { body: { items: items.map(bulkItemBody) } }),
+      )
+      return { count: dto.data?.count ?? 0 }
+    },
+
     // Search and tags
     async search(params) {
       const dto = await unwrap(
@@ -360,6 +377,8 @@ function createNotesRepository(
     },
   }
 }
+
+const bulkItemBody = (item: BulkItem) => ({ type: item.kind, id: item.id })
 
 /** The request body that places an item: exactly one of the two ids, or neither for the root. */
 function destinationBody(destination: Destination) {
