@@ -11,7 +11,6 @@ import { Button } from '@/components/Button'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { UserMenu } from '@/features/auth/UserMenu'
 import { useNewDocument, useNewDocumentShortcut } from '@/features/documents/useNewDocument'
-import { TagList } from '@/features/tags/TagList'
 import { NewLinkProvider } from '@/features/links/NewLinkProvider'
 import { SearchProvider, useSearch } from '@/features/search/SearchProvider'
 import { EntityMenuProvider } from '@/features/tree/EntityMenuProvider'
@@ -61,6 +60,7 @@ function Shell() {
   useNewDocumentShortcut(createDocument)
   const { t: tLinks } = useTranslation('links')
   const search = useSearch()
+  const { t: tTags } = useTranslation('tags')
   const { t: tSearch } = useTranslation('search')
   const desktop = useMediaQuery('(min-width: 768px)')
   const [menuOpen, setMenuOpen] = useState(false)
@@ -193,6 +193,9 @@ function Shell() {
           <NavLink to="/links" className={linkClass}>
             {tLinks('nav')}
           </NavLink>
+          <NavLink to="/tags" className={linkClass}>
+            {tTags('nav')}
+          </NavLink>
           <button
             type="button"
             onClick={search.open}
@@ -209,7 +212,6 @@ function Shell() {
           </NavLink>
         </nav>
         <SidebarTree />
-        <TagList />
       </aside>
       {desktop && (
         <div

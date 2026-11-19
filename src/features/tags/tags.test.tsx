@@ -350,14 +350,17 @@ describe('tag list', () => {
     const note = await mock.notes.createNote({ title: 'Plan' })
     const { user } = await renderApp(`/doc/${note.id}`, mock)
     await screen.findByRole('group', { name: 'Tags' })
-    await screen.findByText('No tags yet')
 
     await user.type(screen.getByRole('combobox', { name: 'Add tag' }), 'fresh{Enter}')
+    await screen.findByRole('button', { name: 'Remove tag fresh' })
 
+    await user.click(screen.getByRole('link', { name: 'Home' }))
     await waitFor(() =>
       expect(within(list()).getByRole('link', { name: 'fresh (1 item)' })).toBeInTheDocument(),
     )
-    await user.click(screen.getByRole('button', { name: 'Remove tag fresh' }))
+    await user.click((await screen.findAllByRole('link', { name: /Plan/ }))[0])
+    await user.click(await screen.findByRole('button', { name: 'Remove tag fresh' }))
+    await user.click(screen.getByRole('link', { name: 'Home' }))
     await waitFor(() => expect(screen.getByText('No tags yet')).toBeInTheDocument())
   })
 
@@ -365,9 +368,6 @@ describe('tag list', () => {
     const mock = await signedInBackend()
     const note = await mock.notes.createNote({ title: 'Plan', tags: ['temp'] })
     const { user } = await renderApp(`/doc/${note.id}`, mock)
-    await waitFor(() =>
-      expect(within(list()).getByRole('link', { name: 'temp (1 item)' })).toBeInTheDocument(),
-    )
 
     await user.click(await screen.findByRole('button', { name: 'Delete' }))
     await user.click(
@@ -375,19 +375,6 @@ describe('tag list', () => {
     )
 
     await waitFor(() => expect(screen.getByText('No tags yet')).toBeInTheDocument())
-  })
-
-  it('highlights the tag being shown', async () => {
-    const mock = await signedInBackend()
-    await mock.notes.createNote({ title: 'a', tags: ['work', 'home'] })
-    await renderApp('/tag/home', mock)
-
-    await waitFor(() => expect(within(list()).getAllByRole('link')).toHaveLength(2))
-    expect(within(list()).getByRole('link', { name: /home/ })).toHaveAttribute(
-      'aria-current',
-      'page',
-    )
-    expect(within(list()).getByRole('link', { name: /work/ })).not.toHaveAttribute('aria-current')
   })
 })
 
@@ -476,11 +463,6 @@ describe('tag page', () => {
     expect(await screen.findByRole('heading', { name: 'Etiqueta: trabajo' })).toBeInTheDocument()
     expect(
       await within(screen.getByRole('main')).findByRole('region', { name: 'Documentos' }),
-    ).toBeInTheDocument()
-    expect(
-      within(screen.getByRole('list', { name: 'Etiquetas' })).getByRole('link', {
-        name: 'trabajo (1 elemento)',
-      }),
     ).toBeInTheDocument()
   })
 })

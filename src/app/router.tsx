@@ -54,6 +54,12 @@ export const routes: RouteObject[] = [
             }),
           },
           {
+            path: '/tags',
+            lazy: async () => ({
+              Component: (await import('@/features/tags/TagsPage')).default,
+            }),
+          },
+          {
             path: '/trash',
             lazy: async () => ({
               Component: (await import('@/features/trash/TrashPage')).default,

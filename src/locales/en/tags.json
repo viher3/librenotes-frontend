@@ -1,7 +1,11 @@
 {
+  "nav": "Tags",
   "title": "Tags",
   "none": "No tags yet",
   "list": {
+    "title": "All tags",
+    "loadError": "We couldn't load the tags.",
+    "retry": "Try again",
     "empty": "No tags yet",
     "itemCount_one": "{{count}} item",
     "itemCount_other": "{{count}} items"

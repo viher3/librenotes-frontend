@@ -1,7 +1,11 @@
 {
+  "nav": "Etiquetas",
   "title": "Etiquetas",
   "none": "Aún no hay etiquetas",
   "list": {
+    "title": "Todas las etiquetas",
+    "loadError": "No pudimos cargar las etiquetas.",
+    "retry": "Reintentar",
     "empty": "Aún no hay etiquetas",
     "itemCount_one": "{{count}} elemento",
     "itemCount_other": "{{count}} elementos"

@@ -21,6 +21,7 @@ import { errorMessage } from '@/features/auth/errors'
 import { formatRelativeTime } from '@/lib/format'
 import { siteName } from '@/features/links/hostname'
 import { useRootLinks } from '@/features/links/queries'
+import { TagList } from '@/features/tags/TagList'
 import { useFolderContents } from '@/features/tree/queries'
 import { SelectionBar, SelectionToggle } from '@/features/tree/SelectionBar'
 import { cardSelection, useSelection, type Selection } from '@/features/tree/useSelection'
@@ -127,7 +128,7 @@ function Section({
         {selectAll && <SectionCheckbox title={title} selectAll={selectAll} />}
         {title}
       </h3>
-      <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+      <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
         {notes.map((note) => (
           <DocumentCard key={note.id} note={note} onMove={() => onMove(note)} picking={picking} />
         ))}
@@ -326,6 +327,7 @@ export function HomePage() {
           )}
         </section>
       )}
+      <TagList />
       {dialog}
       {bulk.dialogs}
     </div>
