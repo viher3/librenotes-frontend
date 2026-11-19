@@ -1,7 +1,7 @@
 .PHONY: help
 
 help:
-@echo "########################"
+	@echo "########################"
 	@echo "## Available commands ##"
 	@echo "########################"
 	@echo ""
