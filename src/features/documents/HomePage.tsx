@@ -21,7 +21,6 @@ import { errorMessage } from '@/features/auth/errors'
 import { formatRelativeTime } from '@/lib/format'
 import { siteName } from '@/features/links/hostname'
 import { useRootLinks } from '@/features/links/queries'
-import { TagList } from '@/features/tags/TagList'
 import { useFolderContents } from '@/features/tree/queries'
 import { SelectionBar, SelectionToggle } from '@/features/tree/SelectionBar'
 import { cardSelection, useSelection, type Selection } from '@/features/tree/useSelection'
@@ -327,7 +326,6 @@ export function HomePage() {
           )}
         </section>
       )}
-      <TagList />
       {dialog}
       {bulk.dialogs}
     </div>
